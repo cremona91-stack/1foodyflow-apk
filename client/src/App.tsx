@@ -42,6 +42,8 @@ function FoodCostManager() {
       quantity: 25,
       unit: 'kg',
       pricePerUnit: 1.20,
+      createdAt: new Date('2024-01-01'),
+      updatedAt: new Date('2024-01-01'),
     },
     {
       id: '2',
@@ -49,18 +51,25 @@ function FoodCostManager() {
       name: 'Olio Extravergine',
       supplier: 'Frantoio Rossi',
       waste: 0,
+      notes: null,
       quantity: 5,
       unit: 'l',
       pricePerUnit: 8.50,
+      createdAt: new Date('2024-01-02'),
+      updatedAt: new Date('2024-01-02'),
     },
     {
       id: '3',
       code: 'TOM-001',
       name: 'Pomodori San Marzano',
+      supplier: null,
       waste: 5,
+      notes: null,
       quantity: 10,
       unit: 'kg',
       pricePerUnit: 3.20,
+      createdAt: new Date('2024-01-03'),
+      updatedAt: new Date('2024-01-03'),
     },
   ]);
 
@@ -73,6 +82,8 @@ function FoodCostManager() {
         { productId: '2', quantity: 0.1, cost: 0.85 },
       ],
       totalCost: 1.45,
+      createdAt: new Date('2024-01-05'),
+      updatedAt: new Date('2024-01-05'),
     },
   ]);
 
@@ -89,6 +100,8 @@ function FoodCostManager() {
       netPrice: 9.84,
       foodCost: 2.9,
       sold: 15,
+      createdAt: new Date('2024-01-10'),
+      updatedAt: new Date('2024-01-10'),
     },
     {
       id: '2',
@@ -102,6 +115,8 @@ function FoodCostManager() {
       netPrice: 6.56,
       foodCost: 14.3,
       sold: 22,
+      createdAt: new Date('2024-01-11'),
+      updatedAt: new Date('2024-01-11'),
     },
   ]);
 
@@ -113,6 +128,7 @@ function FoodCostManager() {
       cost: 2.40,
       date: '2024-01-15',
       notes: 'Farina scaduta',
+      createdAt: new Date('2024-01-15'),
     },
   ]);
 
@@ -124,6 +140,7 @@ function FoodCostManager() {
       cost: 0.58,
       date: '2024-01-15',
       notes: 'Pranzo staff',
+      createdAt: new Date('2024-01-15'),
     },
   ]);
 
@@ -132,6 +149,10 @@ function FoodCostManager() {
     const newProduct: Product = {
       ...product,
       id: Date.now().toString(),
+      supplier: product.supplier || null,
+      notes: product.notes || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
     setProducts(prev => [...prev, newProduct]);
     console.log("Product added:", newProduct);
@@ -148,6 +169,10 @@ function FoodCostManager() {
     const updated: Product = {
       ...updatedProduct,
       id: editingProduct.id,
+      supplier: updatedProduct.supplier || null,
+      notes: updatedProduct.notes || null,
+      createdAt: editingProduct.createdAt,
+      updatedAt: new Date(),
     };
     
     setProducts(prev => prev.map(p => p.id === editingProduct.id ? updated : p));
@@ -169,6 +194,8 @@ function FoodCostManager() {
     const newRecipe: Recipe = {
       ...recipe,
       id: Date.now().toString(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
     setRecipes(prev => [...prev, newRecipe]);
     console.log("Recipe added:", newRecipe);
@@ -185,6 +212,8 @@ function FoodCostManager() {
     const updated: Recipe = {
       ...updatedRecipe,
       id: editingRecipe.id,
+      createdAt: editingRecipe.createdAt,
+      updatedAt: new Date(),
     };
     
     setRecipes(prev => prev.map(r => r.id === editingRecipe.id ? updated : r));
@@ -207,6 +236,8 @@ function FoodCostManager() {
       ...dish,
       id: Date.now().toString(),
       sold: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
     setDishes(prev => [...prev, newDish]);
     console.log("Dish added:", newDish);
@@ -224,6 +255,8 @@ function FoodCostManager() {
       ...updatedDish,
       id: editingDish.id,
       sold: editingDish.sold, // Keep the sold count when editing
+      createdAt: editingDish.createdAt,
+      updatedAt: new Date(),
     };
     
     setDishes(prev => prev.map(d => d.id === editingDish.id ? updated : d));
@@ -259,6 +292,8 @@ function FoodCostManager() {
     const newWaste: Waste = {
       ...wasteData,
       id: Date.now().toString(),
+      notes: wasteData.notes || null,
+      createdAt: new Date(),
     };
     setWaste(prev => [...prev, newWaste]);
     console.log("Waste added:", newWaste);
@@ -268,6 +303,8 @@ function FoodCostManager() {
     const newMeal: PersonalMeal = {
       ...mealData,
       id: Date.now().toString(),
+      notes: mealData.notes || null,
+      createdAt: new Date(),
     };
     setPersonalMeals(prev => [...prev, newMeal]);
     console.log("Personal meal added:", newMeal);

@@ -1,88 +1,141 @@
+import { sql } from "drizzle-orm";
+import { pgTable, text, varchar, real, integer, json, timestamp, boolean } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Product/Ingredient schema
-export const productSchema = z.object({
-  id: z.string(),
-  code: z.string(),
-  name: z.string(),
-  supplier: z.string().optional(),
-  waste: z.number().min(0).max(100).default(0),
-  notes: z.string().optional(),
-  quantity: z.number().min(0),
-  unit: z.enum(["kg", "l", "pezzo"]),
-  pricePerUnit: z.number().min(0),
-});
-
-export const insertProductSchema = productSchema.omit({ id: true });
-
-// Recipe schema
+// Recipe ingredient schema
 export const recipeIngredientSchema = z.object({
   productId: z.string(),
   quantity: z.number().min(0),
   cost: z.number().min(0),
 });
 
-export const recipeSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  ingredients: z.array(recipeIngredientSchema),
-  totalCost: z.number().min(0),
-});
-
-export const insertRecipeSchema = recipeSchema.omit({ id: true });
-
-// Dish schema
+// Dish ingredient schema
 export const dishIngredientSchema = z.object({
   productId: z.string(),
   quantity: z.number().min(0),
   cost: z.number().min(0),
 });
 
-export const dishSchema = z.object({
-  id: z.string(),
-  name: z.string(),
+// Product/Ingredient table
+export const products = pgTable("products", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code").notNull().unique(),
+  name: text("name").notNull(),
+  supplier: text("supplier"),
+  waste: real("waste").notNull().default(0),
+  notes: text("notes"),
+  quantity: real("quantity").notNull(),
+  unit: varchar("unit").notNull(), // kg, l, pezzo
+  pricePerUnit: real("price_per_unit").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Recipe table
+export const recipes = pgTable("recipes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  ingredients: json("ingredients").$type<z.infer<typeof recipeIngredientSchema>[]>().notNull(),
+  totalCost: real("total_cost").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Dish table
+export const dishes = pgTable("dishes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  ingredients: json("ingredients").$type<z.infer<typeof dishIngredientSchema>[]>().notNull(),
+  totalCost: real("total_cost").notNull(),
+  sellingPrice: real("selling_price").notNull(),
+  netPrice: real("net_price").notNull(),
+  foodCost: real("food_cost").notNull(),
+  sold: integer("sold").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Waste table
+export const waste = pgTable("waste", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  productId: varchar("product_id").notNull().references(() => products.id),
+  quantity: real("quantity").notNull(),
+  cost: real("cost").notNull(),
+  date: text("date").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Personal meals table
+export const personalMeals = pgTable("personal_meals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  dishId: varchar("dish_id").notNull().references(() => dishes.id),
+  quantity: integer("quantity").notNull().default(1),
+  cost: real("cost").notNull(),
+  date: text("date").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Zod schemas for validation
+export const insertProductSchema = createInsertSchema(products).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  waste: z.number().min(0).max(100).default(0),
+  quantity: z.number().min(0),
+  pricePerUnit: z.number().min(0),
+  unit: z.enum(["kg", "l", "pezzo"]),
+});
+
+export const insertRecipeSchema = createInsertSchema(recipes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  ingredients: z.array(recipeIngredientSchema),
+  totalCost: z.number().min(0),
+});
+
+export const insertDishSchema = createInsertSchema(dishes).omit({
+  id: true,
+  sold: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
   ingredients: z.array(dishIngredientSchema),
   totalCost: z.number().min(0),
   sellingPrice: z.number().min(0),
   netPrice: z.number().min(0),
   foodCost: z.number().min(0),
-  sold: z.number().min(0).default(0),
 });
 
-export const insertDishSchema = dishSchema.omit({ id: true, sold: true });
-
-// Waste schema
-export const wasteSchema = z.object({
-  id: z.string(),
-  productId: z.string(),
+export const insertWasteSchema = createInsertSchema(waste).omit({
+  id: true,
+  createdAt: true,
+}).extend({
   quantity: z.number().min(0),
   cost: z.number().min(0),
-  date: z.string(),
-  notes: z.string().optional(),
 });
 
-export const insertWasteSchema = wasteSchema.omit({ id: true });
-
-// Personal meal schema
-export const personalMealSchema = z.object({
-  id: z.string(),
-  dishId: z.string(),
+export const insertPersonalMealSchema = createInsertSchema(personalMeals).omit({
+  id: true,
+  createdAt: true,
+}).extend({
   quantity: z.number().min(0).default(1),
   cost: z.number().min(0),
-  date: z.string(),
-  notes: z.string().optional(),
 });
 
-export const insertPersonalMealSchema = personalMealSchema.omit({ id: true });
-
 // Types
-export type Product = z.infer<typeof productSchema>;
+export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
-export type Recipe = z.infer<typeof recipeSchema>;
+export type Recipe = typeof recipes.$inferSelect;
 export type InsertRecipe = z.infer<typeof insertRecipeSchema>;
-export type Dish = z.infer<typeof dishSchema>;
+export type Dish = typeof dishes.$inferSelect;
 export type InsertDish = z.infer<typeof insertDishSchema>;
-export type Waste = z.infer<typeof wasteSchema>;
+export type Waste = typeof waste.$inferSelect;
 export type InsertWaste = z.infer<typeof insertWasteSchema>;
-export type PersonalMeal = z.infer<typeof personalMealSchema>;
+export type PersonalMeal = typeof personalMeals.$inferSelect;
 export type InsertPersonalMeal = z.infer<typeof insertPersonalMealSchema>;

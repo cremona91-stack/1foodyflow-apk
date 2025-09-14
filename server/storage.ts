@@ -72,7 +72,15 @@ export class MemStorage implements IStorage {
 
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
     const id = randomUUID();
-    const product: Product = { ...insertProduct, id };
+    const now = new Date();
+    const product: Product = { 
+      ...insertProduct,
+      id,
+      supplier: insertProduct.supplier || null,
+      notes: insertProduct.notes || null,
+      createdAt: now,
+      updatedAt: now
+    };
     this.products.set(id, product);
     return product;
   }
@@ -101,7 +109,13 @@ export class MemStorage implements IStorage {
 
   async createRecipe(insertRecipe: InsertRecipe): Promise<Recipe> {
     const id = randomUUID();
-    const recipe: Recipe = { ...insertRecipe, id };
+    const now = new Date();
+    const recipe: Recipe = { 
+      ...insertRecipe,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
     this.recipes.set(id, recipe);
     return recipe;
   }
@@ -130,7 +144,14 @@ export class MemStorage implements IStorage {
 
   async createDish(insertDish: InsertDish): Promise<Dish> {
     const id = randomUUID();
-    const dish: Dish = { ...insertDish, id, sold: 0 };
+    const now = new Date();
+    const dish: Dish = { 
+      ...insertDish,
+      id,
+      sold: 0,
+      createdAt: now,
+      updatedAt: now
+    };
     this.dishes.set(id, dish);
     return dish;
   }
@@ -155,7 +176,12 @@ export class MemStorage implements IStorage {
 
   async createWaste(insertWaste: InsertWaste): Promise<Waste> {
     const id = randomUUID();
-    const waste: Waste = { ...insertWaste, id };
+    const waste: Waste = { 
+      ...insertWaste,
+      id,
+      notes: insertWaste.notes || null,
+      createdAt: new Date()
+    };
     this.waste.set(id, waste);
     return waste;
   }
@@ -171,7 +197,12 @@ export class MemStorage implements IStorage {
 
   async createPersonalMeal(insertMeal: InsertPersonalMeal): Promise<PersonalMeal> {
     const id = randomUUID();
-    const meal: PersonalMeal = { ...insertMeal, id };
+    const meal: PersonalMeal = { 
+      ...insertMeal,
+      id,
+      notes: insertMeal.notes || null,
+      createdAt: new Date()
+    };
     this.personalMeals.set(id, meal);
     return meal;
   }
