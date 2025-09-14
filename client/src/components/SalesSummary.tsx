@@ -1,0 +1,200 @@
+import { type Dish, type Product, type Waste, type PersonalMeal } from "@shared/schema";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { TrendingUp, DollarSign, AlertTriangle, Users } from "lucide-react";
+
+interface SalesSummaryProps {
+  dishes: Dish[];
+  products: Product[];
+  waste: Waste[];
+  personalMeals: PersonalMeal[];
+  maxFoodCost?: number;
+  onMaxFoodCostChange?: (value: number) => void;
+}
+
+export default function SalesSummary({ 
+  dishes, 
+  products, 
+  waste, 
+  personalMeals, 
+  maxFoodCost = 30,
+  onMaxFoodCostChange 
+}: SalesSummaryProps) {
+  
+  // Calculate totals
+  const totalCostOfSales = dishes.reduce((sum, dish) => sum + (dish.totalCost * dish.sold), 0);
+  const totalGrossSales = dishes.reduce((sum, dish) => sum + (dish.sellingPrice * dish.sold), 0);
+  const totalNetSales = dishes.reduce((sum, dish) => sum + (dish.netPrice * dish.sold), 0);
+  
+  const totalWasteCost = waste.reduce((sum, w) => sum + w.cost, 0);
+  const totalPersonalMealsCost = personalMeals.reduce((sum, pm) => sum + pm.cost, 0);
+  
+  // Calculate weighted food cost
+  const weightedFoodCost = totalNetSales > 0 ? (totalCostOfSales / totalNetSales) * 100 : 0;
+  const isOverThreshold = weightedFoodCost > maxFoodCost;
+
+  const handleMaxFoodCostChange = (value: string) => {
+    const numValue = Math.max(0, Math.min(100, parseFloat(value) || 0));
+    console.log("Max food cost changed:", numValue);
+    onMaxFoodCostChange?.(numValue);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Summary Cards */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            Riepilogo Generale
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="p-4">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-destructive" />
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Costo Totale Materiali
+                  </p>
+                  <p className="text-xl font-bold text-destructive font-mono">
+                    €{totalCostOfSales.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Ricavo Totale
+                  </p>
+                  <p className="text-sm font-bold text-primary font-mono">
+                    €{totalGrossSales.toFixed(2)} / €{totalNetSales.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Lordo / Netto</p>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-4">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Totale Sprechi
+                  </p>
+                  <p className="text-xl font-bold text-destructive font-mono">
+                    €{totalWasteCost.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-4">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-destructive" />
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Totale Pasti Personali
+                  </p>
+                  <p className="text-xl font-bold text-destructive font-mono">
+                    €{totalPersonalMealsCost.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Food Cost Analysis */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="maxFoodCost">Soglia Food Cost</Label>
+              <div className="relative mt-1">
+                <Input
+                  id="maxFoodCost"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={maxFoodCost}
+                  onChange={(e) => handleMaxFoodCostChange(e.target.value)}
+                  className="pr-8"
+                  data-testid="input-max-food-cost"
+                />
+                <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground font-medium">
+                  %
+                </span>
+              </div>
+            </div>
+
+            <Card className={`p-4 ${isOverThreshold ? 'bg-destructive/10 border-destructive' : 'bg-chart-2/10 border-chart-2'}`}>
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-foreground">
+                  Food Cost Teorico Ponderato:
+                </span>
+                <span className={`text-2xl font-bold font-mono ${isOverThreshold ? 'text-destructive' : 'text-chart-2'}`}>
+                  {weightedFoodCost.toFixed(1)}%
+                </span>
+              </div>
+              {isOverThreshold && (
+                <p className="text-sm text-destructive mt-2">
+                  ⚠️ Il food cost supera la soglia impostata del {maxFoodCost}%
+                </p>
+              )}
+            </Card>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Detailed Sales Breakdown */}
+      {dishes.filter(d => d.sold > 0).length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Dettaglio Vendite</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {dishes
+                .filter(dish => dish.sold > 0)
+                .map((dish) => (
+                  <div
+                    key={dish.id}
+                    className="flex justify-between items-center p-3 bg-muted rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <span className="font-medium">{dish.name}</span>
+                      <span className="text-sm text-muted-foreground ml-2">
+                        x{dish.sold}
+                      </span>
+                    </div>
+                    <div className="text-right space-y-1">
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Ricavo: </span>
+                        <span className="font-mono font-medium">
+                          €{(dish.netPrice * dish.sold).toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Costo: </span>
+                        <span className="font-mono font-medium">
+                          €{(dish.totalCost * dish.sold).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
