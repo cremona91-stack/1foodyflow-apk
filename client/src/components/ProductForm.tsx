@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertProductSchema, type InsertProduct, type Product } from "@shared/schema";
@@ -21,16 +21,7 @@ export default function ProductForm({ onSubmit, editProduct, onCancel }: Product
 
   const form = useForm<InsertProduct>({
     resolver: zodResolver(insertProductSchema),
-    defaultValues: editProduct ? {
-      code: editProduct.code,
-      name: editProduct.name,
-      supplier: editProduct.supplier || "",
-      waste: editProduct.waste,
-      notes: editProduct.notes || "",
-      quantity: editProduct.quantity,
-      unit: editProduct.unit as "kg" | "l" | "pezzo",
-      pricePerUnit: editProduct.pricePerUnit,
-    } : {
+    defaultValues: {
       code: "",
       name: "",
       supplier: "",
@@ -41,6 +32,33 @@ export default function ProductForm({ onSubmit, editProduct, onCancel }: Product
       pricePerUnit: 0,
     },
   });
+
+  // Update form values when editProduct changes
+  useEffect(() => {
+    if (editProduct) {
+      form.reset({
+        code: editProduct.code,
+        name: editProduct.name,
+        supplier: editProduct.supplier || "",
+        waste: editProduct.waste,
+        notes: editProduct.notes || "",
+        quantity: editProduct.quantity,
+        unit: editProduct.unit as "kg" | "l" | "pezzo",
+        pricePerUnit: editProduct.pricePerUnit,
+      });
+    } else {
+      form.reset({
+        code: "",
+        name: "",
+        supplier: "",
+        waste: 0,
+        notes: "",
+        quantity: 0,
+        unit: "kg",
+        pricePerUnit: 0,
+      });
+    }
+  }, [editProduct, form]);
 
   const handleSubmit = (data: InsertProduct) => {
     console.log("Product form submitted:", data);
