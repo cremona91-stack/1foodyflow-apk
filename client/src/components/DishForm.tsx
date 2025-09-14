@@ -38,7 +38,7 @@ export default function DishForm({ onSubmit, products, editDish, onCancel }: Dis
   const selectedProduct = products.find(p => p.id === selectedProductId);
   const totalCost = ingredients.reduce((sum, ing) => sum + ing.cost, 0);
   const sellingPrice = form.watch("sellingPrice") || 0;
-  const netPrice = sellingPrice / 1.22; // Remove 22% IVA
+  const netPrice = sellingPrice / 1.10; // Remove 10% IVA
   const foodCost = netPrice > 0 ? (totalCost / netPrice) * 100 : 0;
 
   const addIngredient = () => {
