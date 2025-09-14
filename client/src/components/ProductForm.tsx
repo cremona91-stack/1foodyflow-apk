@@ -17,7 +17,7 @@ interface ProductFormProps {
 }
 
 export default function ProductForm({ onSubmit, editProduct, onCancel }: ProductFormProps) {
-  const [isEditing] = useState(!!editProduct);
+  const isEditing = !!editProduct;
 
   const form = useForm<InsertProduct>({
     resolver: zodResolver(insertProductSchema),
@@ -28,7 +28,7 @@ export default function ProductForm({ onSubmit, editProduct, onCancel }: Product
       waste: editProduct.waste,
       notes: editProduct.notes || "",
       quantity: editProduct.quantity,
-      unit: editProduct.unit,
+      unit: editProduct.unit as "kg" | "l" | "pezzo",
       pricePerUnit: editProduct.pricePerUnit,
     } : {
       code: "",
