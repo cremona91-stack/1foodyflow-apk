@@ -59,7 +59,7 @@ export const dishes = pgTable("dishes", {
 // Waste table
 export const waste = pgTable("waste", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  productId: varchar("product_id").notNull().references(() => products.id),
+  productId: varchar("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
   quantity: real("quantity").notNull(),
   cost: real("cost").notNull(),
   date: text("date").notNull(),
@@ -70,7 +70,7 @@ export const waste = pgTable("waste", {
 // Personal meals table
 export const personalMeals = pgTable("personal_meals", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  dishId: varchar("dish_id").notNull().references(() => dishes.id),
+  dishId: varchar("dish_id").notNull().references(() => dishes.id, { onDelete: "cascade" }),
   quantity: integer("quantity").notNull().default(1),
   cost: real("cost").notNull(),
   date: text("date").notNull(),
@@ -128,13 +128,43 @@ export const insertPersonalMealSchema = createInsertSchema(personalMeals).omit({
   cost: z.number().min(0),
 });
 
+// Update schemas for secure PATCH/PUT operations
+export const updateProductSchema = insertProductSchema.partial().omit({
+  // Explicitly omit immutable fields that should never be updated
+}).extend({
+  // Allow optional updates but maintain validation
+  waste: z.number().min(0).max(100).optional(),
+  quantity: z.number().min(0).optional(),
+  pricePerUnit: z.number().min(0).optional(),
+  unit: z.enum(["kg", "l", "pezzo"]).optional(),
+});
+
+export const updateRecipeSchema = z.object({
+  name: z.string().optional(),
+  ingredients: z.array(recipeIngredientSchema).optional(),
+  totalCost: z.number().min(0).optional(),
+});
+
+export const updateDishSchema = z.object({
+  name: z.string().optional(),
+  ingredients: z.array(dishIngredientSchema).optional(),
+  totalCost: z.number().min(0).optional(),
+  sellingPrice: z.number().min(0).optional(),
+  netPrice: z.number().min(0).optional(),
+  foodCost: z.number().min(0).optional(),
+  sold: z.number().min(0).optional(),
+});
+
 // Types
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
+export type UpdateProduct = z.infer<typeof updateProductSchema>;
 export type Recipe = typeof recipes.$inferSelect;
 export type InsertRecipe = z.infer<typeof insertRecipeSchema>;
+export type UpdateRecipe = z.infer<typeof updateRecipeSchema>;
 export type Dish = typeof dishes.$inferSelect;
 export type InsertDish = z.infer<typeof insertDishSchema>;
+export type UpdateDish = z.infer<typeof updateDishSchema>;
 export type Waste = typeof waste.$inferSelect;
 export type InsertWaste = z.infer<typeof insertWasteSchema>;
 export type PersonalMeal = typeof personalMeals.$inferSelect;

@@ -8,9 +8,23 @@ import {
   type InsertRecipe,
   type InsertDish,
   type InsertWaste,
-  type InsertPersonalMeal
+  type InsertPersonalMeal,
+  type UpdateProduct,
+  type UpdateRecipe,
+  type UpdateDish,
+  products,
+  recipes,
+  dishes,
+  waste,
+  personalMeals
 } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { drizzle } from "drizzle-orm/neon-http";
+import { eq } from "drizzle-orm";
+import { neon } from "@neondatabase/serverless";
+
+// Database connection
+const sql = neon(process.env.DATABASE_URL!);
+const db = drizzle(sql);
 
 // Storage interface for Food Cost Manager
 export interface IStorage {
@@ -18,21 +32,21 @@ export interface IStorage {
   getProducts(): Promise<Product[]>;
   getProduct(id: string): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
-  updateProduct(id: string, product: Partial<Product>): Promise<Product | undefined>;
+  updateProduct(id: string, product: UpdateProduct): Promise<Product | undefined>;
   deleteProduct(id: string): Promise<boolean>;
 
   // Recipes
   getRecipes(): Promise<Recipe[]>;
   getRecipe(id: string): Promise<Recipe | undefined>;
   createRecipe(recipe: InsertRecipe): Promise<Recipe>;
-  updateRecipe(id: string, recipe: Partial<Recipe>): Promise<Recipe | undefined>;
+  updateRecipe(id: string, recipe: UpdateRecipe): Promise<Recipe | undefined>;
   deleteRecipe(id: string): Promise<boolean>;
 
   // Dishes
   getDishes(): Promise<Dish[]>;
   getDish(id: string): Promise<Dish | undefined>;
   createDish(dish: InsertDish): Promise<Dish>;
-  updateDish(id: string, dish: Partial<Dish>): Promise<Dish | undefined>;
+  updateDish(id: string, dish: UpdateDish): Promise<Dish | undefined>;
   deleteDish(id: string): Promise<boolean>;
 
   // Waste
@@ -46,170 +60,169 @@ export interface IStorage {
   deletePersonalMeal(id: string): Promise<boolean>;
 }
 
-export class MemStorage implements IStorage {
-  private products: Map<string, Product>;
-  private recipes: Map<string, Recipe>;
-  private dishes: Map<string, Dish>;
-  private waste: Map<string, Waste>;
-  private personalMeals: Map<string, PersonalMeal>;
-
-  constructor() {
-    this.products = new Map();
-    this.recipes = new Map();
-    this.dishes = new Map();
-    this.waste = new Map();
-    this.personalMeals = new Map();
-  }
-
+export class DatabaseStorage implements IStorage {
   // Products
   async getProducts(): Promise<Product[]> {
-    return Array.from(this.products.values());
+    return await db.select().from(products);
   }
 
   async getProduct(id: string): Promise<Product | undefined> {
-    return this.products.get(id);
+    const result = await db.select().from(products).where(eq(products.id, id));
+    return result[0];
   }
 
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
-    const id = randomUUID();
-    const now = new Date();
-    const product: Product = { 
+    const result = await db.insert(products).values({
       ...insertProduct,
-      id,
       supplier: insertProduct.supplier || null,
       notes: insertProduct.notes || null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.products.set(id, product);
-    return product;
+    }).returning();
+    return result[0];
   }
 
-  async updateProduct(id: string, updates: Partial<Product>): Promise<Product | undefined> {
-    const product = this.products.get(id);
-    if (!product) return undefined;
+  async updateProduct(id: string, updates: UpdateProduct): Promise<Product | undefined> {
+    // Filter out undefined values and ensure only safe fields are updated
+    const sanitizedUpdates: any = {};
+    if (updates.code !== undefined) sanitizedUpdates.code = updates.code;
+    if (updates.name !== undefined) sanitizedUpdates.name = updates.name;
+    if (updates.supplier !== undefined) sanitizedUpdates.supplier = updates.supplier;
+    if (updates.waste !== undefined) sanitizedUpdates.waste = updates.waste;
+    if (updates.notes !== undefined) sanitizedUpdates.notes = updates.notes;
+    if (updates.quantity !== undefined) sanitizedUpdates.quantity = updates.quantity;
+    if (updates.unit !== undefined) sanitizedUpdates.unit = updates.unit;
+    if (updates.pricePerUnit !== undefined) sanitizedUpdates.pricePerUnit = updates.pricePerUnit;
     
-    const updated = { ...product, ...updates };
-    this.products.set(id, updated);
-    return updated;
+    // Always update the updatedAt timestamp
+    sanitizedUpdates.updatedAt = new Date();
+    
+    const result = await db.update(products)
+      .set(sanitizedUpdates)
+      .where(eq(products.id, id))
+      .returning();
+    return result[0];
   }
 
   async deleteProduct(id: string): Promise<boolean> {
-    return this.products.delete(id);
+    const result = await db.delete(products).where(eq(products.id, id));
+    return result.rowCount > 0;
   }
 
   // Recipes
   async getRecipes(): Promise<Recipe[]> {
-    return Array.from(this.recipes.values());
+    return await db.select().from(recipes);
   }
 
   async getRecipe(id: string): Promise<Recipe | undefined> {
-    return this.recipes.get(id);
+    const result = await db.select().from(recipes).where(eq(recipes.id, id));
+    return result[0];
   }
 
   async createRecipe(insertRecipe: InsertRecipe): Promise<Recipe> {
-    const id = randomUUID();
-    const now = new Date();
-    const recipe: Recipe = { 
-      ...insertRecipe,
-      id,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.recipes.set(id, recipe);
-    return recipe;
+    const result = await db.insert(recipes).values(insertRecipe).returning();
+    return result[0];
   }
 
-  async updateRecipe(id: string, updates: Partial<Recipe>): Promise<Recipe | undefined> {
-    const recipe = this.recipes.get(id);
-    if (!recipe) return undefined;
+  async updateRecipe(id: string, updates: UpdateRecipe): Promise<Recipe | undefined> {
+    // Filter out undefined values and ensure only safe fields are updated
+    const sanitizedUpdates: any = {};
+    if (updates.name !== undefined) sanitizedUpdates.name = updates.name;
+    if (updates.ingredients !== undefined) sanitizedUpdates.ingredients = updates.ingredients;
+    if (updates.totalCost !== undefined) sanitizedUpdates.totalCost = updates.totalCost;
     
-    const updated = { ...recipe, ...updates };
-    this.recipes.set(id, updated);
-    return updated;
+    // Always update the updatedAt timestamp
+    sanitizedUpdates.updatedAt = new Date();
+    
+    const result = await db.update(recipes)
+      .set(sanitizedUpdates)
+      .where(eq(recipes.id, id))
+      .returning();
+    return result[0];
   }
 
   async deleteRecipe(id: string): Promise<boolean> {
-    return this.recipes.delete(id);
+    const result = await db.delete(recipes).where(eq(recipes.id, id));
+    return result.rowCount > 0;
   }
 
   // Dishes
   async getDishes(): Promise<Dish[]> {
-    return Array.from(this.dishes.values());
+    return await db.select().from(dishes);
   }
 
   async getDish(id: string): Promise<Dish | undefined> {
-    return this.dishes.get(id);
+    const result = await db.select().from(dishes).where(eq(dishes.id, id));
+    return result[0];
   }
 
   async createDish(insertDish: InsertDish): Promise<Dish> {
-    const id = randomUUID();
-    const now = new Date();
-    const dish: Dish = { 
+    const result = await db.insert(dishes).values({
       ...insertDish,
-      id,
-      sold: 0,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.dishes.set(id, dish);
-    return dish;
+      sold: 0
+    }).returning();
+    return result[0];
   }
 
-  async updateDish(id: string, updates: Partial<Dish>): Promise<Dish | undefined> {
-    const dish = this.dishes.get(id);
-    if (!dish) return undefined;
+  async updateDish(id: string, updates: UpdateDish): Promise<Dish | undefined> {
+    // Filter out undefined values and ensure only safe fields are updated
+    const sanitizedUpdates: any = {};
+    if (updates.name !== undefined) sanitizedUpdates.name = updates.name;
+    if (updates.ingredients !== undefined) sanitizedUpdates.ingredients = updates.ingredients;
+    if (updates.totalCost !== undefined) sanitizedUpdates.totalCost = updates.totalCost;
+    if (updates.sellingPrice !== undefined) sanitizedUpdates.sellingPrice = updates.sellingPrice;
+    if (updates.netPrice !== undefined) sanitizedUpdates.netPrice = updates.netPrice;
+    if (updates.foodCost !== undefined) sanitizedUpdates.foodCost = updates.foodCost;
+    if (updates.sold !== undefined) sanitizedUpdates.sold = updates.sold;
     
-    const updated = { ...dish, ...updates };
-    this.dishes.set(id, updated);
-    return updated;
+    // Always update the updatedAt timestamp
+    sanitizedUpdates.updatedAt = new Date();
+    
+    const result = await db.update(dishes)
+      .set(sanitizedUpdates)
+      .where(eq(dishes.id, id))
+      .returning();
+    return result[0];
   }
 
   async deleteDish(id: string): Promise<boolean> {
-    return this.dishes.delete(id);
+    const result = await db.delete(dishes).where(eq(dishes.id, id));
+    return result.rowCount > 0;
   }
 
   // Waste
   async getWaste(): Promise<Waste[]> {
-    return Array.from(this.waste.values());
+    return await db.select().from(waste);
   }
 
   async createWaste(insertWaste: InsertWaste): Promise<Waste> {
-    const id = randomUUID();
-    const waste: Waste = { 
+    const result = await db.insert(waste).values({
       ...insertWaste,
-      id,
       notes: insertWaste.notes || null,
-      createdAt: new Date()
-    };
-    this.waste.set(id, waste);
-    return waste;
+    }).returning();
+    return result[0];
   }
 
   async deleteWaste(id: string): Promise<boolean> {
-    return this.waste.delete(id);
+    const result = await db.delete(waste).where(eq(waste.id, id));
+    return result.rowCount > 0;
   }
 
   // Personal Meals
   async getPersonalMeals(): Promise<PersonalMeal[]> {
-    return Array.from(this.personalMeals.values());
+    return await db.select().from(personalMeals);
   }
 
   async createPersonalMeal(insertMeal: InsertPersonalMeal): Promise<PersonalMeal> {
-    const id = randomUUID();
-    const meal: PersonalMeal = { 
+    const result = await db.insert(personalMeals).values({
       ...insertMeal,
-      id,
       notes: insertMeal.notes || null,
-      createdAt: new Date()
-    };
-    this.personalMeals.set(id, meal);
-    return meal;
+    }).returning();
+    return result[0];
   }
 
   async deletePersonalMeal(id: string): Promise<boolean> {
-    return this.personalMeals.delete(id);
+    const result = await db.delete(personalMeals).where(eq(personalMeals.id, id));
+    return result.rowCount > 0;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
