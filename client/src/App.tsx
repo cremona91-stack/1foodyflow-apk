@@ -25,6 +25,11 @@ function FoodCostManager() {
   const [activeTab, setActiveTab] = useState("inventory");
   const [maxFoodCost, setMaxFoodCost] = useState(30);
   
+  // Edit state
+  const [editingProduct, setEditingProduct] = useState<Product | undefined>();
+  const [editingRecipe, setEditingRecipe] = useState<Recipe | undefined>();
+  const [editingDish, setEditingDish] = useState<Dish | undefined>();
+  
   // Mock data - TODO: remove mock functionality and connect to backend
   const [products, setProducts] = useState<Product[]>([
     {
@@ -132,6 +137,29 @@ function FoodCostManager() {
     console.log("Product added:", newProduct);
   };
 
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct(product);
+    console.log("Editing product:", product);
+  };
+
+  const handleUpdateProduct = (updatedProduct: InsertProduct) => {
+    if (!editingProduct) return;
+    
+    const updated: Product = {
+      ...updatedProduct,
+      id: editingProduct.id,
+    };
+    
+    setProducts(prev => prev.map(p => p.id === editingProduct.id ? updated : p));
+    setEditingProduct(undefined);
+    console.log("Product updated:", updated);
+  };
+
+  const handleCancelEditProduct = () => {
+    setEditingProduct(undefined);
+    console.log("Product edit cancelled");
+  };
+
   const handleDeleteProduct = (productId: string) => {
     setProducts(prev => prev.filter(p => p.id !== productId));
     console.log("Product deleted:", productId);
@@ -144,6 +172,29 @@ function FoodCostManager() {
     };
     setRecipes(prev => [...prev, newRecipe]);
     console.log("Recipe added:", newRecipe);
+  };
+
+  const handleEditRecipe = (recipe: Recipe) => {
+    setEditingRecipe(recipe);
+    console.log("Editing recipe:", recipe);
+  };
+
+  const handleUpdateRecipe = (updatedRecipe: InsertRecipe) => {
+    if (!editingRecipe) return;
+    
+    const updated: Recipe = {
+      ...updatedRecipe,
+      id: editingRecipe.id,
+    };
+    
+    setRecipes(prev => prev.map(r => r.id === editingRecipe.id ? updated : r));
+    setEditingRecipe(undefined);
+    console.log("Recipe updated:", updated);
+  };
+
+  const handleCancelEditRecipe = () => {
+    setEditingRecipe(undefined);
+    console.log("Recipe edit cancelled");
   };
 
   const handleDeleteRecipe = (recipeId: string) => {
@@ -159,6 +210,30 @@ function FoodCostManager() {
     };
     setDishes(prev => [...prev, newDish]);
     console.log("Dish added:", newDish);
+  };
+
+  const handleEditDish = (dish: Dish) => {
+    setEditingDish(dish);
+    console.log("Editing dish:", dish);
+  };
+
+  const handleUpdateDish = (updatedDish: InsertDish) => {
+    if (!editingDish) return;
+    
+    const updated: Dish = {
+      ...updatedDish,
+      id: editingDish.id,
+      sold: editingDish.sold, // Keep the sold count when editing
+    };
+    
+    setDishes(prev => prev.map(d => d.id === editingDish.id ? updated : d));
+    setEditingDish(undefined);
+    console.log("Dish updated:", updated);
+  };
+
+  const handleCancelEditDish = () => {
+    setEditingDish(undefined);
+    console.log("Dish edit cancelled");
   };
 
   const handleDeleteDish = (dishId: string) => {
@@ -215,20 +290,28 @@ function FoodCostManager() {
           {activeTab === "inventory" && (
             <div className="md:flex md:gap-6 space-y-6 md:space-y-0">
               <div className="md:w-1/2 space-y-6">
-                <ProductForm onSubmit={handleAddProduct} />
+                <ProductForm 
+                  onSubmit={editingProduct ? handleUpdateProduct : handleAddProduct}
+                  editProduct={editingProduct}
+                  onCancel={editingProduct ? handleCancelEditProduct : undefined}
+                />
                 <RecipeForm 
                   products={products} 
-                  onSubmit={handleAddRecipe} 
+                  onSubmit={editingRecipe ? handleUpdateRecipe : handleAddRecipe}
+                  editRecipe={editingRecipe}
+                  onCancel={editingRecipe ? handleCancelEditRecipe : undefined}
                 />
               </div>
               <div className="md:w-1/2 space-y-6">
                 <ProductList 
                   products={products} 
+                  onEdit={handleEditProduct}
                   onDelete={handleDeleteProduct}
                 />
                 <RecipeList 
                   recipes={recipes} 
                   products={products}
+                  onEdit={handleEditRecipe}
                   onDelete={handleDeleteRecipe}
                 />
               </div>
@@ -250,13 +333,16 @@ function FoodCostManager() {
                 <div className="md:w-1/2">
                   <DishForm 
                     products={products} 
-                    onSubmit={handleAddDish} 
+                    onSubmit={editingDish ? handleUpdateDish : handleAddDish}
+                    editDish={editingDish}
+                    onCancel={editingDish ? handleCancelEditDish : undefined}
                   />
                 </div>
                 <div className="md:w-1/2">
                   <DishList 
                     dishes={dishes} 
                     products={products}
+                    onEdit={handleEditDish}
                     onDelete={handleDeleteDish}
                     onUpdateSold={handleUpdateSold}
                     onClearSales={handleClearSales}
