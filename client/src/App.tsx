@@ -18,144 +18,65 @@ import DishList from "@/components/DishList";
 import WasteForm from "@/components/WasteForm";
 import SalesSummary from "@/components/SalesSummary";
 
+// API Hooks
+import {
+  useProducts,
+  useRecipes,
+  useDishes,
+  useWaste,
+  usePersonalMeals,
+  useCreateProduct,
+  useUpdateProduct,
+  useDeleteProduct,
+  useCreateRecipe,
+  useUpdateRecipe,
+  useDeleteRecipe,
+  useCreateDish,
+  useUpdateDish,
+  useDeleteDish,
+  useCreateWaste,
+  useCreatePersonalMeal,
+} from "@/hooks/useApi";
+
 // Types
-import type { Product, Recipe, Dish, Waste, PersonalMeal, InsertProduct, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal } from "@shared/schema";
+import type { Product, Recipe, Dish, InsertProduct, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal } from "@shared/schema";
 
 function FoodCostManager() {
   const [activeTab, setActiveTab] = useState("inventory");
   const [maxFoodCost, setMaxFoodCost] = useState(30);
   
-  // Edit state
+  // Edit state - keep as local state
   const [editingProduct, setEditingProduct] = useState<Product | undefined>();
   const [editingRecipe, setEditingRecipe] = useState<Recipe | undefined>();
   const [editingDish, setEditingDish] = useState<Dish | undefined>();
   
-  // Mock data - TODO: remove mock functionality and connect to backend
-  const [products, setProducts] = useState<Product[]>([
-    {
-      id: '1',
-      code: 'FAR-001',
-      name: 'Farina Tipo 00',
-      supplier: 'Molino Bianco',
-      waste: 2,
-      notes: 'Farina di qualità per pasta fresca',
-      quantity: 25,
-      unit: 'kg',
-      pricePerUnit: 1.20,
-      createdAt: new Date('2024-01-01'),
-      updatedAt: new Date('2024-01-01'),
-    },
-    {
-      id: '2',
-      code: 'OLI-001', 
-      name: 'Olio Extravergine',
-      supplier: 'Frantoio Rossi',
-      waste: 0,
-      notes: null,
-      quantity: 5,
-      unit: 'l',
-      pricePerUnit: 8.50,
-      createdAt: new Date('2024-01-02'),
-      updatedAt: new Date('2024-01-02'),
-    },
-    {
-      id: '3',
-      code: 'TOM-001',
-      name: 'Pomodori San Marzano',
-      supplier: null,
-      waste: 5,
-      notes: null,
-      quantity: 10,
-      unit: 'kg',
-      pricePerUnit: 3.20,
-      createdAt: new Date('2024-01-03'),
-      updatedAt: new Date('2024-01-03'),
-    },
-  ]);
+  // React Query hooks for data fetching
+  const { data: products = [], isLoading: isLoadingProducts } = useProducts();
+  const { data: recipes = [], isLoading: isLoadingRecipes } = useRecipes();
+  const { data: dishes = [], isLoading: isLoadingDishes } = useDishes();
+  const { data: waste = [], isLoading: isLoadingWaste } = useWaste();
+  const { data: personalMeals = [], isLoading: isLoadingPersonalMeals } = usePersonalMeals();
 
-  const [recipes, setRecipes] = useState<Recipe[]>([
-    {
-      id: '1',
-      name: 'Pasta Frolla Base',
-      ingredients: [
-        { productId: '1', quantity: 0.5, cost: 0.60 },
-        { productId: '2', quantity: 0.1, cost: 0.85 },
-      ],
-      totalCost: 1.45,
-      createdAt: new Date('2024-01-05'),
-      updatedAt: new Date('2024-01-05'),
-    },
-  ]);
+  // React Query mutations
+  const createProductMutation = useCreateProduct();
+  const updateProductMutation = useUpdateProduct();
+  const deleteProductMutation = useDeleteProduct();
+  
+  const createRecipeMutation = useCreateRecipe();
+  const updateRecipeMutation = useUpdateRecipe();
+  const deleteRecipeMutation = useDeleteRecipe();
+  
+  const createDishMutation = useCreateDish();
+  const updateDishMutation = useUpdateDish();
+  const deleteDishMutation = useDeleteDish();
+  
+  const createWasteMutation = useCreateWaste();
+  const createPersonalMealMutation = useCreatePersonalMeal();
 
-  const [dishes, setDishes] = useState<Dish[]>([
-    {
-      id: '1',
-      name: 'Spaghetti alla Carbonara',
-      ingredients: [
-        { productId: '1', quantity: 0.1, cost: 0.12 },
-        { productId: '2', quantity: 0.02, cost: 0.17 },
-      ],
-      totalCost: 0.29,
-      sellingPrice: 12.00,
-      netPrice: 9.84,
-      foodCost: 2.9,
-      sold: 15,
-      createdAt: new Date('2024-01-10'),
-      updatedAt: new Date('2024-01-10'),
-    },
-    {
-      id: '2',
-      name: 'Pizza Margherita',
-      ingredients: [
-        { productId: '1', quantity: 0.25, cost: 0.30 },
-        { productId: '3', quantity: 0.2, cost: 0.64 },
-      ],
-      totalCost: 0.94,
-      sellingPrice: 8.00,
-      netPrice: 6.56,
-      foodCost: 14.3,
-      sold: 22,
-      createdAt: new Date('2024-01-11'),
-      updatedAt: new Date('2024-01-11'),
-    },
-  ]);
-
-  const [waste, setWaste] = useState<Waste[]>([
-    {
-      id: '1',
-      productId: '1',
-      quantity: 2,
-      cost: 2.40,
-      date: '2024-01-15',
-      notes: 'Farina scaduta',
-      createdAt: new Date('2024-01-15'),
-    },
-  ]);
-
-  const [personalMeals, setPersonalMeals] = useState<PersonalMeal[]>([
-    {
-      id: '1',
-      dishId: '1',
-      quantity: 2,
-      cost: 0.58,
-      date: '2024-01-15',
-      notes: 'Pranzo staff',
-      createdAt: new Date('2024-01-15'),
-    },
-  ]);
-
-  // Event handlers
+  // Product handlers
   const handleAddProduct = (product: InsertProduct) => {
-    const newProduct: Product = {
-      ...product,
-      id: Date.now().toString(),
-      supplier: product.supplier || null,
-      notes: product.notes || null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    setProducts(prev => [...prev, newProduct]);
-    console.log("Product added:", newProduct);
+    createProductMutation.mutate(product);
+    console.log("Product creation submitted:", product);
   };
 
   const handleEditProduct = (product: Product) => {
@@ -166,18 +87,15 @@ function FoodCostManager() {
   const handleUpdateProduct = (updatedProduct: InsertProduct) => {
     if (!editingProduct) return;
     
-    const updated: Product = {
-      ...updatedProduct,
-      id: editingProduct.id,
-      supplier: updatedProduct.supplier || null,
-      notes: updatedProduct.notes || null,
-      createdAt: editingProduct.createdAt,
-      updatedAt: new Date(),
-    };
-    
-    setProducts(prev => prev.map(p => p.id === editingProduct.id ? updated : p));
-    setEditingProduct(undefined);
-    console.log("Product updated:", updated);
+    updateProductMutation.mutate(
+      { id: editingProduct.id, data: updatedProduct },
+      {
+        onSuccess: () => {
+          setEditingProduct(undefined);
+        },
+      }
+    );
+    console.log("Product update submitted:", updatedProduct);
   };
 
   const handleCancelEditProduct = () => {
@@ -186,19 +104,14 @@ function FoodCostManager() {
   };
 
   const handleDeleteProduct = (productId: string) => {
-    setProducts(prev => prev.filter(p => p.id !== productId));
-    console.log("Product deleted:", productId);
+    deleteProductMutation.mutate(productId);
+    console.log("Product deletion submitted:", productId);
   };
 
+  // Recipe handlers
   const handleAddRecipe = (recipe: InsertRecipe) => {
-    const newRecipe: Recipe = {
-      ...recipe,
-      id: Date.now().toString(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    setRecipes(prev => [...prev, newRecipe]);
-    console.log("Recipe added:", newRecipe);
+    createRecipeMutation.mutate(recipe);
+    console.log("Recipe creation submitted:", recipe);
   };
 
   const handleEditRecipe = (recipe: Recipe) => {
@@ -209,16 +122,15 @@ function FoodCostManager() {
   const handleUpdateRecipe = (updatedRecipe: InsertRecipe) => {
     if (!editingRecipe) return;
     
-    const updated: Recipe = {
-      ...updatedRecipe,
-      id: editingRecipe.id,
-      createdAt: editingRecipe.createdAt,
-      updatedAt: new Date(),
-    };
-    
-    setRecipes(prev => prev.map(r => r.id === editingRecipe.id ? updated : r));
-    setEditingRecipe(undefined);
-    console.log("Recipe updated:", updated);
+    updateRecipeMutation.mutate(
+      { id: editingRecipe.id, data: updatedRecipe },
+      {
+        onSuccess: () => {
+          setEditingRecipe(undefined);
+        },
+      }
+    );
+    console.log("Recipe update submitted:", updatedRecipe);
   };
 
   const handleCancelEditRecipe = () => {
@@ -227,20 +139,14 @@ function FoodCostManager() {
   };
 
   const handleDeleteRecipe = (recipeId: string) => {
-    setRecipes(prev => prev.filter(r => r.id !== recipeId));
-    console.log("Recipe deleted:", recipeId);
+    deleteRecipeMutation.mutate(recipeId);
+    console.log("Recipe deletion submitted:", recipeId);
   };
 
+  // Dish handlers
   const handleAddDish = (dish: InsertDish) => {
-    const newDish: Dish = {
-      ...dish,
-      id: Date.now().toString(),
-      sold: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    setDishes(prev => [...prev, newDish]);
-    console.log("Dish added:", newDish);
+    createDishMutation.mutate(dish);
+    console.log("Dish creation submitted:", dish);
   };
 
   const handleEditDish = (dish: Dish) => {
@@ -251,17 +157,15 @@ function FoodCostManager() {
   const handleUpdateDish = (updatedDish: InsertDish) => {
     if (!editingDish) return;
     
-    const updated: Dish = {
-      ...updatedDish,
-      id: editingDish.id,
-      sold: editingDish.sold, // Keep the sold count when editing
-      createdAt: editingDish.createdAt,
-      updatedAt: new Date(),
-    };
-    
-    setDishes(prev => prev.map(d => d.id === editingDish.id ? updated : d));
-    setEditingDish(undefined);
-    console.log("Dish updated:", updated);
+    updateDishMutation.mutate(
+      { id: editingDish.id, data: updatedDish },
+      {
+        onSuccess: () => {
+          setEditingDish(undefined);
+        },
+      }
+    );
+    console.log("Dish update submitted:", updatedDish);
   };
 
   const handleCancelEditDish = () => {
@@ -270,50 +174,65 @@ function FoodCostManager() {
   };
 
   const handleDeleteDish = (dishId: string) => {
-    setDishes(prev => prev.filter(d => d.id !== dishId));
-    console.log("Dish deleted:", dishId);
+    deleteDishMutation.mutate(dishId);
+    console.log("Dish deletion submitted:", dishId);
   };
 
   const handleUpdateSold = (dishId: string, sold: number) => {
-    setDishes(prev => 
-      prev.map(dish => 
-        dish.id === dishId ? { ...dish, sold } : dish
-      )
-    );
-    console.log("Dish sold updated:", dishId, sold);
+    const dish = dishes.find(d => d.id === dishId);
+    if (!dish) return;
+    
+    updateDishMutation.mutate({
+      id: dishId,
+      data: { sold }
+    });
+    console.log("Dish sold update submitted:", dishId, sold);
   };
 
   const handleClearSales = () => {
-    setDishes(prev => prev.map(dish => ({ ...dish, sold: 0 })));
-    console.log("All sales cleared");
+    // Update all dishes to have sold = 0
+    dishes.forEach(dish => {
+      if (dish.sold > 0) {
+        updateDishMutation.mutate({
+          id: dish.id,
+          data: { sold: 0 }
+        });
+      }
+    });
+    console.log("Clear all sales submitted");
   };
 
+  // Waste and Personal Meal handlers
   const handleAddWaste = (wasteData: InsertWaste) => {
-    const newWaste: Waste = {
-      ...wasteData,
-      id: Date.now().toString(),
-      notes: wasteData.notes || null,
-      createdAt: new Date(),
-    };
-    setWaste(prev => [...prev, newWaste]);
-    console.log("Waste added:", newWaste);
+    createWasteMutation.mutate(wasteData);
+    console.log("Waste creation submitted:", wasteData);
   };
 
   const handleAddPersonalMeal = (mealData: InsertPersonalMeal) => {
-    const newMeal: PersonalMeal = {
-      ...mealData,
-      id: Date.now().toString(),
-      notes: mealData.notes || null,
-      createdAt: new Date(),
-    };
-    setPersonalMeals(prev => [...prev, newMeal]);
-    console.log("Personal meal added:", newMeal);
+    createPersonalMealMutation.mutate(mealData);
+    console.log("Personal meal creation submitted:", mealData);
   };
 
   const handleExportPDF = () => {
     console.log("Export PDF functionality would be implemented here");
     // TODO: Implement PDF export functionality
   };
+
+  // Show loading state while data is being fetched
+  const isLoading = isLoadingProducts || isLoadingRecipes || isLoadingDishes || isLoadingWaste || isLoadingPersonalMeals;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-lg font-medium">Caricamento dati...</div>
+          <div className="text-sm text-muted-foreground mt-2">
+            Connessione al database in corso
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
