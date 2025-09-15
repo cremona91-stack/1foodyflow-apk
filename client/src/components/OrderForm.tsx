@@ -25,7 +25,7 @@ export default function OrderForm({ onSubmit, editOrder, onCancel, products }: O
     defaultValues: {
       supplier: "",
       orderDate: new Date().toISOString().split('T')[0], // Today's date
-      items: [{ productId: "", quantity: 0, unitPrice: 0 }],
+      items: [{ productId: "", quantity: 0, unitPrice: 0, totalPrice: 0 }],
       totalAmount: 0,
       status: "pending",
       notes: "",
@@ -54,7 +54,7 @@ export default function OrderForm({ onSubmit, editOrder, onCancel, products }: O
       form.reset({
         supplier: "",
         orderDate: new Date().toISOString().split('T')[0],
-        items: [{ productId: "", quantity: 0, unitPrice: 0 }],
+        items: [{ productId: "", quantity: 0, unitPrice: 0, totalPrice: 0 }],
         totalAmount: 0,
         status: "pending",
         notes: "",
@@ -63,12 +63,26 @@ export default function OrderForm({ onSubmit, editOrder, onCancel, products }: O
     }
   }, [editOrder, form]);
 
-  // Calculate total amount when items change
-  const watchedItems = form.watch("items");
+  // Calculate total amount when items change - watch all form values for deep changes
+  const watchedValues = form.watch();
   useEffect(() => {
-    const total = watchedItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice || 0), 0);
-    form.setValue("totalAmount", total);
-  }, [watchedItems, form]);
+    if (watchedValues.items) {
+      let total = 0;
+      watchedValues.items.forEach((item, index) => {
+        const quantity = Number(item.quantity) || 0;
+        const unitPrice = Number(item.unitPrice) || 0;
+        const itemTotal = quantity * unitPrice;
+        
+        // Update totalPrice for each item
+        if (item.totalPrice !== itemTotal) {
+          form.setValue(`items.${index}.totalPrice`, itemTotal);
+        }
+        
+        total += itemTotal;
+      });
+      form.setValue("totalAmount", total);
+    }
+  }, [watchedValues, form]);
 
   const handleSubmit = (data: InsertOrder) => {
     console.log("Order form submitted:", data);
@@ -77,7 +91,7 @@ export default function OrderForm({ onSubmit, editOrder, onCancel, products }: O
       form.reset({
         supplier: "",
         orderDate: new Date().toISOString().split('T')[0],
-        items: [{ productId: "", quantity: 0, unitPrice: 0 }],
+        items: [{ productId: "", quantity: 0, unitPrice: 0, totalPrice: 0 }],
         totalAmount: 0,
         status: "pending",
         notes: "",
@@ -93,7 +107,7 @@ export default function OrderForm({ onSubmit, editOrder, onCancel, products }: O
   };
 
   const addItem = () => {
-    append({ productId: "", quantity: 0, unitPrice: 0 });
+    append({ productId: "", quantity: 0, unitPrice: 0, totalPrice: 0 });
   };
 
   const removeItem = (index: number) => {
@@ -306,7 +320,7 @@ export default function OrderForm({ onSubmit, editOrder, onCancel, products }: O
 
                     <div className="flex items-center gap-2">
                       <div className="text-sm">
-                        Totale: €{((watchedItems[index]?.quantity || 0) * (watchedItems[index]?.unitPrice || 0)).toFixed(2)}
+                        Totale: €{((Number(watchedValues.items?.[index]?.quantity) || 0) * (Number(watchedValues.items?.[index]?.unitPrice) || 0)).toFixed(2)}
                       </div>
                       <Button
                         type="button"
@@ -328,7 +342,7 @@ export default function OrderForm({ onSubmit, editOrder, onCancel, products }: O
             <div className="bg-muted p-4 rounded-lg">
               <div className="flex items-center justify-between text-lg font-semibold">
                 <span>Totale Ordine:</span>
-                <span data-testid="text-total-amount">€{form.watch("totalAmount").toFixed(2)}</span>
+                <span data-testid="text-total-amount">€{(form.watch("totalAmount") || 0).toFixed(2)}</span>
               </div>
             </div>
 
