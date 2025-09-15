@@ -524,9 +524,9 @@ function FoodCostManager() {
               <InventoryGrid 
                 products={products}
                 stockMovements={stockMovements}
-                inventorySnapshots={inventorySnapshots}
+                waste={waste}
+                personalMeals={personalMeals}
                 onViewMovements={handleViewMovements}
-                onCreateSnapshot={handleCreateSnapshot}
               />
               
               {/* Stock Movement Management */}
