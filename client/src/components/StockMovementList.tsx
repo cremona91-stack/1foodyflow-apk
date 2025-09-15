@@ -164,14 +164,14 @@ export default function StockMovementList({
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4" />
                 <Select 
-                  value={selectedProductId || ""} 
-                  onValueChange={(value) => onFilterByProduct(value || null)}
+                  value={selectedProductId || "all"} 
+                  onValueChange={(value) => onFilterByProduct(value === "all" ? null : value)}
                 >
                   <SelectTrigger className="w-48" data-testid="select-filter-product">
                     <SelectValue placeholder="Filtra per prodotto" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tutti i prodotti</SelectItem>
+                    <SelectItem value="all">Tutti i prodotti</SelectItem>
                     {products.map((product) => (
                       <SelectItem key={product.id} value={product.id}>
                         {product.name} ({product.code})
