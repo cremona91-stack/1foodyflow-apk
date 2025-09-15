@@ -80,6 +80,7 @@ export interface IStorage {
 
   // Stock Movements (Magazzino In/Out)
   getStockMovements(): Promise<StockMovement[]>;
+  getStockMovement(id: string): Promise<StockMovement | undefined>;
   getStockMovementsByProduct(productId: string): Promise<StockMovement[]>;
   createStockMovement(movement: InsertStockMovement): Promise<StockMovement>;
   updateStockMovement(id: string, movement: UpdateStockMovement): Promise<StockMovement | undefined>;
@@ -87,6 +88,7 @@ export interface IStorage {
 
   // Inventory Snapshots
   getInventorySnapshots(): Promise<InventorySnapshot[]>;
+  getInventorySnapshot(id: string): Promise<InventorySnapshot | undefined>;
   getInventorySnapshotsByProduct(productId: string): Promise<InventorySnapshot[]>;
   createInventorySnapshot(snapshot: InsertInventorySnapshot): Promise<InventorySnapshot>;
   updateInventorySnapshot(id: string, snapshot: UpdateInventorySnapshot): Promise<InventorySnapshot | undefined>;
@@ -305,6 +307,11 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(stockMovements);
   }
 
+  async getStockMovement(id: string): Promise<StockMovement | undefined> {
+    const result = await db.select().from(stockMovements).where(eq(stockMovements.id, id));
+    return result[0];
+  }
+
   async getStockMovementsByProduct(productId: string): Promise<StockMovement[]> {
     return await db.select().from(stockMovements).where(eq(stockMovements.productId, productId));
   }
@@ -343,6 +350,11 @@ export class DatabaseStorage implements IStorage {
   // Inventory Snapshots
   async getInventorySnapshots(): Promise<InventorySnapshot[]> {
     return await db.select().from(inventorySnapshots);
+  }
+
+  async getInventorySnapshot(id: string): Promise<InventorySnapshot | undefined> {
+    const result = await db.select().from(inventorySnapshots).where(eq(inventorySnapshots.id, id));
+    return result[0];
   }
 
   async getInventorySnapshotsByProduct(productId: string): Promise<InventorySnapshot[]> {

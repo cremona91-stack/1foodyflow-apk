@@ -7,9 +7,15 @@ import {
   insertDishSchema, 
   insertWasteSchema, 
   insertPersonalMealSchema,
+  insertOrderSchema,
+  insertStockMovementSchema,
+  insertInventorySnapshotSchema,
   updateProductSchema,
   updateRecipeSchema,
-  updateDishSchema
+  updateDishSchema,
+  updateOrderSchema,
+  updateStockMovementSchema,
+  updateInventorySnapshotSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -291,6 +297,230 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting personal meal:", error);
       res.status(500).json({ error: "Failed to delete personal meal" });
+    }
+  });
+
+  // Orders API Routes (Ricevimento Merci)
+  app.get("/api/orders", async (req, res) => {
+    try {
+      const orders = await storage.getOrders();
+      res.json(orders);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      res.status(500).json({ error: "Failed to fetch orders" });
+    }
+  });
+
+  app.get("/api/orders/:id", async (req, res) => {
+    try {
+      const order = await storage.getOrder(req.params.id);
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      res.json(order);
+    } catch (error) {
+      console.error("Error fetching order:", error);
+      res.status(500).json({ error: "Failed to fetch order" });
+    }
+  });
+
+  app.post("/api/orders", async (req, res) => {
+    try {
+      const validatedData = insertOrderSchema.parse(req.body);
+      const order = await storage.createOrder(validatedData);
+      res.status(201).json(order);
+    } catch (error) {
+      console.error("Error creating order:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create order" });
+    }
+  });
+
+  app.put("/api/orders/:id", async (req, res) => {
+    try {
+      const validatedData = updateOrderSchema.parse(req.body);
+      const order = await storage.updateOrder(req.params.id, validatedData);
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      res.json(order);
+    } catch (error) {
+      console.error("Error updating order:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update order" });
+    }
+  });
+
+  app.delete("/api/orders/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteOrder(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting order:", error);
+      res.status(500).json({ error: "Failed to delete order" });
+    }
+  });
+
+  // Stock Movements API Routes (Magazzino In/Out)
+  app.get("/api/stock-movements", async (req, res) => {
+    try {
+      const movements = await storage.getStockMovements();
+      res.json(movements);
+    } catch (error) {
+      console.error("Error fetching stock movements:", error);
+      res.status(500).json({ error: "Failed to fetch stock movements" });
+    }
+  });
+
+  app.get("/api/stock-movements/product/:productId", async (req, res) => {
+    try {
+      const movements = await storage.getStockMovementsByProduct(req.params.productId);
+      res.json(movements);
+    } catch (error) {
+      console.error("Error fetching stock movements by product:", error);
+      res.status(500).json({ error: "Failed to fetch stock movements by product" });
+    }
+  });
+
+  app.get("/api/stock-movements/:id", async (req, res) => {
+    try {
+      const movement = await storage.getStockMovement(req.params.id);
+      if (!movement) {
+        return res.status(404).json({ error: "Stock movement not found" });
+      }
+      res.json(movement);
+    } catch (error) {
+      console.error("Error fetching stock movement:", error);
+      res.status(500).json({ error: "Failed to fetch stock movement" });
+    }
+  });
+
+  app.post("/api/stock-movements", async (req, res) => {
+    try {
+      const validatedData = insertStockMovementSchema.parse(req.body);
+      const movement = await storage.createStockMovement(validatedData);
+      res.status(201).json(movement);
+    } catch (error) {
+      console.error("Error creating stock movement:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create stock movement" });
+    }
+  });
+
+  app.put("/api/stock-movements/:id", async (req, res) => {
+    try {
+      const validatedData = updateStockMovementSchema.parse(req.body);
+      const movement = await storage.updateStockMovement(req.params.id, validatedData);
+      if (!movement) {
+        return res.status(404).json({ error: "Stock movement not found" });
+      }
+      res.json(movement);
+    } catch (error) {
+      console.error("Error updating stock movement:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update stock movement" });
+    }
+  });
+
+  app.delete("/api/stock-movements/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteStockMovement(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Stock movement not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting stock movement:", error);
+      res.status(500).json({ error: "Failed to delete stock movement" });
+    }
+  });
+
+  // Inventory Snapshots API Routes
+  app.get("/api/inventory-snapshots", async (req, res) => {
+    try {
+      const snapshots = await storage.getInventorySnapshots();
+      res.json(snapshots);
+    } catch (error) {
+      console.error("Error fetching inventory snapshots:", error);
+      res.status(500).json({ error: "Failed to fetch inventory snapshots" });
+    }
+  });
+
+  app.get("/api/inventory-snapshots/product/:productId", async (req, res) => {
+    try {
+      const snapshots = await storage.getInventorySnapshotsByProduct(req.params.productId);
+      res.json(snapshots);
+    } catch (error) {
+      console.error("Error fetching inventory snapshots by product:", error);
+      res.status(500).json({ error: "Failed to fetch inventory snapshots by product" });
+    }
+  });
+
+  app.get("/api/inventory-snapshots/:id", async (req, res) => {
+    try {
+      const snapshot = await storage.getInventorySnapshot(req.params.id);
+      if (!snapshot) {
+        return res.status(404).json({ error: "Inventory snapshot not found" });
+      }
+      res.json(snapshot);
+    } catch (error) {
+      console.error("Error fetching inventory snapshot:", error);
+      res.status(500).json({ error: "Failed to fetch inventory snapshot" });
+    }
+  });
+
+  app.post("/api/inventory-snapshots", async (req, res) => {
+    try {
+      const validatedData = insertInventorySnapshotSchema.parse(req.body);
+      const snapshot = await storage.createInventorySnapshot(validatedData);
+      res.status(201).json(snapshot);
+    } catch (error) {
+      console.error("Error creating inventory snapshot:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create inventory snapshot" });
+    }
+  });
+
+  app.put("/api/inventory-snapshots/:id", async (req, res) => {
+    try {
+      const validatedData = updateInventorySnapshotSchema.parse(req.body);
+      const snapshot = await storage.updateInventorySnapshot(req.params.id, validatedData);
+      if (!snapshot) {
+        return res.status(404).json({ error: "Inventory snapshot not found" });
+      }
+      res.json(snapshot);
+    } catch (error) {
+      console.error("Error updating inventory snapshot:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update inventory snapshot" });
+    }
+  });
+
+  app.delete("/api/inventory-snapshots/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteInventorySnapshot(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Inventory snapshot not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting inventory snapshot:", error);
+      res.status(500).json({ error: "Failed to delete inventory snapshot" });
     }
   });
 
