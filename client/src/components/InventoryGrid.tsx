@@ -114,7 +114,18 @@ export default function InventoryGrid({
       return sum + (ingredient.quantity * meal.quantity);
     }, 0);
 
-    return salesOut + wasteOut + personalMealsOut;
+    // Calculate dish sales OUT (sold dishes * ingredient quantities)
+    const dishSalesOut = dishes.reduce((sum, dish) => {
+      if (!dish.sold || dish.sold <= 0) return sum;
+      
+      // Find ingredient quantity of this product in the dish
+      const ingredient = dish.ingredients?.find((ing: any) => ing.productId === productId);
+      if (!ingredient) return sum;
+      
+      return sum + (ingredient.quantity * dish.sold);
+    }, 0);
+
+    return salesOut + wasteOut + personalMealsOut + dishSalesOut;
   };
 
   const inventoryRows: InventoryRowData[] = useMemo(() => {
