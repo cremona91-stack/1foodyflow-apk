@@ -107,10 +107,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
+    // Calculate effective price per unit considering waste
+    const wastePercentage = insertProduct.waste || 0;
+    const effectivePricePerUnit = insertProduct.pricePerUnit / (1 - wastePercentage / 100);
+    
     const result = await db.insert(products).values({
       ...insertProduct,
       supplier: insertProduct.supplier || null,
       notes: insertProduct.notes || null,
+      effectivePricePerUnit: effectivePricePerUnit,
     }).returning();
     return result[0];
   }
@@ -126,6 +131,20 @@ export class DatabaseStorage implements IStorage {
     if (updates.quantity !== undefined) sanitizedUpdates.quantity = updates.quantity;
     if (updates.unit !== undefined) sanitizedUpdates.unit = updates.unit;
     if (updates.pricePerUnit !== undefined) sanitizedUpdates.pricePerUnit = updates.pricePerUnit;
+    
+    // Recalculate effective price when pricePerUnit or waste changes
+    if (updates.pricePerUnit !== undefined || updates.waste !== undefined) {
+      // Get current product data
+      const currentProduct = await this.getProduct(id);
+      if (!currentProduct) return undefined;
+      
+      // Use new values if provided, otherwise use current values
+      const newPricePerUnit = updates.pricePerUnit ?? currentProduct.pricePerUnit;
+      const newWaste = updates.waste ?? currentProduct.waste;
+      
+      // Calculate new effective price
+      sanitizedUpdates.effectivePricePerUnit = newPricePerUnit / (1 - newWaste / 100);
+    }
     
     // Always update the updatedAt timestamp
     sanitizedUpdates.updatedAt = new Date();

@@ -75,23 +75,28 @@ export default function ProductList({ products, onEdit, onDelete }: ProductListP
                       </span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">Costo/Unità:</span>{" "}
+                      <span className="text-muted-foreground">Prezzo Grezzo:</span>{" "}
                       <span className="font-medium font-mono">
-                        €{product.pricePerUnit.toFixed(2)}
+                        €{product.pricePerUnit.toFixed(2)}/{product.unit}
                       </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Prezzo Effettivo:</span>{" "}
+                      <span className="font-bold font-mono text-primary">
+                        €{product.effectivePricePerUnit?.toFixed(2) || product.pricePerUnit.toFixed(2)}/{product.unit}
+                      </span>
+                      {product.waste > 0 && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          (con {product.waste}% sfrido)
+                        </div>
+                      )}
                     </div>
                     <div>
                       <span className="text-muted-foreground">Costo Totale:</span>{" "}
                       <span className="font-bold font-mono text-destructive">
-                        €{(product.quantity * product.pricePerUnit).toFixed(2)}
+                        €{(product.quantity * (product.effectivePricePerUnit || product.pricePerUnit)).toFixed(2)}
                       </span>
                     </div>
-                    {product.waste > 0 && (
-                      <div>
-                        <span className="text-muted-foreground">Sfrido:</span>{" "}
-                        <span className="font-medium">{product.waste}%</span>
-                      </div>
-                    )}
                   </div>
                   
                   {product.notes && (

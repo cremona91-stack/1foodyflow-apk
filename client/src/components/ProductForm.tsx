@@ -130,6 +130,7 @@ export default function ProductForm({ onSubmit, editProduct, onCancel }: Product
                   <FormControl>
                     <Input
                       {...field}
+                      value={field.value || ""}
                       placeholder="Es. Grano & Co."
                       data-testid="input-supplier"
                     />
@@ -176,6 +177,7 @@ export default function ProductForm({ onSubmit, editProduct, onCancel }: Product
                   <FormControl>
                     <Textarea
                       {...field}
+                      value={field.value || ""}
                       placeholder="Aggiungi note sul prodotto..."
                       rows={2}
                       data-testid="input-notes"

@@ -28,6 +28,7 @@ export const products = pgTable("products", {
   quantity: real("quantity").notNull(),
   unit: varchar("unit").notNull(), // kg, l, pezzo
   pricePerUnit: real("price_per_unit").notNull(),
+  effectivePricePerUnit: real("effective_price_per_unit").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
