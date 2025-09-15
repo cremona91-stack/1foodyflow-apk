@@ -15,10 +15,9 @@ export default function AppHeader({ onExportPDF }: AppHeaderProps) {
     <header className="bg-card border-b border-card-border p-6">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
-            <Utensils className="h-8 w-8 text-primary" data-testid="icon-utensils" />
-            Food Cost Manager
-            <ChefHat className="h-8 w-8 text-primary" data-testid="icon-chef" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
+            {/* Logo sarà posizionato qui */}
+            Foodieflow
           </h1>
           <p className="text-sm italic text-muted-foreground mt-2">
             L'importante è conoscere

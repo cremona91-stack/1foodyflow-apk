@@ -1,8 +1,8 @@
-# Food Cost Manager
+# Foodieflow
 
 ## Overview
 
-Food Cost Manager is a comprehensive restaurant management system designed to help restaurant owners and kitchen staff track inventory, calculate food costs, manage recipes and dishes, and monitor waste and sales performance. The application provides real-time food cost calculations, inventory management, and detailed sales reporting to optimize restaurant profitability.
+Foodieflow is a comprehensive restaurant management system designed to help restaurant owners and kitchen staff track inventory, calculate food costs, manage recipes and dishes, and monitor waste and sales performance. The application provides real-time food cost calculations, inventory management, and detailed sales reporting to optimize restaurant profitability.
 
 ## User Preferences
 
