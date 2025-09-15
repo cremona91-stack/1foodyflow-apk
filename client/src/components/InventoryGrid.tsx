@@ -339,6 +339,12 @@ export default function InventoryGrid({
     }, 0);
   };
 
+  const getTotalVarianceValue = () => {
+    return inventoryRows.reduce((sum, row) => {
+      return sum + (row.variance * row.product.pricePerUnit);
+    }, 0);
+  };
+
   if (products.length === 0) {
     return (
       <Card>
@@ -388,11 +394,11 @@ export default function InventoryGrid({
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Edit2 className="h-4 w-4 text-blue-600" />
+              <TrendingDown className="h-4 w-4 text-orange-600" />
               <div>
-                <p className="text-sm text-muted-foreground">Editabili</p>
-                <p className="text-lg font-semibold" data-testid="stat-editable">
-                  {editableInventoryData.length}
+                <p className="text-sm text-muted-foreground">Valore Varianza</p>
+                <p className={`text-lg font-semibold ${getTotalVarianceValue() >= 0 ? 'text-gray-600' : 'text-red-600'}`} data-testid="stat-variance-value">
+                  €{getTotalVarianceValue().toFixed(2)}
                 </p>
               </div>
             </div>
@@ -556,10 +562,13 @@ export default function InventoryGrid({
 
                   {/* Varianza (Calculated) */}
                   <div className="text-center" data-testid={`variance-${row.product.id}`}>
-                    <div className={`font-mono flex items-center justify-center gap-1 ${getVarianceColor(row.variance)}`}>
+                    <div className={`font-mono font-semibold flex items-center justify-center gap-1 ${getVarianceColor(row.variance)}`}>
                       {row.variance > 0 ? <TrendingUp className="h-3 w-3" /> : 
                        row.variance < 0 ? <TrendingDown className="h-3 w-3" /> : null}
                       {row.variance >= 0 ? '+' : ''}{row.variance.toFixed(2)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      €{(row.variance * row.product.pricePerUnit).toFixed(2)}
                     </div>
                   </div>
                 </div>
