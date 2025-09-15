@@ -469,6 +469,7 @@ function FoodCostManager() {
                 personalMeals={personalMeals}
                 maxFoodCost={maxFoodCost}
                 onMaxFoodCostChange={setMaxFoodCost}
+                showSalesDetails={false}
               />
               <div className="md:flex md:gap-6 space-y-6 md:space-y-0">
                 <div className="md:w-1/2">

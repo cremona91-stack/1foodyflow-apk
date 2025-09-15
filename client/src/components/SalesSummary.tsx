@@ -11,6 +11,7 @@ interface SalesSummaryProps {
   personalMeals: PersonalMeal[];
   maxFoodCost?: number;
   onMaxFoodCostChange?: (value: number) => void;
+  showSalesDetails?: boolean;
 }
 
 export default function SalesSummary({ 
@@ -19,7 +20,8 @@ export default function SalesSummary({
   waste, 
   personalMeals, 
   maxFoodCost = 30,
-  onMaxFoodCostChange 
+  onMaxFoodCostChange,
+  showSalesDetails = true 
 }: SalesSummaryProps) {
   
   // Calculate totals
@@ -155,7 +157,7 @@ export default function SalesSummary({
       </Card>
 
       {/* Detailed Sales Breakdown */}
-      {dishes.filter(d => d.sold > 0).length > 0 && (
+      {showSalesDetails && dishes.filter(d => d.sold > 0).length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Dettaglio Vendite</CardTitle>
