@@ -659,17 +659,6 @@ function FoodCostManager() {
             </div>
           )}
 
-          {/* Summary Tab */}
-          {activeTab === "summary" && (
-            <SalesSummary 
-              dishes={dishes}
-              products={products}
-              waste={waste}
-              personalMeals={personalMeals}
-              maxFoodCost={maxFoodCost}
-              onMaxFoodCostChange={setMaxFoodCost}
-            />
-          )}
 
           {/* Sales Detail Tab */}
           {activeTab === "sales-detail" && (

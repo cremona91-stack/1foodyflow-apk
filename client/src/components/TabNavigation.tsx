@@ -12,7 +12,6 @@ const tabs = [
   { id: "warehouse", label: "Magazzino In/Out", icon: ArrowUpDown },
   { id: "food-cost", label: "Calcolo Food Cost", icon: Calculator },
   { id: "waste", label: "Waste e pasti personali", icon: Trash2 },
-  { id: "summary", label: "Riepilogo Vendite", icon: TrendingUp },
   { id: "sales-detail", label: "Dettaglio Vendite", icon: BarChart3 },
 ];
 
