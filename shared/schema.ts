@@ -133,6 +133,7 @@ export const insertProductSchema = createInsertSchema(products).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  effectivePricePerUnit: true, // Calculated automatically by backend
 }).extend({
   waste: z.number().min(0).max(100).default(0),
   quantity: z.number().min(0),
