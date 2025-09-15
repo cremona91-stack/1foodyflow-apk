@@ -2,9 +2,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import type { 
-  Product, Recipe, Dish, Waste, PersonalMeal, Order,
-  InsertProduct, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal, InsertOrder,
-  UpdateProduct, UpdateRecipe, UpdateDish, UpdateOrder
+  Product, Recipe, Dish, Waste, PersonalMeal, Order, StockMovement, InventorySnapshot,
+  InsertProduct, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal, InsertOrder, InsertStockMovement, InsertInventorySnapshot,
+  UpdateProduct, UpdateRecipe, UpdateDish, UpdateOrder, UpdateStockMovement, UpdateInventorySnapshot
 } from "@shared/schema";
 
 // Products hooks
@@ -453,6 +453,197 @@ export function useDeleteOrder() {
       toast({
         title: "Errore",
         description: error.message || "Errore durante l'eliminazione dell'ordine",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+// Stock Movements hooks
+export function useStockMovements() {
+  return useQuery({
+    queryKey: ["/api/stock-movements"],
+    queryFn: api.stockMovements.getStockMovements,
+  });
+}
+
+export function useStockMovement(id: string) {
+  return useQuery({
+    queryKey: ["/api/stock-movements", id],
+    queryFn: () => api.stockMovements.getStockMovement(id),
+    enabled: !!id,
+  });
+}
+
+export function useStockMovementsByProduct(productId: string) {
+  return useQuery({
+    queryKey: ["/api/stock-movements", "product", productId],
+    queryFn: () => api.stockMovements.getStockMovementsByProduct(productId),
+    enabled: !!productId,
+  });
+}
+
+export function useCreateStockMovement() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: api.stockMovements.createStockMovement,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/stock-movements"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory-snapshots"] });
+      toast({
+        title: "Successo",
+        description: "Movimento di magazzino registrato con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante la registrazione del movimento",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useUpdateStockMovement() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateStockMovement }) =>
+      api.stockMovements.updateStockMovement(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/stock-movements"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory-snapshots"] });
+      toast({
+        title: "Successo",
+        description: "Movimento di magazzino aggiornato con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante l'aggiornamento del movimento",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useDeleteStockMovement() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: api.stockMovements.deleteStockMovement,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/stock-movements"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory-snapshots"] });
+      toast({
+        title: "Successo",
+        description: "Movimento di magazzino eliminato con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante l'eliminazione del movimento",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+// Inventory Snapshots hooks
+export function useInventorySnapshots() {
+  return useQuery({
+    queryKey: ["/api/inventory-snapshots"],
+    queryFn: api.inventorySnapshots.getInventorySnapshots,
+  });
+}
+
+export function useInventorySnapshot(id: string) {
+  return useQuery({
+    queryKey: ["/api/inventory-snapshots", id],
+    queryFn: () => api.inventorySnapshots.getInventorySnapshot(id),
+    enabled: !!id,
+  });
+}
+
+export function useInventorySnapshotsByProduct(productId: string) {
+  return useQuery({
+    queryKey: ["/api/inventory-snapshots", "product", productId],
+    queryFn: () => api.inventorySnapshots.getInventorySnapshotsByProduct(productId),
+    enabled: !!productId,
+  });
+}
+
+export function useCreateInventorySnapshot() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: api.inventorySnapshots.createInventorySnapshot,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory-snapshots"] });
+      toast({
+        title: "Successo",
+        description: "Snapshot inventario creato con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante la creazione dello snapshot",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useUpdateInventorySnapshot() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateInventorySnapshot }) =>
+      api.inventorySnapshots.updateInventorySnapshot(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory-snapshots"] });
+      toast({
+        title: "Successo",
+        description: "Snapshot inventario aggiornato con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante l'aggiornamento dello snapshot",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useDeleteInventorySnapshot() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: api.inventorySnapshots.deleteInventorySnapshot,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory-snapshots"] });
+      toast({
+        title: "Successo",
+        description: "Snapshot inventario eliminato con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante l'eliminazione dello snapshot",
         variant: "destructive",
       });
     },

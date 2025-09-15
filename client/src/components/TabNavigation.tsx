@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Warehouse, Calculator, Trash2, TrendingUp, Truck } from "lucide-react";
+import { Warehouse, Calculator, Trash2, TrendingUp, Truck, ArrowUpDown } from "lucide-react";
 
 interface TabNavigationProps {
   activeTab: string;
@@ -9,6 +9,7 @@ interface TabNavigationProps {
 const tabs = [
   { id: "inventory", label: "Lista Materie Prime", icon: Warehouse },
   { id: "orders", label: "Ricevimento Merci", icon: Truck },
+  { id: "warehouse", label: "Magazzino In/Out", icon: ArrowUpDown },
   { id: "food-cost", label: "Calcolo Food Cost", icon: Calculator },
   { id: "waste", label: "Waste e pasti personali", icon: Trash2 },
   { id: "summary", label: "Riepilogo Vendite", icon: TrendingUp },

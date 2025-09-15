@@ -1,8 +1,8 @@
 import { apiRequest } from "./queryClient";
 import type { 
-  Product, Recipe, Dish, Waste, PersonalMeal, Order,
-  InsertProduct, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal, InsertOrder,
-  UpdateProduct, UpdateRecipe, UpdateDish, UpdateOrder
+  Product, Recipe, Dish, Waste, PersonalMeal, Order, StockMovement, InventorySnapshot,
+  InsertProduct, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal, InsertOrder, InsertStockMovement, InsertInventorySnapshot,
+  UpdateProduct, UpdateRecipe, UpdateDish, UpdateOrder, UpdateStockMovement, UpdateInventorySnapshot
 } from "@shared/schema";
 
 // Products API
@@ -178,6 +178,88 @@ export const ordersApi = {
   },
 };
 
+// Stock Movements API
+export const stockMovementsApi = {
+  async getStockMovements(): Promise<StockMovement[]> {
+    const response = await fetch("/api/stock-movements", { credentials: "include" });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch stock movements: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async getStockMovement(id: string): Promise<StockMovement> {
+    const response = await fetch(`/api/stock-movements/${id}`, { credentials: "include" });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch stock movement: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async getStockMovementsByProduct(productId: string): Promise<StockMovement[]> {
+    const response = await fetch(`/api/stock-movements/product/${productId}`, { credentials: "include" });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch stock movements for product: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async createStockMovement(data: InsertStockMovement): Promise<StockMovement> {
+    const response = await apiRequest("POST", "/api/stock-movements", data);
+    return response.json();
+  },
+
+  async updateStockMovement(id: string, data: UpdateStockMovement): Promise<StockMovement> {
+    const response = await apiRequest("PUT", `/api/stock-movements/${id}`, data);
+    return response.json();
+  },
+
+  async deleteStockMovement(id: string): Promise<void> {
+    await apiRequest("DELETE", `/api/stock-movements/${id}`);
+  },
+};
+
+// Inventory Snapshots API
+export const inventorySnapshotsApi = {
+  async getInventorySnapshots(): Promise<InventorySnapshot[]> {
+    const response = await fetch("/api/inventory-snapshots", { credentials: "include" });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch inventory snapshots: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async getInventorySnapshot(id: string): Promise<InventorySnapshot> {
+    const response = await fetch(`/api/inventory-snapshots/${id}`, { credentials: "include" });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch inventory snapshot: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async getInventorySnapshotsByProduct(productId: string): Promise<InventorySnapshot[]> {
+    const response = await fetch(`/api/inventory-snapshots/product/${productId}`, { credentials: "include" });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch inventory snapshots for product: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async createInventorySnapshot(data: InsertInventorySnapshot): Promise<InventorySnapshot> {
+    const response = await apiRequest("POST", "/api/inventory-snapshots", data);
+    return response.json();
+  },
+
+  async updateInventorySnapshot(id: string, data: UpdateInventorySnapshot): Promise<InventorySnapshot> {
+    const response = await apiRequest("PUT", `/api/inventory-snapshots/${id}`, data);
+    return response.json();
+  },
+
+  async deleteInventorySnapshot(id: string): Promise<void> {
+    await apiRequest("DELETE", `/api/inventory-snapshots/${id}`);
+  },
+};
+
 export const api = {
   products: productsApi,
   recipes: recipesApi,
@@ -185,4 +267,6 @@ export const api = {
   waste: wasteApi,
   personalMeals: personalMealsApi,
   orders: ordersApi,
+  stockMovements: stockMovementsApi,
+  inventorySnapshots: inventorySnapshotsApi,
 };
