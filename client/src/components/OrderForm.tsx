@@ -19,6 +19,8 @@ interface OrderFormProps {
 
 export default function OrderForm({ onSubmit, editOrder, onCancel, products }: OrderFormProps) {
   const isEditing = !!editOrder;
+  const [showProducts, setShowProducts] = useState(false);
+  const [supplierProducts, setSupplierProducts] = useState<Product[]>([]);
 
   const form = useForm<InsertOrder>({
     resolver: zodResolver(insertOrderSchema),
@@ -38,6 +40,9 @@ export default function OrderForm({ onSubmit, editOrder, onCancel, products }: O
     name: "items",
   });
 
+  // Get unique suppliers from products
+  const uniqueSuppliers = Array.from(new Set(products.map(p => p.supplier).filter(Boolean))) as string[];
+
   // Update form values when editOrder changes
   useEffect(() => {
     if (editOrder) {
@@ -46,7 +51,7 @@ export default function OrderForm({ onSubmit, editOrder, onCancel, products }: O
         orderDate: editOrder.orderDate.split('T')[0], // Extract date part only
         items: editOrder.items,
         totalAmount: editOrder.totalAmount,
-        status: editOrder.status,
+        status: editOrder.status as "pending" | "confirmed" | "cancelled",
         notes: editOrder.notes || "",
         operatorName: editOrder.operatorName || "",
       });
@@ -56,7 +61,7 @@ export default function OrderForm({ onSubmit, editOrder, onCancel, products }: O
         orderDate: new Date().toISOString().split('T')[0],
         items: [{ productId: "", quantity: 0, unitPrice: 0, totalPrice: 0 }],
         totalAmount: 0,
-        status: "pending",
+        status: "pending" as const,
         notes: "",
         operatorName: "",
       });
@@ -106,6 +111,27 @@ export default function OrderForm({ onSubmit, editOrder, onCancel, products }: O
     onCancel?.();
   };
 
+  // Handle supplier selection and show products
+  const handleShowProducts = () => {
+    const selectedSupplier = form.getValues("supplier");
+    if (!selectedSupplier) return;
+    
+    const filtered = products.filter(p => p.supplier === selectedSupplier);
+    setSupplierProducts(filtered);
+    setShowProducts(true);
+    
+    // Clear existing items and add new ones based on supplier products
+    form.setValue("items", []);
+    filtered.forEach((product, index) => {
+      append({ 
+        productId: product.id, 
+        quantity: 0, 
+        unitPrice: product.effectivePricePerUnit || product.pricePerUnit,
+        totalPrice: 0 
+      });
+    });
+  };
+
   const addItem = () => {
     append({ productId: "", quantity: 0, unitPrice: 0, totalPrice: 0 });
   };
@@ -143,13 +169,20 @@ export default function OrderForm({ onSubmit, editOrder, onCancel, products }: O
                       <Truck className="h-4 w-4" />
                       Fornitore
                     </FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Nome fornitore" 
-                        data-testid="input-supplier"
-                        {...field} 
-                      />
-                    </FormControl>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-supplier">
+                          <SelectValue placeholder="Seleziona fornitore" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {uniqueSuppliers.map((supplier) => (
+                          <SelectItem key={supplier} value={supplier}>
+                            {supplier}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -189,7 +222,10 @@ export default function OrderForm({ onSubmit, editOrder, onCancel, products }: O
                       <Input 
                         placeholder="Nome operatore" 
                         data-testid="input-operator-name"
-                        {...field} 
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name} 
                       />
                     </FormControl>
                     <FormMessage />
@@ -225,54 +261,50 @@ export default function OrderForm({ onSubmit, editOrder, onCancel, products }: O
               />
             </div>
 
-            {/* Order Items */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">Prodotti Ordinati</h3>
+            {/* View Products Button */}
+            {!showProducts && (
+              <div className="flex justify-center py-4">
                 <Button
                   type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addItem}
-                  className="flex items-center gap-2"
-                  data-testid="button-add-item"
+                  variant="default"
+                  size="lg"
+                  onClick={handleShowProducts}
+                  disabled={!form.watch("supplier") || !form.watch("orderDate") || !form.watch("operatorName")}
+                  data-testid="button-show-products"
+                  className="px-8"
                 >
-                  <Plus className="h-4 w-4" />
-                  Aggiungi Prodotto
+                  Vedi
                 </Button>
               </div>
+            )}
 
-              {fields.map((field, index) => (
+            {/* Order Items */}
+            {showProducts && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium">Prodotti da {form.watch("supplier")}</h3>
+                <div className="text-sm text-muted-foreground">
+                  {supplierProducts.length} prodotti disponibili
+                </div>
+              </div>
+
+              {fields.map((field, index) => {
+                const product = supplierProducts.find(p => p.id === form.watch(`items.${index}.productId`));
+                return (
                 <Card key={field.id} className="p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                    <FormField
-                      control={form.control}
-                      name={`items.${index}.productId`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Prodotto</FormLabel>
-                          <Select 
-                            value={field.value} 
-                            onValueChange={field.onChange}
-                            data-testid={`select-product-${index}`}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Seleziona prodotto" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {products.map((product) => (
-                                <SelectItem key={product.id} value={product.id}>
-                                  {product.name} ({product.code})
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <div className="space-y-2">
+                      <FormLabel>Prodotto</FormLabel>
+                      <div className="font-medium text-sm">
+                        {product ? `${product.name} (${product.code})` : 'Prodotto non trovato'}
+                      </div>
+                      {product && (
+                        <div className="text-xs text-muted-foreground">
+                          Prezzo: €{(product.effectivePricePerUnit || product.pricePerUnit).toFixed(2)}/{product.unit}
+                          {product.waste > 0 && ` (${product.waste}% sfrido)`}
+                        </div>
                       )}
-                    />
+                    </div>
 
                     <FormField
                       control={form.control}
@@ -296,47 +328,20 @@ export default function OrderForm({ onSubmit, editOrder, onCancel, products }: O
                       )}
                     />
 
-                    <FormField
-                      control={form.control}
-                      name={`items.${index}.unitPrice`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Prezzo Unitario (€)</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              placeholder="0.00"
-                              data-testid={`input-unit-price-${index}`}
-                              {...field}
-                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="flex items-center gap-2">
-                      <div className="text-sm">
+                    <div className="text-right space-y-2">
+                      <div className="text-sm font-medium">
                         Totale: €{((Number(watchedValues.items?.[index]?.quantity) || 0) * (Number(watchedValues.items?.[index]?.unitPrice) || 0)).toFixed(2)}
                       </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeItem(index)}
-                        disabled={fields.length === 1}
-                        data-testid={`button-remove-item-${index}`}
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
+                      <div className="text-xs text-muted-foreground">
+                        {Number(watchedValues.items?.[index]?.quantity) || 0} {product?.unit}
+                      </div>
                     </div>
                   </div>
                 </Card>
-              ))}
+              );
+              })}
             </div>
+            )}
 
             {/* Total Amount Display */}
             <div className="bg-muted p-4 rounded-lg">
@@ -361,7 +366,10 @@ export default function OrderForm({ onSubmit, editOrder, onCancel, products }: O
                       placeholder="Note aggiuntive sull'ordine..."
                       rows={3}
                       data-testid="input-notes"
-                      {...field}
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
                     />
                   </FormControl>
                   <FormMessage />
