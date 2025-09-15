@@ -454,6 +454,14 @@ function FoodCostManager() {
           exportWasteToPDF(waste, products);
           break;
           
+        case "products":
+          exportProductsToPDF(products);
+          break;
+          
+        case "recipes":
+          exportRecipesToPDF(recipes, products);
+          break;
+          
         default:
           // Default to comprehensive inventory export
           const defaultInventoryData = queryClient.getQueryData(["/api/editable-inventory"]) as any[] || [];

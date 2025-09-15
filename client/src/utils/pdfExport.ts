@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import type { Product, StockMovement, Order, Waste, PersonalMeal, Recipe, Dish, EditableInventory } from '@shared/schema';
 
 // Extend jsPDF type to include autoTable
@@ -138,7 +138,7 @@ export const exportInventoryToPDF = (
     `€${item.varianceValue.toFixed(2)}`
   ]);
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: yPos,
     head: [tableColumns],
     body: tableRows,
@@ -154,21 +154,15 @@ export const exportInventoryToPDF = (
     alternateRowStyles: {
       fillColor: [245, 245, 245]
     },
-    columnStyles: {
-      6: { // Varianza column
-        cellRenderer: (data: any) => {
-          const variance = parseFloat(data.cell.text[0].replace(/[+€]/g, ''));
-          return {
-            textColor: variance < 0 ? [220, 38, 27] : [107, 114, 126]
-          };
-        }
-      },
-      8: { // Valore Varianza column
-        cellRenderer: (data: any) => {
-          const varianceValue = parseFloat(data.cell.text[0].replace(/[+€]/g, ''));
-          return {
-            textColor: varianceValue < 0 ? [220, 38, 27] : [107, 114, 126]
-          };
+    didParseCell: (data: any) => {
+      // Color variance columns (6 and 8) based on positive/negative values
+      if (data.column.index === 6 || data.column.index === 8) {
+        const text = data.cell.text[0] || '';
+        const value = parseFloat(text.replace(/[+€]/g, ''));
+        if (value < 0) {
+          data.cell.styles.textColor = [220, 38, 27]; // Red for negative
+        } else {
+          data.cell.styles.textColor = [107, 114, 126]; // Gray for positive
         }
       }
     }
@@ -193,7 +187,7 @@ export const exportProductsToPDF = (products: Product[]) => {
     product.category || 'N/A'
   ]);
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: yPos,
     head: [tableColumns],
     body: tableRows,
@@ -230,7 +224,7 @@ export const exportOrdersToPDF = (orders: Order[]) => {
     order.notes || 'N/A'
   ]);
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: yPos,
     head: [tableColumns],
     body: tableRows,
@@ -300,7 +294,7 @@ export const exportRecipesToPDF = (recipes: Recipe[], products: Product[]) => {
     `€${recipe.totalCost.toFixed(2)}`
   ]);
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: yPos,
     head: [tableColumns],
     body: tableRows,
@@ -336,7 +330,7 @@ export const exportDishesToPDF = (dishes: Dish[], products: Product[]) => {
     (dish.sold || 0).toString()
   ]);
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: yPos,
     head: [tableColumns],
     body: tableRows,
@@ -408,7 +402,7 @@ export const exportWasteToPDF = (waste: Waste[], products: Product[]) => {
     ];
   });
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: yPos,
     head: [tableColumns],
     body: tableRows,
