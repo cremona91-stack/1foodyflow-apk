@@ -10,12 +10,14 @@ import {
   insertOrderSchema,
   insertStockMovementSchema,
   insertInventorySnapshotSchema,
+  insertEditableInventorySchema,
   updateProductSchema,
   updateRecipeSchema,
   updateDishSchema,
   updateOrderSchema,
   updateStockMovementSchema,
-  updateInventorySnapshotSchema
+  updateInventorySnapshotSchema,
+  updateEditableInventorySchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -541,6 +543,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting inventory snapshot:", error);
       res.status(500).json({ error: "Failed to delete inventory snapshot" });
+    }
+  });
+
+  // Editable Inventory API Routes
+  app.get("/api/editable-inventory", async (req, res) => {
+    try {
+      const inventory = await storage.getEditableInventory();
+      res.json(inventory);
+    } catch (error) {
+      console.error("Error fetching editable inventory:", error);
+      res.status(500).json({ error: "Failed to fetch editable inventory" });
+    }
+  });
+
+  app.get("/api/editable-inventory/product/:productId", async (req, res) => {
+    try {
+      const inventory = await storage.getEditableInventoryByProduct(req.params.productId);
+      if (!inventory) {
+        return res.status(404).json({ error: "Editable inventory not found" });
+      }
+      res.json(inventory);
+    } catch (error) {
+      console.error("Error fetching editable inventory by product:", error);
+      res.status(500).json({ error: "Failed to fetch editable inventory by product" });
+    }
+  });
+
+  app.post("/api/editable-inventory", async (req, res) => {
+    try {
+      const validatedData = insertEditableInventorySchema.parse(req.body);
+      const inventory = await storage.createEditableInventory(validatedData);
+      res.status(201).json(inventory);
+    } catch (error) {
+      console.error("Error creating editable inventory:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create editable inventory" });
+    }
+  });
+
+  app.put("/api/editable-inventory/:id", async (req, res) => {
+    try {
+      const validatedData = updateEditableInventorySchema.parse(req.body);
+      const inventory = await storage.updateEditableInventory(req.params.id, validatedData);
+      if (!inventory) {
+        return res.status(404).json({ error: "Editable inventory not found" });
+      }
+      res.json(inventory);
+    } catch (error) {
+      console.error("Error updating editable inventory:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update editable inventory" });
+    }
+  });
+
+  app.delete("/api/editable-inventory/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteEditableInventory(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Editable inventory not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting editable inventory:", error);
+      res.status(500).json({ error: "Failed to delete editable inventory" });
     }
   });
 

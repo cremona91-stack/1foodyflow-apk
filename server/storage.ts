@@ -7,6 +7,7 @@ import {
   type Order,
   type StockMovement,
   type InventorySnapshot,
+  type EditableInventory,
   type InsertProduct,
   type InsertRecipe,
   type InsertDish,
@@ -15,12 +16,14 @@ import {
   type InsertOrder,
   type InsertStockMovement,
   type InsertInventorySnapshot,
+  type InsertEditableInventory,
   type UpdateProduct,
   type UpdateRecipe,
   type UpdateDish,
   type UpdateOrder,
   type UpdateStockMovement,
   type UpdateInventorySnapshot,
+  type UpdateEditableInventory,
   products,
   recipes,
   dishes,
@@ -28,7 +31,8 @@ import {
   personalMeals,
   orders,
   stockMovements,
-  inventorySnapshots
+  inventorySnapshots,
+  editableInventory
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/neon-http";
 import { eq } from "drizzle-orm";
@@ -93,6 +97,13 @@ export interface IStorage {
   createInventorySnapshot(snapshot: InsertInventorySnapshot): Promise<InventorySnapshot>;
   updateInventorySnapshot(id: string, snapshot: UpdateInventorySnapshot): Promise<InventorySnapshot | undefined>;
   deleteInventorySnapshot(id: string): Promise<boolean>;
+
+  // Editable Inventory
+  getEditableInventory(): Promise<EditableInventory[]>;
+  getEditableInventoryByProduct(productId: string): Promise<EditableInventory | undefined>;
+  createEditableInventory(inventory: InsertEditableInventory): Promise<EditableInventory>;
+  updateEditableInventory(id: string, inventory: UpdateEditableInventory): Promise<EditableInventory | undefined>;
+  deleteEditableInventory(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -298,6 +309,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateOrder(id: string, updates: UpdateOrder): Promise<Order | undefined> {
+    // First, get the current order to check status change
+    const currentOrder = await this.getOrder(id);
+    if (!currentOrder) {
+      return undefined;
+    }
+
     const sanitizedUpdates: any = {};
     if (updates.supplier !== undefined) sanitizedUpdates.supplier = updates.supplier;
     if (updates.orderDate !== undefined) sanitizedUpdates.orderDate = updates.orderDate;
@@ -313,7 +330,36 @@ export class DatabaseStorage implements IStorage {
       .set(sanitizedUpdates)
       .where(eq(orders.id, id))
       .returning();
-    return result[0];
+    
+    const updatedOrder = result[0];
+    
+    // AUTOMATISMO: Se l'ordine cambia status da non-confermato a "confirmed", crea movimenti IN
+    if (updatedOrder && 
+        updates.status === "confirmed" && 
+        currentOrder.status !== "confirmed") {
+      
+      console.log(`[AUTOMATISMO] Ordine ${id} confermato - creando movimenti IN automatici`);
+      
+      // Crea movimenti di stock IN per ogni item dell'ordine
+      for (const item of updatedOrder.items) {
+        const stockMovement: InsertStockMovement = {
+          productId: item.productId,
+          movementType: "in",
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalCost: item.totalPrice,
+          source: "order",
+          sourceId: updatedOrder.id,
+          movementDate: updatedOrder.orderDate,
+          notes: `Ricevimento automatico da ordine ${updatedOrder.supplier} - ${updatedOrder.operatorName || 'Sistema'}`,
+        };
+        
+        await this.createStockMovement(stockMovement);
+        console.log(`[AUTOMATISMO] Creato movimento IN: ${item.quantity} ${item.productId} da ordine ${id}`);
+      }
+    }
+    
+    return updatedOrder;
   }
 
   async deleteOrder(id: string): Promise<boolean> {
@@ -406,6 +452,45 @@ export class DatabaseStorage implements IStorage {
 
   async deleteInventorySnapshot(id: string): Promise<boolean> {
     const result = await db.delete(inventorySnapshots).where(eq(inventorySnapshots.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Editable Inventory methods
+  async getEditableInventory(): Promise<EditableInventory[]> {
+    return await db.select().from(editableInventory);
+  }
+
+  async getEditableInventoryByProduct(productId: string): Promise<EditableInventory | undefined> {
+    const result = await db.select().from(editableInventory).where(eq(editableInventory.productId, productId));
+    return result[0];
+  }
+
+  async createEditableInventory(inventory: InsertEditableInventory): Promise<EditableInventory> {
+    const result = await db.insert(editableInventory).values({
+      ...inventory,
+      notes: inventory.notes || null,
+    }).returning();
+    return result[0];
+  }
+
+  async updateEditableInventory(id: string, updates: UpdateEditableInventory): Promise<EditableInventory | undefined> {
+    const sanitizedUpdates: any = {};
+    if (updates.initialQuantity !== undefined) sanitizedUpdates.initialQuantity = updates.initialQuantity;
+    if (updates.finalQuantity !== undefined) sanitizedUpdates.finalQuantity = updates.finalQuantity;
+    if (updates.notes !== undefined) sanitizedUpdates.notes = updates.notes;
+    
+    // Always update lastUpdated when modifying
+    sanitizedUpdates.lastUpdated = new Date();
+    
+    const result = await db.update(editableInventory)
+      .set(sanitizedUpdates)
+      .where(eq(editableInventory.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteEditableInventory(id: string): Promise<boolean> {
+    const result = await db.delete(editableInventory).where(eq(editableInventory.id, id));
     return result.rowCount > 0;
   }
 }

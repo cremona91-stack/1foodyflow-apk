@@ -128,6 +128,17 @@ export const inventorySnapshots = pgTable("inventory_snapshots", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Editable inventory values table (nuovo sistema per magazzino editabile)
+export const editableInventory = pgTable("editable_inventory", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  productId: varchar("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  initialQuantity: real("initial_quantity").notNull().default(0),
+  finalQuantity: real("final_quantity").notNull().default(0),
+  lastUpdated: timestamp("last_updated").defaultNow(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Zod schemas for validation
 export const insertProductSchema = createInsertSchema(products).omit({
   id: true,
@@ -197,7 +208,7 @@ export const insertStockMovementSchema = createInsertSchema(stockMovements).omit
   quantity: z.number().min(0),
   unitPrice: z.number().min(0).optional(),
   totalCost: z.number().min(0).optional(),
-  source: z.enum(["order", "sale", "waste", "adjustment"]),
+  source: z.enum(["order", "sale", "waste", "personal_meal", "adjustment"]),
 });
 
 export const insertInventorySnapshotSchema = createInsertSchema(inventorySnapshots).omit({
@@ -208,6 +219,15 @@ export const insertInventorySnapshotSchema = createInsertSchema(inventorySnapsho
   finalQuantity: z.number().min(0),
   theoreticalQuantity: z.number().min(0).optional(),
   variance: z.number().optional(),
+});
+
+export const insertEditableInventorySchema = createInsertSchema(editableInventory).omit({
+  id: true,
+  createdAt: true,
+  lastUpdated: true,
+}).extend({
+  initialQuantity: z.number().min(0),
+  finalQuantity: z.number().min(0),
 });
 
 // Update schemas for secure PATCH/PUT operations
@@ -263,6 +283,12 @@ export const updateInventorySnapshotSchema = z.object({
   variance: z.number().optional(),
 });
 
+export const updateEditableInventorySchema = z.object({
+  initialQuantity: z.number().min(0).optional(),
+  finalQuantity: z.number().min(0).optional(),
+  notes: z.string().optional(),
+});
+
 // Types
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
@@ -286,3 +312,6 @@ export type UpdateStockMovement = z.infer<typeof updateStockMovementSchema>;
 export type InventorySnapshot = typeof inventorySnapshots.$inferSelect;
 export type InsertInventorySnapshot = z.infer<typeof insertInventorySnapshotSchema>;
 export type UpdateInventorySnapshot = z.infer<typeof updateInventorySnapshotSchema>;
+export type EditableInventory = typeof editableInventory.$inferSelect;
+export type InsertEditableInventory = z.infer<typeof insertEditableInventorySchema>;
+export type UpdateEditableInventory = z.infer<typeof updateEditableInventorySchema>;
