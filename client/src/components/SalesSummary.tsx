@@ -2,7 +2,9 @@ import { type Dish, type Product, type Waste, type PersonalMeal } from "@shared/
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { TrendingUp, DollarSign, AlertTriangle, Users } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { TrendingUp, DollarSign, AlertTriangle, Users, Info } from "lucide-react";
 
 interface SalesSummaryProps {
   dishes: Dish[];
@@ -139,9 +141,42 @@ export default function SalesSummary({
 
             <Card className={`p-4 ${isOverThreshold ? 'bg-destructive/10 border-destructive' : 'bg-chart-2/10 border-chart-2'}`}>
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-foreground">
-                  Food Cost Teorico Ponderato:
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-foreground">
+                    Food Cost Teorico Ponderato:
+                  </span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 p-0 hover:bg-transparent"
+                          data-testid="button-food-cost-info"
+                        >
+                          <Info className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-md p-4">
+                        <div className="space-y-3 text-sm">
+                          <p>
+                            Il <strong>Food Cost Teorico</strong>, noto anche come Food Cost Preventivo o Attivo, rappresenta il costo ideale che un'attività di ristorazione dovrebbe sostenere per la preparazione di un singolo piatto in condizioni perfette e senza sprechi. A differenza del costo reale, che si calcola a consuntivo, quello teorico viene stabilito in via preventiva, prima che il piatto venga preparato.
+                          </p>
+                          <p>
+                            Questo calcolo si basa su ricette analitiche e standardizzate, che specificano con precisione la quantità esatta di ogni ingrediente e il suo costo unitario. L'obiettivo è creare una "distinta base" che elenchi tutti i componenti necessari per una porzione standard, eliminando la gestione a "occhio".
+                          </p>
+                          <div>
+                            <p className="font-medium mb-2">Il valore che si ottiene è un benchmark che serve a:</p>
+                            <ul className="list-disc list-inside space-y-1 pl-2">
+                              <li><strong>Determinare il prezzo di vendita</strong>: fornisce una base razionale per definire un prezzo che assicuri il margine di profitto desiderato.</li>
+                              <li><strong>Misurare l'efficienza</strong>: viene confrontato con il Food Cost Consuntivo (o reale) per individuare perdite di profitto dovute a sprechi, porzionamento impreciso o altri problemi operativi.</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <span className={`text-2xl font-bold font-mono ${isOverThreshold ? 'text-destructive' : 'text-chart-2'}`}>
                   {weightedFoodCost.toFixed(1)}%
                 </span>
