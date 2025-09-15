@@ -2,9 +2,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import type { 
-  Product, Recipe, Dish, Waste, PersonalMeal,
-  InsertProduct, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal,
-  UpdateProduct, UpdateRecipe, UpdateDish
+  Product, Recipe, Dish, Waste, PersonalMeal, Order,
+  InsertProduct, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal, InsertOrder,
+  UpdateProduct, UpdateRecipe, UpdateDish, UpdateOrder
 } from "@shared/schema";
 
 // Products hooks
@@ -367,6 +367,92 @@ export function useDeletePersonalMeal() {
       toast({
         title: "Errore",
         description: error.message || "Errore durante l'eliminazione del pasto personale",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+// Orders hooks
+export function useOrders() {
+  return useQuery({
+    queryKey: ["/api/orders"],
+    queryFn: api.orders.getOrders,
+  });
+}
+
+export function useOrder(id: string) {
+  return useQuery({
+    queryKey: ["/api/orders", id],
+    queryFn: () => api.orders.getOrder(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreateOrder() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: api.orders.createOrder,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      toast({
+        title: "Successo",
+        description: "Ordine creato con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante la creazione dell'ordine",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useUpdateOrder() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateOrder }) =>
+      api.orders.updateOrder(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      toast({
+        title: "Successo",
+        description: "Ordine aggiornato con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante l'aggiornamento dell'ordine",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useDeleteOrder() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: api.orders.deleteOrder,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      toast({
+        title: "Successo",
+        description: "Ordine eliminato con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante l'eliminazione dell'ordine",
         variant: "destructive",
       });
     },

@@ -17,6 +17,8 @@ import DishForm from "@/components/DishForm";
 import DishList from "@/components/DishList";
 import WasteForm from "@/components/WasteForm";
 import SalesSummary from "@/components/SalesSummary";
+import OrderForm from "@/components/OrderForm";
+import OrderList from "@/components/OrderList";
 
 // API Hooks
 import {
@@ -25,6 +27,7 @@ import {
   useDishes,
   useWaste,
   usePersonalMeals,
+  useOrders,
   useCreateProduct,
   useUpdateProduct,
   useDeleteProduct,
@@ -36,10 +39,13 @@ import {
   useDeleteDish,
   useCreateWaste,
   useCreatePersonalMeal,
+  useCreateOrder,
+  useUpdateOrder,
+  useDeleteOrder,
 } from "@/hooks/useApi";
 
 // Types
-import type { Product, Recipe, Dish, InsertProduct, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal } from "@shared/schema";
+import type { Product, Recipe, Dish, Order, InsertProduct, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal, InsertOrder } from "@shared/schema";
 
 function FoodCostManager() {
   const [activeTab, setActiveTab] = useState("inventory");
@@ -49,6 +55,7 @@ function FoodCostManager() {
   const [editingProduct, setEditingProduct] = useState<Product | undefined>();
   const [editingRecipe, setEditingRecipe] = useState<Recipe | undefined>();
   const [editingDish, setEditingDish] = useState<Dish | undefined>();
+  const [editingOrder, setEditingOrder] = useState<Order | undefined>();
   
   // React Query hooks for data fetching
   const { data: products = [], isLoading: isLoadingProducts } = useProducts();
@@ -56,6 +63,7 @@ function FoodCostManager() {
   const { data: dishes = [], isLoading: isLoadingDishes } = useDishes();
   const { data: waste = [], isLoading: isLoadingWaste } = useWaste();
   const { data: personalMeals = [], isLoading: isLoadingPersonalMeals } = usePersonalMeals();
+  const { data: orders = [], isLoading: isLoadingOrders } = useOrders();
 
   // React Query mutations
   const createProductMutation = useCreateProduct();
@@ -72,6 +80,10 @@ function FoodCostManager() {
   
   const createWasteMutation = useCreateWaste();
   const createPersonalMealMutation = useCreatePersonalMeal();
+  
+  const createOrderMutation = useCreateOrder();
+  const updateOrderMutation = useUpdateOrder();
+  const deleteOrderMutation = useDeleteOrder();
 
   // Product handlers
   const handleAddProduct = (product: InsertProduct) => {
@@ -213,13 +225,48 @@ function FoodCostManager() {
     console.log("Personal meal creation submitted:", mealData);
   };
 
+  // Order handlers
+  const handleAddOrder = (order: InsertOrder) => {
+    createOrderMutation.mutate(order);
+    console.log("Order creation submitted:", order);
+  };
+
+  const handleEditOrder = (order: Order) => {
+    setEditingOrder(order);
+    console.log("Editing order:", order);
+  };
+
+  const handleUpdateOrder = (updatedOrder: InsertOrder) => {
+    if (!editingOrder) return;
+    
+    updateOrderMutation.mutate(
+      { id: editingOrder.id, data: updatedOrder },
+      {
+        onSuccess: () => {
+          setEditingOrder(undefined);
+        },
+      }
+    );
+    console.log("Order update submitted:", updatedOrder);
+  };
+
+  const handleCancelEditOrder = () => {
+    setEditingOrder(undefined);
+    console.log("Order edit cancelled");
+  };
+
+  const handleDeleteOrder = (orderId: string) => {
+    deleteOrderMutation.mutate(orderId);
+    console.log("Order deletion submitted:", orderId);
+  };
+
   const handleExportPDF = () => {
     console.log("Export PDF functionality would be implemented here");
     // TODO: Implement PDF export functionality
   };
 
   // Show loading state while data is being fetched
-  const isLoading = isLoadingProducts || isLoadingRecipes || isLoadingDishes || isLoadingWaste || isLoadingPersonalMeals;
+  const isLoading = isLoadingProducts || isLoadingRecipes || isLoadingDishes || isLoadingWaste || isLoadingPersonalMeals || isLoadingOrders;
 
   if (isLoading) {
     return (
@@ -304,6 +351,28 @@ function FoodCostManager() {
                     onClearSales={handleClearSales}
                   />
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Orders Tab */}
+          {activeTab === "orders" && (
+            <div className="md:flex md:gap-6 space-y-6 md:space-y-0">
+              <div className="md:w-1/2">
+                <OrderForm 
+                  products={products} 
+                  onSubmit={editingOrder ? handleUpdateOrder : handleAddOrder}
+                  editOrder={editingOrder}
+                  onCancel={editingOrder ? handleCancelEditOrder : undefined}
+                />
+              </div>
+              <div className="md:w-1/2">
+                <OrderList 
+                  orders={orders} 
+                  products={products}
+                  onEdit={handleEditOrder}
+                  onDelete={handleDeleteOrder}
+                />
               </div>
             </div>
           )}

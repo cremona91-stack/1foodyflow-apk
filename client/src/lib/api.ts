@@ -1,8 +1,8 @@
 import { apiRequest } from "./queryClient";
 import type { 
-  Product, Recipe, Dish, Waste, PersonalMeal,
-  InsertProduct, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal,
-  UpdateProduct, UpdateRecipe, UpdateDish
+  Product, Recipe, Dish, Waste, PersonalMeal, Order,
+  InsertProduct, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal, InsertOrder,
+  UpdateProduct, UpdateRecipe, UpdateDish, UpdateOrder
 } from "@shared/schema";
 
 // Products API
@@ -145,10 +145,44 @@ export const personalMealsApi = {
 };
 
 // Export all APIs for convenience
+// Orders API
+export const ordersApi = {
+  async getOrders(): Promise<Order[]> {
+    const response = await fetch("/api/orders", { credentials: "include" });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch orders: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async getOrder(id: string): Promise<Order> {
+    const response = await fetch(`/api/orders/${id}`, { credentials: "include" });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch order: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async createOrder(data: InsertOrder): Promise<Order> {
+    const response = await apiRequest("POST", "/api/orders", data);
+    return response.json();
+  },
+
+  async updateOrder(id: string, data: UpdateOrder): Promise<Order> {
+    const response = await apiRequest("PUT", `/api/orders/${id}`, data);
+    return response.json();
+  },
+
+  async deleteOrder(id: string): Promise<void> {
+    await apiRequest("DELETE", `/api/orders/${id}`);
+  },
+};
+
 export const api = {
   products: productsApi,
   recipes: recipesApi,
   dishes: dishesApi,
   waste: wasteApi,
   personalMeals: personalMealsApi,
+  orders: ordersApi,
 };
