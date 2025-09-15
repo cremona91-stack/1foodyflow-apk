@@ -135,15 +135,16 @@ export default function OrderList({ orders, products, onEdit, onDelete, onView }
                     </h3>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Badge 
-                          className={`${getStatusColor(order.status)} cursor-pointer hover:opacity-80 transition-opacity`}
-                          data-testid={`badge-status-${order.id}`}
-                        >
-                          <span className="flex items-center gap-1">
-                            {getStatusLabel(order.status)}
-                            <ChevronDown className="h-3 w-3" />
-                          </span>
-                        </Badge>
+                        <div className="cursor-pointer" data-testid={`badge-status-${order.id}`}>
+                          <Badge 
+                            className={`${getStatusColor(order.status)} hover:opacity-80 transition-opacity`}
+                          >
+                            <span className="flex items-center gap-1">
+                              {getStatusLabel(order.status)}
+                              <ChevronDown className="h-3 w-3" />
+                            </span>
+                          </Badge>
+                        </div>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start">
                         <DropdownMenuItem 
