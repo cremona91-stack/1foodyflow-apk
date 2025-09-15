@@ -16,6 +16,7 @@ import RecipeList from "@/components/RecipeList";
 import DishForm from "@/components/DishForm";
 import DishList from "@/components/DishList";
 import WasteForm from "@/components/WasteForm";
+import WasteRegistry from "@/components/WasteRegistry";
 import SalesSummary from "@/components/SalesSummary";
 import OrderForm from "@/components/OrderForm";
 import OrderList from "@/components/OrderList";
@@ -554,12 +555,21 @@ function FoodCostManager() {
 
           {/* Waste Tab */}
           {activeTab === "waste" && (
-            <div className="max-w-2xl mx-auto">
-              <WasteForm 
+            <div className="space-y-6">
+              <div className="max-w-2xl mx-auto">
+                <WasteForm 
+                  products={products}
+                  dishes={dishes}
+                  onSubmitWaste={handleAddWaste}
+                  onSubmitPersonalMeal={handleAddPersonalMeal}
+                />
+              </div>
+              
+              <WasteRegistry 
+                waste={waste}
+                personalMeals={personalMeals}
                 products={products}
                 dishes={dishes}
-                onSubmitWaste={handleAddWaste}
-                onSubmitPersonalMeal={handleAddPersonalMeal}
               />
             </div>
           )}
