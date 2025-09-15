@@ -50,7 +50,7 @@ export default function DishForm({ onSubmit, products, editDish, onCancel }: Dis
     const parsedQuantity = parseFloat(quantity);
     if (parsedQuantity <= 0) return;
 
-    const cost = parsedQuantity * product.pricePerUnit;
+    const cost = parsedQuantity * product.effectivePricePerUnit;
     const ingredient = {
       productId: selectedProductId,
       quantity: parsedQuantity,
@@ -163,7 +163,7 @@ export default function DishForm({ onSubmit, products, editDish, onCancel }: Dis
                     />
                     <Input
                       readOnly
-                      value={`€${selectedProduct.pricePerUnit.toFixed(2)}`}
+                      value={`€${selectedProduct.effectivePricePerUnit.toFixed(2)}`}
                       className="bg-muted text-muted-foreground"
                     />
                   </div>
