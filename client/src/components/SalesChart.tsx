@@ -23,6 +23,21 @@ interface FilterState {
   sortOrder: "asc" | "desc";
 }
 
+interface SalesDataItem {
+  id: string;
+  name: string;
+  quantity: number;
+  revenue: number;
+  cost: number;
+  profit: number;
+  revenuePercentage: number;
+  quantityPercentage: number;
+  unitPrice: number;
+  foodCost: number;
+  filteredRevenuePercentage?: number;
+  filteredQuantityPercentage?: number;
+}
+
 const CHART_COLORS = [
   'hsl(var(--chart-1))',
   'hsl(var(--chart-2))',
@@ -44,7 +59,7 @@ export default function SalesChart({ dishes }: SalesChartProps) {
   });
 
   // Calcola dati delle vendite con percentuali
-  const salesData = useMemo(() => {
+  const salesData = useMemo((): SalesDataItem[] => {
     const soldDishes = dishes.filter(dish => dish.sold > 0);
     
     if (soldDishes.length === 0) return [];
@@ -73,8 +88,8 @@ export default function SalesChart({ dishes }: SalesChartProps) {
     });
   }, [dishes]);
 
-  // Applica filtri
-  const filteredData = useMemo(() => {
+  // Applica filtri e ricalcola percentuali sui dati filtrati
+  const filteredData = useMemo((): SalesDataItem[] => {
     let filtered = salesData.filter(item => {
       const nameMatch = !filters.nameFilter || 
         item.name.toLowerCase().includes(filters.nameFilter.toLowerCase());
@@ -89,6 +104,16 @@ export default function SalesChart({ dishes }: SalesChartProps) {
       
       return nameMatch && revenueMatch && quantityMatch;
     });
+    
+    // Ricalcola percentuali sui dati filtrati per grafici accurati
+    const filteredTotalRevenue = filtered.reduce((sum, item) => sum + item.revenue, 0);
+    const filteredTotalQuantity = filtered.reduce((sum, item) => sum + item.quantity, 0);
+    
+    filtered = filtered.map(item => ({
+      ...item,
+      filteredRevenuePercentage: filteredTotalRevenue > 0 ? (item.revenue / filteredTotalRevenue) * 100 : 0,
+      filteredQuantityPercentage: filteredTotalQuantity > 0 ? (item.quantity / filteredTotalQuantity) * 100 : 0,
+    }));
 
     // Applica ordinamento
     filtered.sort((a, b) => {
@@ -108,8 +133,8 @@ export default function SalesChart({ dishes }: SalesChartProps) {
           bValue = b.quantity;
           break;
         case "percentage":
-          aValue = a.revenuePercentage;
-          bValue = b.revenuePercentage;
+          aValue = a.filteredRevenuePercentage || a.revenuePercentage;
+          bValue = b.filteredRevenuePercentage || b.revenuePercentage;
           break;
         default:
           aValue = a.revenue;
@@ -165,8 +190,12 @@ export default function SalesChart({ dishes }: SalesChartProps) {
               </span>
             </div>
             <div className="flex justify-between">
-              <span>% Ricavo:</span>
-              <span className="font-mono font-medium">{data.revenuePercentage.toFixed(1)}%</span>
+              <span>% Ricavo (filtrato):</span>
+              <span className="font-mono font-medium">{(data.filteredRevenuePercentage || data.revenuePercentage).toFixed(1)}%</span>
+            </div>
+            <div className="flex justify-between">
+              <span>% Ricavo (totale):</span>
+              <span className="font-mono font-medium text-muted-foreground">{data.revenuePercentage.toFixed(1)}%</span>
             </div>
           </div>
         </div>
@@ -370,13 +399,13 @@ export default function SalesChart({ dishes }: SalesChartProps) {
                 <PieChart>
                   <Pie
                     data={filteredData}
-                    dataKey="revenuePercentage"
+                    dataKey="filteredRevenuePercentage"
                     nameKey="name"
                     cx="50%"
                     cy="50%"
                     outerRadius={120}
-                    label={({ name, revenuePercentage }) => 
-                      `${name}: ${revenuePercentage.toFixed(1)}%`
+                    label={({ name, filteredRevenuePercentage }) => 
+                      `${name}: ${filteredRevenuePercentage.toFixed(1)}%`
                     }
                   >
                     {filteredData.map((entry, index) => (
@@ -432,12 +461,12 @@ export default function SalesChart({ dishes }: SalesChartProps) {
                     </td>
                     <td className="text-right py-3 px-2">
                       <Badge variant="secondary" className="font-mono text-xs">
-                        {item.revenuePercentage.toFixed(1)}%
+                        {(item.filteredRevenuePercentage || item.revenuePercentage).toFixed(1)}%
                       </Badge>
                     </td>
                     <td className="text-right py-3 px-2">
                       <Badge variant="outline" className="font-mono text-xs">
-                        {item.quantityPercentage.toFixed(1)}%
+                        {(item.filteredQuantityPercentage || item.quantityPercentage).toFixed(1)}%
                       </Badge>
                     </td>
                   </tr>
