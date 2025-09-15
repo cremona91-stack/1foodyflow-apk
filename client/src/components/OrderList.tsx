@@ -73,6 +73,8 @@ export default function OrderList({ orders, products, onEdit, onDelete, onView }
         return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100";
       case "cancelled":
         return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100";
+      case "pendente":
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100";
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100";
     }
@@ -86,6 +88,8 @@ export default function OrderList({ orders, products, onEdit, onDelete, onView }
         return "Confermato";
       case "cancelled":
         return "Annullato";
+      case "pendente":
+        return "Pendente";
       default:
         return status;
     }
@@ -170,6 +174,14 @@ export default function OrderList({ orders, products, onEdit, onDelete, onView }
                         >
                           <span className="w-2 h-2 rounded-full bg-red-500 mr-2"></span>
                           Annullato
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => updateStatusMutation.mutate({ orderId: order.id, status: 'pendente' })}
+                          disabled={order.status === 'pendente' || updateStatusMutation.isPending}
+                          data-testid={`status-pendente-${order.id}`}
+                        >
+                          <span className="w-2 h-2 rounded-full bg-gray-500 mr-2"></span>
+                          Pendente
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

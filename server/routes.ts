@@ -358,7 +358,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/orders/:id/status", async (req, res) => {
     try {
       const statusSchema = z.object({
-        status: z.enum(["pending", "confirmed", "cancelled"])
+        status: z.enum(["pending", "confirmed", "cancelled", "pendente"])
       });
       const validatedData = statusSchema.parse(req.body);
       const order = await storage.updateOrder(req.params.id, validatedData);

@@ -186,7 +186,7 @@ export const insertOrderSchema = createInsertSchema(orders).omit({
 }).extend({
   items: z.array(orderItemSchema),
   totalAmount: z.number().min(0),
-  status: z.enum(["pending", "confirmed", "cancelled"]).default("pending"),
+  status: z.enum(["pending", "confirmed", "cancelled", "pendente"]).default("pending"),
 });
 
 export const insertStockMovementSchema = createInsertSchema(stockMovements).omit({
@@ -242,7 +242,7 @@ export const updateOrderSchema = z.object({
   orderDate: z.string().optional(),
   items: z.array(orderItemSchema).optional(),
   totalAmount: z.number().min(0).optional(),
-  status: z.enum(["pending", "confirmed", "cancelled"]).optional(),
+  status: z.enum(["pending", "confirmed", "cancelled", "pendente"]).optional(),
   notes: z.string().optional(),
   operatorName: z.string().optional(),
 });
