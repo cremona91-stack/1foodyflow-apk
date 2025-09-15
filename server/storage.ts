@@ -24,6 +24,7 @@ import {
   type UpdateStockMovement,
   type UpdateInventorySnapshot,
   type UpdateEditableInventory,
+  type UpsertEditableInventory,
   products,
   recipes,
   dishes,
@@ -34,13 +35,21 @@ import {
   inventorySnapshots,
   editableInventory
 } from "@shared/schema";
-import { drizzle } from "drizzle-orm/neon-http";
-import { eq } from "drizzle-orm";
-import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import { eq, and } from "drizzle-orm";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
 
-// Database connection
-const sql = neon(process.env.DATABASE_URL!);
-const db = drizzle(sql);
+// Configure WebSocket for Node.js environment
+if (typeof WebSocket === 'undefined') {
+  neonConfig.webSocketConstructor = ws;
+}
+
+// Database connection with transaction support
+const pool = new Pool({ 
+  connectionString: process.env.DATABASE_URL!
+});
+const db = drizzle(pool);
 
 // Storage interface for Food Cost Manager
 export interface IStorage {
@@ -103,6 +112,7 @@ export interface IStorage {
   getEditableInventoryByProduct(productId: string): Promise<EditableInventory | undefined>;
   createEditableInventory(inventory: InsertEditableInventory): Promise<EditableInventory>;
   updateEditableInventory(id: string, inventory: UpdateEditableInventory): Promise<EditableInventory | undefined>;
+  upsertEditableInventory(inventory: UpsertEditableInventory): Promise<EditableInventory>;
   deleteEditableInventory(id: string): Promise<boolean>;
 }
 
@@ -309,57 +319,110 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateOrder(id: string, updates: UpdateOrder): Promise<Order | undefined> {
-    // First, get the current order to check status change
-    const currentOrder = await this.getOrder(id);
-    if (!currentOrder) {
-      return undefined;
-    }
-
-    const sanitizedUpdates: any = {};
-    if (updates.supplier !== undefined) sanitizedUpdates.supplier = updates.supplier;
-    if (updates.orderDate !== undefined) sanitizedUpdates.orderDate = updates.orderDate;
-    if (updates.items !== undefined) sanitizedUpdates.items = updates.items;
-    if (updates.totalAmount !== undefined) sanitizedUpdates.totalAmount = updates.totalAmount;
-    if (updates.status !== undefined) sanitizedUpdates.status = updates.status;
-    if (updates.notes !== undefined) sanitizedUpdates.notes = updates.notes;
-    if (updates.operatorName !== undefined) sanitizedUpdates.operatorName = updates.operatorName;
-    
-    sanitizedUpdates.updatedAt = new Date();
-    
-    const result = await db.update(orders)
-      .set(sanitizedUpdates)
-      .where(eq(orders.id, id))
-      .returning();
-    
-    const updatedOrder = result[0];
-    
-    // AUTOMATISMO: Se l'ordine cambia status da non-confermato a "confirmed", crea movimenti IN
-    if (updatedOrder && 
-        updates.status === "confirmed" && 
-        currentOrder.status !== "confirmed") {
+    // Use transaction for atomic order updates with stock movements
+    return await db.transaction(async (tx) => {
+      // First, get the current order to check status change
+      const currentOrderResult = await tx.select().from(orders).where(eq(orders.id, id));
+      const currentOrder = currentOrderResult[0];
       
-      console.log(`[AUTOMATISMO] Ordine ${id} confermato - creando movimenti IN automatici`);
-      
-      // Crea movimenti di stock IN per ogni item dell'ordine
-      for (const item of updatedOrder.items) {
-        const stockMovement: InsertStockMovement = {
-          productId: item.productId,
-          movementType: "in",
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          totalCost: item.totalPrice,
-          source: "order",
-          sourceId: updatedOrder.id,
-          movementDate: updatedOrder.orderDate,
-          notes: `Ricevimento automatico da ordine ${updatedOrder.supplier} - ${updatedOrder.operatorName || 'Sistema'}`,
-        };
-        
-        await this.createStockMovement(stockMovement);
-        console.log(`[AUTOMATISMO] Creato movimento IN: ${item.quantity} ${item.productId} da ordine ${id}`);
+      if (!currentOrder) {
+        console.log(`[AUTOMATISMO] Ordine ${id} non trovato`);
+        return undefined;
       }
-    }
-    
-    return updatedOrder;
+
+      const sanitizedUpdates: any = {};
+      if (updates.supplier !== undefined) sanitizedUpdates.supplier = updates.supplier;
+      if (updates.orderDate !== undefined) sanitizedUpdates.orderDate = updates.orderDate;
+      if (updates.items !== undefined) sanitizedUpdates.items = updates.items;
+      if (updates.totalAmount !== undefined) sanitizedUpdates.totalAmount = updates.totalAmount;
+      if (updates.status !== undefined) sanitizedUpdates.status = updates.status;
+      if (updates.notes !== undefined) sanitizedUpdates.notes = updates.notes;
+      if (updates.operatorName !== undefined) sanitizedUpdates.operatorName = updates.operatorName;
+      
+      sanitizedUpdates.updatedAt = new Date();
+      
+      // AUTOMATISMO: Rilevazione transizione a "confirmed"
+      const isTransitionToConfirmed = updates.status === "confirmed" && 
+                                     currentOrder.status !== "confirmed";
+      
+      if (isTransitionToConfirmed) {
+        console.log(`[TRANSAZIONE] Rilevata transizione di stato per ordine ${id}: "${currentOrder.status}" → "confirmed"`);
+        
+        // CONTROLLO ANTI-DUPLICAZIONE: Verifica che non esistano già movimenti per questo ordine
+        const existingMovements = await tx.select()
+          .from(stockMovements)
+          .where(and(
+            eq(stockMovements.source, "order"),
+            eq(stockMovements.sourceId, id)
+          ));
+          
+        if (existingMovements.length > 0) {
+          console.log(`[TRANSAZIONE] ⚠️  SKIP - Esistono già ${existingMovements.length} movimenti per ordine ${id}:`);
+          existingMovements.forEach(mov => {
+            console.log(`[TRANSAZIONE]    - ${mov.movementType.toUpperCase()}: ${mov.quantity} x ${mov.productId} (ID: ${mov.id})`);
+          });
+          
+          // Aggiorna comunque l'ordine ma salta la creazione movimenti
+          const result = await tx.update(orders)
+            .set(sanitizedUpdates)
+            .where(eq(orders.id, id))
+            .returning();
+          return result[0];
+        }
+        
+        console.log(`[TRANSAZIONE] ✅ Nessun movimento esistente trovato - procedo con creazione automatica atomica`);
+      }
+      
+      // Aggiorna l'ordine DENTRO la transazione
+      const result = await tx.update(orders)
+        .set(sanitizedUpdates)
+        .where(eq(orders.id, id))
+        .returning();
+      
+      const updatedOrder = result[0];
+      
+      // Se abbiamo una transizione a confirmed e nessun movimento esistente, crea i movimenti ATOMICAMENTE
+      if (isTransitionToConfirmed && updatedOrder) {
+        console.log(`[TRANSAZIONE] 🚀 Iniziando creazione movimenti IN atomica per ordine ${id}`);
+        console.log(`[TRANSAZIONE]    Supplier: ${updatedOrder.supplier}`);
+        console.log(`[TRANSAZIONE]    Items: ${updatedOrder.items.length}`);
+        console.log(`[TRANSAZIONE]    Totale: €${updatedOrder.totalAmount}`);
+        
+        // Crea movimenti di stock IN per ogni item dell'ordine DENTRO la stessa transazione
+        const createdMovements = [];
+        for (let i = 0; i < updatedOrder.items.length; i++) {
+          const item = updatedOrder.items[i];
+          console.log(`[TRANSAZIONE]    Processando item ${i+1}/${updatedOrder.items.length}: ${item.quantity} x ${item.productId}`);
+          
+          // Crea il movimento DENTRO la transazione
+          const stockMovementResult = await tx.insert(stockMovements).values({
+            productId: item.productId,
+            movementType: "in",
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            totalCost: item.totalPrice,
+            source: "order",
+            sourceId: updatedOrder.id,
+            movementDate: updatedOrder.orderDate,
+            notes: `Ricevimento automatico da ordine ${updatedOrder.supplier} - ${updatedOrder.operatorName || 'Sistema'}`,
+          }).returning();
+          
+          const created = stockMovementResult[0];
+          createdMovements.push(created);
+          console.log(`[TRANSAZIONE]    ✅ Creato movimento IN #${i+1}: ${item.quantity} x ${item.productId} (ID: ${created.id})`);
+        }
+        
+        console.log(`[TRANSAZIONE] 🎉 COMMIT: creati ${createdMovements.length} movimenti atomici per ordine ${id}`);
+        console.log(`[TRANSAZIONE]    Riepilogo movimenti:`);
+        createdMovements.forEach((mov, idx) => {
+          console.log(`[TRANSAZIONE]      ${idx+1}. ${mov.movementType.toUpperCase()}: ${mov.quantity} x ${mov.productId} = €${mov.totalCost || 'N/A'} (${mov.id})`);
+        });
+      }
+      
+      // La transazione fa commit automaticamente se arriva qui
+      return updatedOrder;
+    });
+    // Se c'è un errore, la transazione fa rollback automaticamente
   }
 
   async deleteOrder(id: string): Promise<boolean> {
@@ -487,6 +550,36 @@ export class DatabaseStorage implements IStorage {
       .where(eq(editableInventory.id, id))
       .returning();
     return result[0];
+  }
+
+  async upsertEditableInventory(inventory: UpsertEditableInventory): Promise<EditableInventory> {
+    // Check if a record exists for this product
+    const existingRecord = await this.getEditableInventoryByProduct(inventory.productId);
+    
+    if (existingRecord) {
+      // Update existing record
+      const updateData: UpdateEditableInventory = {
+        initialQuantity: inventory.initialQuantity,
+        finalQuantity: inventory.finalQuantity,
+        notes: inventory.notes || `Aggiornato il ${new Date().toLocaleDateString()}`
+      };
+      
+      const result = await this.updateEditableInventory(existingRecord.id, updateData);
+      if (!result) {
+        throw new Error("Failed to update editable inventory record");
+      }
+      return result;
+    } else {
+      // Create new record
+      const insertData: InsertEditableInventory = {
+        productId: inventory.productId,
+        initialQuantity: inventory.initialQuantity,
+        finalQuantity: inventory.finalQuantity,
+        notes: inventory.notes || `Creato il ${new Date().toLocaleDateString()}`
+      };
+      
+      return await this.createEditableInventory(insertData);
+    }
   }
 
   async deleteEditableInventory(id: string): Promise<boolean> {

@@ -17,7 +17,8 @@ import {
   updateOrderSchema,
   updateStockMovementSchema,
   updateInventorySnapshotSchema,
-  updateEditableInventorySchema
+  updateEditableInventorySchema,
+  upsertEditableInventorySchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -589,7 +590,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = updateEditableInventorySchema.parse(req.body);
       const inventory = await storage.updateEditableInventory(req.params.id, validatedData);
       if (!inventory) {
-        return res.status(404).json({ error: "Editable inventory not found" });
+        return res.status(404).json({ error: "Editable inventory record not found" });
       }
       res.json(inventory);
     } catch (error) {
@@ -605,12 +606,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const success = await storage.deleteEditableInventory(req.params.id);
       if (!success) {
-        return res.status(404).json({ error: "Editable inventory not found" });
+        return res.status(404).json({ error: "Editable inventory record not found" });
       }
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting editable inventory:", error);
       res.status(500).json({ error: "Failed to delete editable inventory" });
+    }
+  });
+
+  app.post("/api/editable-inventory/upsert", async (req, res) => {
+    try {
+      const validatedData = upsertEditableInventorySchema.parse(req.body);
+      const inventory = await storage.upsertEditableInventory(validatedData);
+      res.json(inventory);
+    } catch (error) {
+      console.error("Error upserting editable inventory:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to upsert editable inventory" });
     }
   });
 

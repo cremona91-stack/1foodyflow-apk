@@ -20,7 +20,8 @@ import type {
   Waste, 
   PersonalMeal,
   InsertEditableInventory,
-  UpdateEditableInventory 
+  UpdateEditableInventory,
+  UpsertEditableInventory 
 } from "@shared/schema";
 
 interface InventoryGridProps {
@@ -44,6 +45,10 @@ interface InventoryRowData {
     initialQuantity: string;
     finalQuantity: string;
   };
+  validationErrors: {
+    initialQuantity?: string;
+    finalQuantity?: string;
+  };
 }
 
 export default function InventoryGrid({ 
@@ -56,6 +61,7 @@ export default function InventoryGrid({
   const { toast } = useToast();
   const [editingRows, setEditingRows] = useState<Set<string>>(new Set());
   const [editValues, setEditValues] = useState<Record<string, { initialQuantity: string; finalQuantity: string }>>({});
+  const [validationErrors, setValidationErrors] = useState<Record<string, { initialQuantity?: string; finalQuantity?: string }>>({});
 
   // Fetch editable inventory data
   const { data: editableInventoryData = [] } = useQuery({
@@ -63,39 +69,15 @@ export default function InventoryGrid({
     enabled: products.length > 0
   });
 
-  // Create editable inventory mutation
-  const createEditableInventoryMutation = useMutation({
-    mutationFn: (data: InsertEditableInventory) => apiRequest("/api/editable-inventory", {
-      method: "POST",
-      body: JSON.stringify(data)
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/editable-inventory"] });
-      toast({ title: "Inventario creato", description: "Record di inventario editabile creato con successo" });
-    },
-    onError: (error) => {
-      console.error("Error creating editable inventory:", error);
-      toast({ 
-        title: "Errore", 
-        description: "Impossibile creare il record di inventario", 
-        variant: "destructive" 
-      });
-    }
-  });
-
-  // Update editable inventory mutation  
-  const updateEditableInventoryMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateEditableInventory }) => 
-      apiRequest(`/api/editable-inventory/${id}`, {
-        method: "PUT", 
-        body: JSON.stringify(data)
-      }),
+  // Upsert editable inventory mutation (replaces separate create/update)
+  const upsertEditableInventoryMutation = useMutation({
+    mutationFn: (data: UpsertEditableInventory) => apiRequest("POST", "/api/editable-inventory/upsert", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/editable-inventory"] });
       toast({ title: "Inventario aggiornato", description: "Quantità salvate con successo" });
     },
     onError: (error) => {
-      console.error("Error updating editable inventory:", error);
+      console.error("Error upserting editable inventory:", error);
       toast({ 
         title: "Errore", 
         description: "Impossibile salvare le quantità", 
@@ -172,10 +154,27 @@ export default function InventoryGrid({
         finalQuantity,
         variance,
         isEditing,
-        editValues: productEditValues
+        editValues: productEditValues,
+        validationErrors: validationErrors[product.id] || {}
       };
     });
   }, [products, editableInventoryData, stockMovements, waste, personalMeals, editingRows, editValues]);
+
+  // Helper function to check if inputs are valid for Save button
+  const isInputValid = (productId: string): boolean => {
+    const errors = validationErrors[productId];
+    const values = editValues[productId];
+    
+    if (!values || !errors) return false;
+    
+    // Check if there are any validation errors
+    const hasErrors = Object.keys(errors).length > 0 && Object.values(errors).some(error => error !== undefined);
+    
+    // Check if inputs are empty
+    const hasEmptyValues = !values.initialQuantity.trim() || !values.finalQuantity.trim();
+    
+    return !hasErrors && !hasEmptyValues;
+  };
 
   const startEditing = (productId: string, row: InventoryRowData) => {
     setEditingRows(prev => new Set([...prev, productId]));
@@ -199,39 +198,41 @@ export default function InventoryGrid({
       delete newValues[productId];
       return newValues;
     });
+    setValidationErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[productId];
+      return newErrors;
+    });
   };
 
   const saveEditing = async (productId: string, row: InventoryRowData) => {
     const values = editValues[productId];
     if (!values) return;
 
-    const initialQuantity = parseFloat(values.initialQuantity) || 0;
-    const finalQuantity = parseFloat(values.finalQuantity) || 0;
+    // Validate inputs before saving
+    const errors = validateInputs(productId, values);
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(prev => ({ ...prev, [productId]: errors }));
+      toast({ 
+        title: "Errore di validazione", 
+        description: "Correggi gli errori prima di salvare", 
+        variant: "destructive" 
+      });
+      return;
+    }
 
-    const updateData: UpdateEditableInventory = {
+    const initialQuantity = parseFloat(values.initialQuantity);
+    const finalQuantity = parseFloat(values.finalQuantity);
+
+    const upsertData: UpsertEditableInventory = {
+      productId,
       initialQuantity,
       finalQuantity,
-      notes: `Aggiornato manualmente il ${new Date().toLocaleDateString()}`
+      notes: `Aggiornato il ${new Date().toLocaleDateString()}`
     };
 
     try {
-      if (row.editableInventory) {
-        // Update existing record
-        await updateEditableInventoryMutation.mutateAsync({
-          id: row.editableInventory.id,
-          data: updateData
-        });
-      } else {
-        // Create new record
-        const createData: InsertEditableInventory = {
-          productId,
-          initialQuantity,
-          finalQuantity,
-          notes: `Creato manualmente il ${new Date().toLocaleDateString()}`
-        };
-        await createEditableInventoryMutation.mutateAsync(createData);
-      }
-
+      await upsertEditableInventoryMutation.mutateAsync(upsertData);
       // Exit editing mode
       cancelEditing(productId);
     } catch (error) {
@@ -239,13 +240,76 @@ export default function InventoryGrid({
     }
   };
 
+  const validateInputs = (productId: string, values: { initialQuantity: string; finalQuantity: string }) => {
+    const errors: { initialQuantity?: string; finalQuantity?: string } = {};
+    
+    // Check if values are empty or invalid
+    if (!values.initialQuantity || values.initialQuantity.trim() === '') {
+      errors.initialQuantity = "Quantità iniziale richiesta";
+    } else if (isNaN(parseFloat(values.initialQuantity)) || parseFloat(values.initialQuantity) < 0) {
+      errors.initialQuantity = "Deve essere un numero positivo";
+    }
+    
+    if (!values.finalQuantity || values.finalQuantity.trim() === '') {
+      errors.finalQuantity = "Quantità finale richiesta";
+    } else if (isNaN(parseFloat(values.finalQuantity)) || parseFloat(values.finalQuantity) < 0) {
+      errors.finalQuantity = "Deve essere un numero positivo";
+    }
+    
+    return errors;
+  };
+
   const updateEditValue = (productId: string, field: 'initialQuantity' | 'finalQuantity', value: string) => {
-    setEditValues(prev => ({
-      ...prev,
-      [productId]: {
-        ...prev[productId],
-        [field]: value
+    // Allow only valid numeric input - no empty strings
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      setEditValues(prev => ({
+        ...prev,
+        [productId]: {
+          ...prev[productId],
+          [field]: value
+        }
+      }));
+      
+      // Clear validation error for this field when user starts typing
+      if (validationErrors[productId]?.[field]) {
+        setValidationErrors(prev => ({
+          ...prev,
+          [productId]: {
+            ...prev[productId],
+            [field]: undefined
+          }
+        }));
       }
+    }
+  };
+
+  const handleInputBlur = (productId: string, field: 'initialQuantity' | 'finalQuantity') => {
+    const values = editValues[productId];
+    if (!values) return;
+    
+    let normalizedValue = values[field].trim();
+    
+    // If empty, set to "0"
+    if (normalizedValue === '') {
+      normalizedValue = '0';
+      setEditValues(prev => ({
+        ...prev,
+        [productId]: {
+          ...prev[productId],
+          [field]: normalizedValue
+        }
+      }));
+    }
+    
+    // Validate after normalization
+    const errors = validateInputs(productId, {
+      ...values,
+      [field]: normalizedValue
+    });
+    
+    setValidationErrors(prev => ({
+      ...prev,
+      [productId]: errors
     }));
   };
 
@@ -381,9 +445,10 @@ export default function InventoryGrid({
                             onClick={() => saveEditing(row.product.id, row)}
                             data-testid={`button-save-${row.product.id}`}
                             className="h-6 text-xs text-green-600"
+                            disabled={upsertEditableInventoryMutation.isPending || !isInputValid(row.product.id)}
                           >
                             <Save className="h-3 w-3 mr-1" />
-                            Salva
+                            {upsertEditableInventoryMutation.isPending ? "Salvando..." : "Salva"}
                           </Button>
                           <Button
                             variant="ghost"
@@ -391,6 +456,7 @@ export default function InventoryGrid({
                             onClick={() => cancelEditing(row.product.id)}
                             data-testid={`button-cancel-${row.product.id}`}
                             className="h-6 text-xs text-red-600"
+                            disabled={upsertEditableInventoryMutation.isPending}
                           >
                             <X className="h-3 w-3 mr-1" />
                             Annulla
@@ -403,13 +469,26 @@ export default function InventoryGrid({
                   {/* Iniziale (Editable) */}
                   <div className="text-center" data-testid={`initial-${row.product.id}`}>
                     {row.isEditing ? (
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={row.editValues.initialQuantity}
-                        onChange={(e) => updateEditValue(row.product.id, 'initialQuantity', e.target.value)}
-                        className="w-20 text-center font-mono text-sm"
-                      />
+                      <div className="space-y-1">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={row.editValues.initialQuantity}
+                          onChange={(e) => updateEditValue(row.product.id, 'initialQuantity', e.target.value)}
+                          onBlur={() => handleInputBlur(row.product.id, 'initialQuantity')}
+                          className={`w-20 text-center font-mono text-sm ${
+                            row.validationErrors.initialQuantity ? 'border-red-500' : ''
+                          }`}
+                          placeholder="0.00"
+                          data-testid={`input-initial-${row.product.id}`}
+                        />
+                        {row.validationErrors.initialQuantity && (
+                          <div className="text-xs text-red-500" data-testid={`error-initial-${row.product.id}`}>
+                            {row.validationErrors.initialQuantity}
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <div className="font-mono">{row.initialQuantity.toFixed(2)}</div>
                     )}
@@ -434,13 +513,26 @@ export default function InventoryGrid({
                   {/* Finale (Editable) */}
                   <div className="text-center" data-testid={`final-${row.product.id}`}>
                     {row.isEditing ? (
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={row.editValues.finalQuantity}
-                        onChange={(e) => updateEditValue(row.product.id, 'finalQuantity', e.target.value)}
-                        className="w-20 text-center font-mono text-sm"
-                      />
+                      <div className="space-y-1">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={row.editValues.finalQuantity}
+                          onChange={(e) => updateEditValue(row.product.id, 'finalQuantity', e.target.value)}
+                          onBlur={() => handleInputBlur(row.product.id, 'finalQuantity')}
+                          className={`w-20 text-center font-mono text-sm ${
+                            row.validationErrors.finalQuantity ? 'border-red-500' : ''
+                          }`}
+                          placeholder="0.00"
+                          data-testid={`input-final-${row.product.id}`}
+                        />
+                        {row.validationErrors.finalQuantity && (
+                          <div className="text-xs text-red-500" data-testid={`error-final-${row.product.id}`}>
+                            {row.validationErrors.finalQuantity}
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <div>
                         <div className="font-mono font-semibold">{row.finalQuantity.toFixed(2)}</div>

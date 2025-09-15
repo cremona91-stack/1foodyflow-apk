@@ -131,7 +131,7 @@ export const inventorySnapshots = pgTable("inventory_snapshots", {
 // Editable inventory values table (nuovo sistema per magazzino editabile)
 export const editableInventory = pgTable("editable_inventory", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  productId: varchar("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  productId: varchar("product_id").notNull().unique().references(() => products.id, { onDelete: "cascade" }),
   initialQuantity: real("initial_quantity").notNull().default(0),
   finalQuantity: real("final_quantity").notNull().default(0),
   lastUpdated: timestamp("last_updated").defaultNow(),
@@ -289,6 +289,13 @@ export const updateEditableInventorySchema = z.object({
   notes: z.string().optional(),
 });
 
+export const upsertEditableInventorySchema = z.object({
+  productId: z.string(),
+  initialQuantity: z.number().min(0),
+  finalQuantity: z.number().min(0),
+  notes: z.string().optional(),
+});
+
 // Types
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
@@ -315,3 +322,4 @@ export type UpdateInventorySnapshot = z.infer<typeof updateInventorySnapshotSche
 export type EditableInventory = typeof editableInventory.$inferSelect;
 export type InsertEditableInventory = z.infer<typeof insertEditableInventorySchema>;
 export type UpdateEditableInventory = z.infer<typeof updateEditableInventorySchema>;
+export type UpsertEditableInventory = z.infer<typeof upsertEditableInventorySchema>;
