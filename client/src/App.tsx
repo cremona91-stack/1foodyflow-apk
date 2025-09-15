@@ -6,6 +6,16 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 
+// PDF Export utilities
+import {
+  exportInventoryToPDF,
+  exportProductsToPDF,
+  exportOrdersToPDF,
+  exportRecipesToPDF,
+  exportDishesToPDF,
+  exportWasteToPDF
+} from "@/utils/pdfExport";
+
 // Components
 import AppHeader from "@/components/AppHeader";
 import TabNavigation from "@/components/TabNavigation";
@@ -400,8 +410,69 @@ function FoodCostManager() {
   };
 
   const handleExportPDF = () => {
-    console.log("Export PDF functionality would be implemented here");
-    // TODO: Implement PDF export functionality
+    try {
+      switch (activeTab) {
+        case "inventory":
+          // Get editable inventory data from queryClient
+          const editableInventoryData = queryClient.getQueryData(["/api/editable-inventory"]) as any[] || [];
+          exportInventoryToPDF(
+            products, 
+            editableInventoryData,
+            stockMovements, 
+            waste, 
+            personalMeals, 
+            dishes
+          );
+          break;
+          
+        case "food-cost":
+          exportDishesToPDF(dishes, products);
+          break;
+          
+        case "dishes":
+          exportDishesToPDF(dishes, products);
+          break;
+          
+        case "orders":
+          exportOrdersToPDF(orders);
+          break;
+          
+        case "warehouse":
+          // Get editable inventory data for warehouse export
+          const warehouseInventoryData = queryClient.getQueryData(["/api/editable-inventory"]) as any[] || [];
+          exportInventoryToPDF(
+            products, 
+            warehouseInventoryData,
+            stockMovements, 
+            waste, 
+            personalMeals, 
+            dishes
+          );
+          break;
+          
+        case "waste":
+          exportWasteToPDF(waste, products);
+          break;
+          
+        default:
+          // Default to comprehensive inventory export
+          const defaultInventoryData = queryClient.getQueryData(["/api/editable-inventory"]) as any[] || [];
+          exportInventoryToPDF(
+            products, 
+            defaultInventoryData,
+            stockMovements, 
+            waste, 
+            personalMeals, 
+            dishes
+          );
+          break;
+      }
+      
+      console.log(`PDF export completed for section: ${activeTab}`);
+    } catch (error) {
+      console.error("PDF export failed:", error);
+      alert("Errore durante l'esportazione PDF. Riprova.");
+    }
   };
 
   // Show loading state while data is being fetched
