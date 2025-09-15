@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertRecipeSchema, type InsertRecipe, type Recipe, type Product, recipeIngredientSchema } from "@shared/schema";
@@ -24,7 +24,7 @@ const ingredientFormSchema = z.object({
 });
 
 export default function RecipeForm({ onSubmit, products, editRecipe, onCancel }: RecipeFormProps) {
-  const [isEditing] = useState(!!editRecipe);
+  const [isEditing, setIsEditing] = useState(!!editRecipe);
   const [ingredients, setIngredients] = useState(editRecipe?.ingredients || []);
   const [selectedProductId, setSelectedProductId] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -35,6 +35,23 @@ export default function RecipeForm({ onSubmit, products, editRecipe, onCancel }:
       name: editRecipe?.name || "",
     },
   });
+
+  // Update form and state when editRecipe prop changes
+  useEffect(() => {
+    if (editRecipe) {
+      setIsEditing(true);
+      setIngredients(editRecipe.ingredients || []);
+      form.reset({
+        name: editRecipe.name,
+      });
+    } else {
+      setIsEditing(false);
+      setIngredients([]);
+      form.reset({
+        name: "",
+      });
+    }
+  }, [editRecipe, form]);
 
   const selectedProduct = products.find(p => p.id === selectedProductId);
   const totalCost = ingredients.reduce((sum, ing) => sum + ing.cost, 0);
