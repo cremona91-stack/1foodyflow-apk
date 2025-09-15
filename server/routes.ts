@@ -355,6 +355,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/orders/:id/status", async (req, res) => {
+    try {
+      const statusSchema = z.object({
+        status: z.enum(["pending", "confirmed", "cancelled"])
+      });
+      const validatedData = statusSchema.parse(req.body);
+      const order = await storage.updateOrder(req.params.id, validatedData);
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      res.json(order);
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update order status" });
+    }
+  });
+
   app.delete("/api/orders/:id", async (req, res) => {
     try {
       const success = await storage.deleteOrder(req.params.id);

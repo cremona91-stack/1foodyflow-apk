@@ -2,6 +2,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   Edit2, 
   Trash2, 
@@ -10,8 +16,12 @@ import {
   Calendar,
   User,
   FileText,
-  Euro
+  Euro,
+  ChevronDown
 } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { Order, Product } from "@shared/schema";
 
 interface OrderListProps {
@@ -24,6 +34,31 @@ interface OrderListProps {
 
 export default function OrderList({ orders, products, onEdit, onDelete, onView }: OrderListProps) {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  // Mutation per aggiornare lo status dell'ordine
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
+      const response = await apiRequest('PATCH', `/api/orders/${orderId}/status`, { status });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      toast({
+        title: "Status aggiornato",
+        description: "Lo status dell'ordine è stato modificato con successo."
+      });
+    },
+    onError: (error) => {
+      console.error('Error updating status:', error);
+      toast({
+        title: "Errore",
+        description: "Non è stato possibile aggiornare lo status dell'ordine.",
+        variant: "destructive"
+      });
+    }
+  });
 
   const getProductName = (productId: string) => {
     const product = products.find(p => p.id === productId);
@@ -98,12 +133,45 @@ export default function OrderList({ orders, products, onEdit, onDelete, onView }
                     <h3 className="font-medium" data-testid={`text-supplier-${order.id}`}>
                       {order.supplier}
                     </h3>
-                    <Badge 
-                      className={getStatusColor(order.status)}
-                      data-testid={`badge-status-${order.id}`}
-                    >
-                      {getStatusLabel(order.status)}
-                    </Badge>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Badge 
+                          className={`${getStatusColor(order.status)} cursor-pointer hover:opacity-80 transition-opacity`}
+                          data-testid={`badge-status-${order.id}`}
+                        >
+                          <span className="flex items-center gap-1">
+                            {getStatusLabel(order.status)}
+                            <ChevronDown className="h-3 w-3" />
+                          </span>
+                        </Badge>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        <DropdownMenuItem 
+                          onClick={() => updateStatusMutation.mutate({ orderId: order.id, status: 'pending' })}
+                          disabled={order.status === 'pending' || updateStatusMutation.isPending}
+                          data-testid={`status-pending-${order.id}`}
+                        >
+                          <span className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></span>
+                          In Attesa
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => updateStatusMutation.mutate({ orderId: order.id, status: 'confirmed' })}
+                          disabled={order.status === 'confirmed' || updateStatusMutation.isPending}
+                          data-testid={`status-confirmed-${order.id}`}
+                        >
+                          <span className="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+                          Confermato
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => updateStatusMutation.mutate({ orderId: order.id, status: 'cancelled' })}
+                          disabled={order.status === 'cancelled' || updateStatusMutation.isPending}
+                          data-testid={`status-cancelled-${order.id}`}
+                        >
+                          <span className="w-2 h-2 rounded-full bg-red-500 mr-2"></span>
+                          Annullato
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-muted-foreground">
