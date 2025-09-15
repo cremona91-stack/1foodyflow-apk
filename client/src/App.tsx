@@ -33,6 +33,7 @@ import OrderList from "@/components/OrderList";
 import StockMovementForm from "@/components/StockMovementForm";
 import StockMovementList from "@/components/StockMovementList";
 import InventoryGrid from "@/components/InventoryGrid";
+import SalesChart from "@/components/SalesChart";
 
 // API Hooks
 import {
@@ -462,6 +463,11 @@ function FoodCostManager() {
           exportRecipesToPDF(recipes, products);
           break;
           
+        case "sales-detail":
+          // Usa la stessa funzione dei piatti ma con focus sulle vendite
+          exportDishesToPDF(dishes, products);
+          break;
+          
         default:
           // Default to comprehensive inventory export
           const defaultInventoryData = queryClient.getQueryData(["/api/editable-inventory"]) as any[] || [];
@@ -663,6 +669,11 @@ function FoodCostManager() {
               maxFoodCost={maxFoodCost}
               onMaxFoodCostChange={setMaxFoodCost}
             />
+          )}
+
+          {/* Sales Detail Tab */}
+          {activeTab === "sales-detail" && (
+            <SalesChart dishes={dishes} />
           )}
         </div>
       </div>
