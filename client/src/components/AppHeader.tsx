@@ -14,7 +14,7 @@ export default function AppHeader({ onExportPDF }: AppHeaderProps) {
   return (
     <header className="bg-card border-b border-card-border p-6">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
+        <div className="flex flex-col items-center text-center">
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
             FoodyFlow
           </h1>
