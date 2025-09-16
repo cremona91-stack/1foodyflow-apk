@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Background logo watermark */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('/attached_assets/FoodyFlow_1757981655801.png');
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: 400px 400px;
+  opacity: 0.03;
+  z-index: -1;
+  pointer-events: none;
+}
+
 /* LIGHT MODE */
 :root {
   --button-outline: rgba(0,0,0, .10);
