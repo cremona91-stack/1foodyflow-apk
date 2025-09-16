@@ -20,7 +20,7 @@ export default function AppHeader({ onExportPDF }: AppHeaderProps) {
             FoodyFlow
           </h1>
           <p className="text-sm italic text-muted-foreground mt-2">
-            L'importante è conoscere
+            Evolve Your Eatery
           </p>
         </div>
         <Button 
