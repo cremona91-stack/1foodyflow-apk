@@ -21,7 +21,7 @@ export default function AppHeader({ onExportPDF }: AppHeaderProps) {
             <img 
               src={logoImage} 
               alt="FoodyFlow Logo" 
-              className="h-12 w-12" 
+              className="h-16 w-16" 
               data-testid="logo-foodyflow"
             />
           </h1>
