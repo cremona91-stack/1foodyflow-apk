@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { FileText, Utensils, ChefHat } from "lucide-react";
-import logoImage from "@assets/FoodyFlow_1757981303421.png";
 
 interface AppHeaderProps {
   onExportPDF?: () => void;
@@ -19,17 +18,9 @@ export default function AppHeader({ onExportPDF }: AppHeaderProps) {
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
             FoodyFlow
           </h1>
-          <div className="flex items-center gap-3 mt-2">
-            <p className="text-sm italic text-muted-foreground">
-              Evolve Your Eatery
-            </p>
-            <img 
-              src={logoImage} 
-              alt="FoodyFlow Logo" 
-              className="h-8 w-8" 
-              data-testid="logo-foodyflow"
-            />
-          </div>
+          <p className="text-sm italic text-muted-foreground mt-2">
+            Evolve Your Eatery
+          </p>
         </div>
         <Button 
           onClick={handleExportPDF}
