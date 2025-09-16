@@ -17,7 +17,7 @@ export default function AppHeader({ onExportPDF }: AppHeaderProps) {
         <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
             {/* Logo sarà posizionato qui */}
-            Foodieflow
+            FoodyFlow
           </h1>
           <p className="text-sm italic text-muted-foreground mt-2">
             L'importante è conoscere
