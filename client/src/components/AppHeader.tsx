@@ -16,18 +16,20 @@ export default function AppHeader({ onExportPDF }: AppHeaderProps) {
     <header className="bg-card border-b border-card-border p-6">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
             FoodyFlow
+          </h1>
+          <div className="flex items-center gap-3 mt-2">
+            <p className="text-sm italic text-muted-foreground">
+              Evolve Your Eatery
+            </p>
             <img 
               src={logoImage} 
               alt="FoodyFlow Logo" 
-              className="h-16 w-16" 
+              className="h-8 w-8" 
               data-testid="logo-foodyflow"
             />
-          </h1>
-          <p className="text-sm italic text-muted-foreground mt-2">
-            Evolve Your Eatery
-          </p>
+          </div>
         </div>
         <Button 
           onClick={handleExportPDF}
