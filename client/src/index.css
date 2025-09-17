@@ -105,9 +105,9 @@ body::before {
   --chart-4: 147.1429 78.5047% 41.9608%;
   --chart-5: 341.4894 75.2000% 50.9804%;
 
-  --font-sans: 'Inter', sans-serif;
-  --font-serif: 'Source Serif Pro', serif;
-  --font-mono: 'IBM Plex Mono', monospace;
+  --font-sans: Inter;
+  --font-serif: Architects Daughter;
+  --font-mono: IBM Plex Mono;
   --radius: 0.875rem; /* 8px */
   --shadow-2xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
   --shadow-xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);

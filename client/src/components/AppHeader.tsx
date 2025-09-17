@@ -1,14 +1,21 @@
 import { Button } from "@/components/ui/button";
-import { FileText, Utensils, ChefHat } from "lucide-react";
+import { FileText, Utensils, ChefHat, Sun, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
 
 interface AppHeaderProps {
   onExportPDF?: () => void;
 }
 
 export default function AppHeader({ onExportPDF }: AppHeaderProps) {
+  const { theme, setTheme } = useTheme();
+  
   const handleExportPDF = () => {
     console.log("PDF export triggered");
     onExportPDF?.();
+  };
+  
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
   };
 
   return (
@@ -34,7 +41,20 @@ export default function AppHeader({ onExportPDF }: AppHeaderProps) {
           </p>
         </div>
         
-        <div className="w-24"></div> {/* Spacer per bilanciare il layout */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleTheme}
+          data-testid="button-theme-toggle"
+          className="flex items-center gap-1"
+        >
+          {theme === "dark" ? (
+            <Sun className="h-4 w-4" />
+          ) : (
+            <Moon className="h-4 w-4" />
+          )}
+          {theme === "dark" ? "Light" : "Dark"}
+        </Button>
       </div>
     </header>
   );
