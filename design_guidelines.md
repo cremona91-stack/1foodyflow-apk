@@ -1,99 +1,99 @@
-# Food Cost Manager Design Guidelines
+# FoodyFlow Design Guidelines
 
 ## Design Approach
-**Selected Approach**: Design System (Utility-Focused)
-**System**: Material Design with custom restaurant industry adaptations
-**Justification**: This is a productivity tool for restaurant management requiring efficiency, data clarity, and frequent daily use by kitchen staff and managers.
+**Selected Approach**: Reference-Based (Experience-Focused)
+**References**: Inspired by premium culinary platforms like ChefSteps and Resy, balancing warmth with professional utility
+**Justification**: Restaurant management requires both emotional connection to culinary craft and efficient data management
 
 ## Core Design Elements
 
 ### Color Palette
 **Primary Colors:**
-- Light Mode: 25 85% 47% (deep green - representing freshness and profitability)
-- Dark Mode: 25 60% 35% (muted green for reduced eye strain)
+- Light Mode: 25 45% 35% (sage green - natural, calming kitchen herb tones)
+- Dark Mode: 25 35% 25% (deeper sage for evening kitchen ambiance)
+
+**Secondary Colors:**
+- Warm Clay: 15 55% 45% (terracotta warmth, oven-fired ceramics)
+- Cream: 45 25% 85% (warm neutral, fresh dairy tones)
 
 **Accent Colors:**
-- Warning: 45 90% 55% (amber for waste alerts and cost warnings)
-- Success: 120 50% 45% (forest green for positive metrics)
-- Neutral: 220 15% 25% (charcoal for text and borders)
+- Paprika: 12 70% 50% (spice-inspired warmth for alerts)
+- Golden Harvest: 35 45% 55% (grain-inspired for success states)
+- Charcoal: 220 15% 25% (professional kitchen equipment)
 
 **Background Colors:**
-- Light Mode: 0 0% 98% (near white)
-- Dark Mode: 220 15% 12% (dark charcoal)
+- Light Mode: 45 15% 96% (warm cream base)
+- Dark Mode: 25 20% 12% (rich kitchen darkness)
 
 ### Typography
-**Font Families:** Inter (primary), JetBrains Mono (numbers/data)
+**Font Families:** Outfit (primary headings), Inter (body text), JetBrains Mono (data)
 **Hierarchy:**
-- Headers: 600 weight, sizes from text-2xl to text-lg
-- Body text: 400 weight, text-base
-- Data/numbers: JetBrains Mono, 500 weight for emphasis
-- Small labels: 400 weight, text-sm
+- Brand headers: Outfit 600 weight, warm and approachable
+- Section headers: Outfit 500 weight
+- Body text: Inter 400 weight for clarity
+- Data/metrics: JetBrains Mono 500 weight
 
 ### Layout System
-**Spacing Units:** Tailwind units 2, 4, 6, and 8 (p-2, m-4, gap-6, h-8)
-**Grid:** 12-column responsive grid with consistent gutters
-**Component spacing:** 6-unit spacing between major sections, 4-unit within components
+**Spacing Units:** Tailwind units 3, 4, 6, and 8 for organic, kitchen-inspired rhythm
+**Visual Breathing:** Generous whitespace mimicking clean kitchen countertops
+**Component spacing:** 8-unit spacing between major sections, 4-unit within components
 
 ### Component Library
 
 **Navigation:**
-- Sidebar navigation with clear icons and labels
-- Tab-based navigation within sections
-- Breadcrumb navigation for deep sections
+- Warm sidebar with subtle kitchen texture overlay
+- Icon library: Heroicons with custom food/kitchen icons where needed
+- Breadcrumbs with subtle divider styling
 
 **Data Display:**
-- Tables with alternating row colors and hover states
-- Cards for recipe items and inventory summaries
-- Progress bars for cost tracking and waste metrics
-- Dashboard widgets with clear metric displays
+- Cards with soft shadows and rounded corners (rounded-lg)
+- Tables with warm hover states using cream tones
+- Progress bars with gradient fills using accent colors
+- Dashboard widgets with food-inspired iconography
 
 **Forms:**
-- Single-column layouts for data entry
-- Grouped related fields with subtle borders
-- Inline validation with immediate feedback
-- Large touch targets for mobile use
+- Input fields with warm border colors in focus states
+- Grouped sections with subtle warm background tints
+- Validation using paprika accent for errors, golden harvest for success
+- Touch-friendly sizing for kitchen tablet use
 
 **Actions:**
-- Primary buttons: Filled with primary color
-- Secondary buttons: Outline variant with primary border
-- Destructive actions: Red color for delete/waste operations
-- FAB (Floating Action Button) for quick "Add Item" actions
+- Primary buttons: Sage green with warm hover states
+- Secondary buttons: Outline variant with clay borders
+- Floating action buttons with subtle food-related icons
 
-**Overlays:**
-- Modal dialogs for recipe creation and editing
-- Toast notifications for save confirmations
-- Dropdown menus for filtering and sorting
+### Restaurant Industry Adaptations
 
-### Responsive Design
-**Mobile-first approach** with emphasis on:
-- Single-column layouts on mobile
-- Large tap targets (minimum 44px)
-- Simplified navigation with hamburger menu
-- Swipe gestures for table interactions
+**Kitchen Environment Considerations:**
+- High contrast maintained in both light and dark modes
+- Spill-resistant design metaphors (contained sections, clear boundaries)
+- Quick-scan layouts for busy kitchen environments
+- Temperature-resistant color choices (avoiding blues that suggest cold)
 
-### Data Visualization
-- Simple bar charts for cost trends
-- Pie charts for waste distribution
-- Color-coded indicators for cost alerts
-- Progress indicators for inventory levels
+**Culinary Excellence Motifs:**
+- Subtle texture overlays suggesting natural materials (wood grain, stone)
+- Card shadows reminiscent of ingredient containers
+- Border treatments inspired by cutting boards and kitchen tools
+- Icon treatments that reference chef knives, measuring tools, and fresh ingredients
 
-## Restaurant Industry Adaptations
+## Images
 
-**Kitchen-Friendly Features:**
-- High contrast for visibility in various lighting
-- Large, clear numbers for quick scanning
-- Minimal scrolling for frequently accessed data
-- Quick-add buttons for common ingredients
+**Background Elements:**
+- Hero section: Warm, softly-focused kitchen workspace with natural lighting - professional but inviting
+- Dashboard backgrounds: Subtle textural overlays of natural materials (wood grain, marble)
+- Section dividers: Soft gradients from cream to sage
+- No large hero images - focus on clean, functional layouts with subtle textural depth
 
-**Manager Dashboard:**
-- Cost alerts prominently displayed
-- Profit margin indicators with traffic light colors
-- Daily/weekly summary cards
-- Export buttons clearly labeled and accessible
+**Visual Motifs:**
+- Ingredient-inspired card corners and borders
+- Subtle kitchen tool silhouettes as decorative elements
+- Natural material textures as background overlays (10-15% opacity)
 
-**Consistent Dark Mode:**
-- All form inputs with dark backgrounds
-- Maintained contrast ratios for accessibility
-- Consistent styling across all interactive elements
+## Responsive Design
+**Mobile-First Philosophy:**
+- Single-column layouts with warm card-based sections
+- Thumb-friendly navigation with kitchen glove consideration
+- Simplified data tables with swipe interactions
+- Consistent warm color temperature across all screen sizes
 
-This design prioritizes functionality and data clarity while maintaining a professional appearance suitable for daily restaurant operations.
+This design creates a welcoming yet professional environment that honors culinary craft while maintaining the utility focus essential for efficient restaurant management.
