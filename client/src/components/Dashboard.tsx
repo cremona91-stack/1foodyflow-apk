@@ -27,6 +27,7 @@ interface DashboardProps {
   dishes: Dish[];
   orders: Order[];
   stockMovements: StockMovement[];
+  inventorySnapshots: any[];
   waste: any[];
   personalMeals: any[];
   onNavigateToSection: (section: string) => void;
@@ -180,6 +181,7 @@ export function Dashboard({
   dishes, 
   orders, 
   stockMovements, 
+  inventorySnapshots,
   waste, 
   personalMeals, 
   onNavigateToSection 
@@ -190,32 +192,39 @@ export function Dashboard({
     [products]
   );
   
-  // Calculate food cost metrics with proper error handling
+  // Calculate food cost metrics using the new formula: (totale iniziale + totale IN - totale finale)
   const { totalFoodSales, totalFoodCost, foodCostPercentage } = useMemo(() => {
     const sales = dishes.reduce((sum, dish) => sum + (dish.sellingPrice * dish.sold), 0);
     
-    // Calculate cost per dish using ingredients array if it exists
-    const cost = dishes.reduce((sum, dish) => {
-      // Guard against missing ingredients (some dishes might not have ingredients defined)
-      if (!dish.ingredients || !Array.isArray(dish.ingredients)) {
-        return sum;
-      }
-      
-      const dishCost = dish.ingredients.reduce((ingredientSum, ing) => {
-        const product = productMap.get(ing.productId);
-        return ingredientSum + (product ? product.pricePerUnit * ing.quantity : 0);
-      }, 0);
-      return sum + (dishCost * dish.sold);
+    // Calculate food cost according to formula: (totale iniziale magazzino + totale IN magazzino - totale finale magazzino)
+    
+    // 1. Totale iniziale magazzino (from inventorySnapshots)
+    const totaleInizialeM = inventorySnapshots.reduce((sum, snapshot) => {
+      const product = productMap.get(snapshot.productId);
+      return sum + (product ? snapshot.initialQuantity * product.pricePerUnit : 0);
     }, 0);
     
-    const percentage = sales > 0 ? (cost / sales) * 100 : 0;
+    // 2. Totale IN magazzino (from stockMovements with movementType = 'in')
+    const totaleInM = stockMovements
+      .filter(movement => movement.movementType === 'in')
+      .reduce((sum, movement) => sum + (movement.totalCost || 0), 0);
+    
+    // 3. Totale finale magazzino (from inventorySnapshots)
+    const totaleFinaleM = inventorySnapshots.reduce((sum, snapshot) => {
+      const product = productMap.get(snapshot.productId);
+      return sum + (product ? snapshot.finalQuantity * product.pricePerUnit : 0);
+    }, 0);
+    
+    // Food cost calculation
+    const foodCostValue = totaleInizialeM + totaleInM - totaleFinaleM;
+    const percentage = sales > 0 ? (foodCostValue / sales) * 100 : 0;
     
     return {
       totalFoodSales: sales,
-      totalFoodCost: cost,
+      totalFoodCost: foodCostValue,
       foodCostPercentage: percentage
     };
-  }, [dishes, productMap]);
+  }, [dishes, productMap, inventorySnapshots, stockMovements]);
   
   const wasteValue = useMemo(() => 
     waste.reduce((sum, w) => sum + (w.totalCost || 0), 0), 

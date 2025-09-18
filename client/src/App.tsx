@@ -523,6 +523,7 @@ function FoodCostManager() {
               dishes={dishes}
               orders={orders}
               stockMovements={stockMovements}
+              inventorySnapshots={inventorySnapshots}
               waste={waste}
               personalMeals={personalMeals}
               onNavigateToSection={setActiveTab}
