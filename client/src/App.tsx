@@ -19,6 +19,9 @@ import {
 // Components
 import AppHeader from "@/components/AppHeader";
 import TabNavigation from "@/components/TabNavigation";
+import { Dashboard } from "@/components/Dashboard";
+import { Users, Calculator } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import ProductForm from "@/components/ProductForm";
 import ProductList from "@/components/ProductList";
 import RecipeForm from "@/components/RecipeForm";
@@ -71,7 +74,7 @@ import {
 import type { Product, Recipe, Dish, Order, StockMovement, InventorySnapshot, InsertProduct, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal, InsertOrder, InsertStockMovement, InsertInventorySnapshot } from "@shared/schema";
 
 function FoodCostManager() {
-  const [activeTab, setActiveTab] = useState("inventory");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [maxFoodCost, setMaxFoodCost] = useState(30);
   
   // Edit state - keep as local state
@@ -513,6 +516,101 @@ function FoodCostManager() {
         <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
         
         <div className="flex-grow p-4 sm:p-8 overflow-y-auto">
+          {/* Dashboard Tab */}
+          {activeTab === "dashboard" && (
+            <Dashboard
+              products={products}
+              dishes={dishes}
+              orders={orders}
+              stockMovements={stockMovements}
+              waste={waste}
+              personalMeals={personalMeals}
+              onNavigateToSection={setActiveTab}
+            />
+          )}
+
+          {/* Labour Cost Tab (Coming Soon) */}
+          {activeTab === "labour-cost" && (
+            <div className="text-center space-y-6 py-12">
+              <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center">
+                <Users className="h-12 w-12 text-muted-foreground" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-bold">Labour Cost Management</h2>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  Gestione del personale, turni, produttività e costi del lavoro. 
+                  Questa funzionalità sarà disponibile nelle prossime versioni.
+                </p>
+              </div>
+              <div className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-3 max-w-2xl mx-auto">
+                  <div className="bg-card p-4 rounded-lg border">
+                    <h3 className="font-semibold mb-2">Gestione Turni</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Pianificazione e monitoraggio turni del personale
+                    </p>
+                  </div>
+                  <div className="bg-card p-4 rounded-lg border">
+                    <h3 className="font-semibold mb-2">Costi del Lavoro</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Calcolo automatico stipendi e costi orari
+                    </p>
+                  </div>
+                  <div className="bg-card p-4 rounded-lg border">
+                    <h3 className="font-semibold mb-2">Produttività</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Analisi performance e KPI del personale
+                    </p>
+                  </div>
+                </div>
+                <Button onClick={() => setActiveTab("dashboard")} variant="outline">
+                  Torna alla Dashboard
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Profit & Loss Tab (Coming Soon) */}
+          {activeTab === "profit-loss" && (
+            <div className="text-center space-y-6 py-12">
+              <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center">
+                <Calculator className="h-12 w-12 text-muted-foreground" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-bold">Conto Economico</h2>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  Analisi P&L completa, margini, performance finanziaria e reporting avanzato. 
+                  Questa funzionalità sarà disponibile nelle prossime versioni.
+                </p>
+              </div>
+              <div className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-3 max-w-2xl mx-auto">
+                  <div className="bg-card p-4 rounded-lg border">
+                    <h3 className="font-semibold mb-2">Profit & Loss</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Report P&L automatici mensili e annuali
+                    </p>
+                  </div>
+                  <div className="bg-card p-4 rounded-lg border">
+                    <h3 className="font-semibold mb-2">Analisi Margini</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Margini per piatto, categoria e periodo
+                    </p>
+                  </div>
+                  <div className="bg-card p-4 rounded-lg border">
+                    <h3 className="font-semibold mb-2">Budget & Forecast</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Previsioni e confronto con obiettivi
+                    </p>
+                  </div>
+                </div>
+                <Button onClick={() => setActiveTab("dashboard")} variant="outline">
+                  Torna alla Dashboard
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Inventory Tab */}
           {activeTab === "inventory" && (
             <div className="md:flex md:gap-6 space-y-6 md:space-y-0">
