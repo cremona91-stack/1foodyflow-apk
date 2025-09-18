@@ -196,7 +196,8 @@ export function Dashboard({
   
   // Calculate food cost metrics using the new formula: (totale iniziale + totale IN - totale finale)
   const { totalFoodSales, totalFoodCost, foodCostPercentage } = useMemo(() => {
-    const sales = dishes.reduce((sum, dish) => sum + (dish.sellingPrice * dish.sold), 0);
+    // Use NET REVENUE (netPrice) instead of gross revenue (sellingPrice) for Food Cost calculation
+    const sales = dishes.reduce((sum, dish) => sum + (dish.netPrice * dish.sold), 0);
     
     // Calculate food cost according to formula: (totale iniziale magazzino + totale IN magazzino - totale finale magazzino)
     // Using data from sezione magazzino (editableInventory + stockMovements)
