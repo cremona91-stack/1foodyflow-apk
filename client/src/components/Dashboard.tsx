@@ -46,12 +46,25 @@ interface KPICardProps {
 
 function KPICard({ title, value, change, icon, trend, status = "good", onClick }: KPICardProps) {
   const getBadgeVariant = () => {
+    // For change/differential: we'll use custom classes, not variants
+    if (change !== undefined) {
+      return "outline"; // Use outline as base, then override with custom classes
+    }
+    // For regular status
     switch (status) {
       case "good": return "default";
       case "warning": return "secondary";
       case "danger": return "destructive";
       default: return "default";
     }
+  };
+
+  const getChangeClasses = () => {
+    if (change === undefined) return "";
+    // Negative = green (good), Positive = red (bad)
+    return change < 0 
+      ? "!bg-green-100 dark:!bg-green-900 !text-green-800 dark:!text-green-200 !border-green-200 dark:!border-green-700"
+      : "!bg-red-100 dark:!bg-red-900 !text-red-800 dark:!text-red-200 !border-red-200 dark:!border-red-700";
   };
 
   const getTrendIcon = () => {
@@ -73,7 +86,7 @@ function KPICard({ title, value, change, icon, trend, status = "good", onClick }
         <div className="flex items-center gap-2">
           <div className="text-2xl font-bold">{value}</div>
           {change !== undefined && (
-            <Badge variant={getBadgeVariant()} className="flex items-center gap-1">
+            <Badge variant={getBadgeVariant()} className={`flex items-center gap-1 ${getChangeClasses()}`}>
               {getTrendIcon()}
               <span className="text-xs">{change > 0 ? '+' : ''}{change}%</span>
             </Badge>
