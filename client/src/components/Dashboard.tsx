@@ -28,6 +28,7 @@ interface DashboardProps {
   orders: Order[];
   stockMovements: StockMovement[];
   inventorySnapshots: any[];
+  editableInventory: any[];
   waste: any[];
   personalMeals: any[];
   onNavigateToSection: (section: string) => void;
@@ -182,6 +183,7 @@ export function Dashboard({
   orders, 
   stockMovements, 
   inventorySnapshots,
+  editableInventory,
   waste, 
   personalMeals, 
   onNavigateToSection 
@@ -197,11 +199,12 @@ export function Dashboard({
     const sales = dishes.reduce((sum, dish) => sum + (dish.sellingPrice * dish.sold), 0);
     
     // Calculate food cost according to formula: (totale iniziale magazzino + totale IN magazzino - totale finale magazzino)
+    // Using data from sezione magazzino (editableInventory + stockMovements)
     
-    // 1. Totale iniziale magazzino (from inventorySnapshots)
-    const totaleInizialeM = inventorySnapshots.reduce((sum, snapshot) => {
-      const product = productMap.get(snapshot.productId);
-      return sum + (product ? snapshot.initialQuantity * product.pricePerUnit : 0);
+    // 1. Totale iniziale magazzino (from editableInventory)
+    const totaleInizialeM = editableInventory.reduce((sum, inventory) => {
+      const product = productMap.get(inventory.productId);
+      return sum + (product ? inventory.initialQuantity * product.pricePerUnit : 0);
     }, 0);
     
     // 2. Totale IN magazzino (from stockMovements with movementType = 'in')
@@ -209,10 +212,10 @@ export function Dashboard({
       .filter(movement => movement.movementType === 'in')
       .reduce((sum, movement) => sum + (movement.totalCost || 0), 0);
     
-    // 3. Totale finale magazzino (from inventorySnapshots)
-    const totaleFinaleM = inventorySnapshots.reduce((sum, snapshot) => {
-      const product = productMap.get(snapshot.productId);
-      return sum + (product ? snapshot.finalQuantity * product.pricePerUnit : 0);
+    // 3. Totale finale magazzino (from editableInventory)
+    const totaleFinaleM = editableInventory.reduce((sum, inventory) => {
+      const product = productMap.get(inventory.productId);
+      return sum + (product ? inventory.finalQuantity * product.pricePerUnit : 0);
     }, 0);
     
     // Food cost calculation
@@ -224,7 +227,7 @@ export function Dashboard({
       totalFoodCost: foodCostValue,
       foodCostPercentage: percentage
     };
-  }, [dishes, productMap, inventorySnapshots, stockMovements]);
+  }, [dishes, productMap, editableInventory, stockMovements]);
   
   const wasteValue = useMemo(() => 
     waste.reduce((sum, w) => sum + (w.totalCost || 0), 0), 
