@@ -789,24 +789,24 @@ export default function Budget({}: BudgetProps) {
                     {costItems.map((item) => (
                       <TableRow key={item.code} className={item.highlight ? "bg-yellow-50 dark:bg-yellow-950/20" : ""}>
                         <TableCell className={item.highlight ? "font-medium" : ""}>{item.code} - {item.name}</TableCell>
-                        <TableCell className={`text-center ${item.highlight ? "font-medium" : ""} ${item.editable && (item.field === 'materieFirstePercent' || item.field === 'acquistiVarPercent') ? 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 bg-yellow-100 dark:bg-yellow-900/30' : ''}`}
+                        <TableCell className={`text-center ${item.highlight ? "font-medium" : ""} ${item.isBidirectional ? 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 bg-yellow-100 dark:bg-yellow-900/30' : ''}`}
                           data-testid={item.dataTestId ? `${item.dataTestId}-percent` : undefined}
-                          onClick={item.editable && item.field && (item.field === 'materieFirstePercent' || item.field === 'acquistiVarPercent') ? () => {
+                          onClick={item.isBidirectional ? () => {
                             const currentValue = item.percent * 100;
-                            handleEcoEdit(item.field as keyof UpdateEconomicParameters, currentValue, true);
+                            handleEcoEdit(item.field as keyof UpdateEconomicParameters, currentValue, false, false);
                           } : undefined}
                         >
-                          {ecoEditingField === item.field && item.editable ? (
+                          {ecoEditingField === item.field && item.isBidirectional ? (
                             <Input
                               value={ecoTempValue}
                               onChange={(e) => setEcoTempValue(e.target.value)}
                               onBlur={() => {
-                                handleEcoSave(item.field as keyof UpdateEconomicParameters);
+                                handleEcoSave(item.field as keyof UpdateEconomicParameters, false, false);
                                 setEcoEditingField(null);
                               }}
                               onKeyPress={(e) => {
                                 if (e.key === 'Enter') {
-                                  handleEcoSave(item.field as keyof UpdateEconomicParameters);
+                                  handleEcoSave(item.field as keyof UpdateEconomicParameters, false, false);
                                   setEcoEditingField(null);
                                 }
                               }}
@@ -818,27 +818,24 @@ export default function Budget({}: BudgetProps) {
                           )}
                         </TableCell>
                         <TableCell 
-                          className={`text-right ${item.highlight ? "font-medium" : ""} ${item.editable && item.field ? 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 bg-yellow-100 dark:bg-yellow-900/30' : ''}`}
+                          className={`text-right ${item.highlight ? "font-medium" : ""} ${item.isBidirectional ? 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 bg-yellow-100 dark:bg-yellow-900/30' : ''}`}
                           data-testid={item.dataTestId ? `${item.dataTestId}-budget` : undefined}
-                          onClick={item.editable && item.field ? () => {
+                          onClick={item.isBidirectional ? () => {
                             const currentValue = item.budgetValue || 0;
-                            const isBidirectional = item.field === 'materieFirstePercent' || item.field === 'acquistiVarPercent';
-                            handleEcoEdit(item.field as keyof UpdateEconomicParameters, currentValue, false, isBidirectional);
+                            handleEcoEdit(item.field as keyof UpdateEconomicParameters, currentValue, false, false);
                           } : undefined}
                         >
-                          {ecoEditingField === item.field && item.editable && item.field ? (
+                          {ecoEditingField === item.field && item.isBidirectional ? (
                             <Input
                               value={ecoTempValue}
                               onChange={(e) => setEcoTempValue(e.target.value)}
                               onBlur={() => {
-                                const isBidirectional = item.field === 'materieFirstePercent' || item.field === 'acquistiVarPercent';
-                                handleEcoSave(item.field as keyof UpdateEconomicParameters, false, isBidirectional);
+                                handleEcoSave(item.field as keyof UpdateEconomicParameters, false, false);
                                 setEcoEditingField(null);
                               }}
                               onKeyPress={(e) => {
                                 if (e.key === 'Enter') {
-                                  const isBidirectional = item.field === 'materieFirstePercent' || item.field === 'acquistiVarPercent';
-                                  handleEcoSave(item.field as keyof UpdateEconomicParameters, false, isBidirectional);
+                                  handleEcoSave(item.field as keyof UpdateEconomicParameters, false, false);
                                   setEcoEditingField(null);
                                 }
                               }}
