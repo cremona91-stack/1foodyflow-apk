@@ -169,11 +169,11 @@ export default function Budget({}: BudgetProps) {
       const budgetEuro = (numValue * totalCorrispettivi) / 100;
       
       if (field === 'materieFirstePercent') {
-        updateData['materieFirstePercent'] = numValue; // Salva la percentuale inserita
-        updateData['materieFirsteBudget'] = budgetEuro; // Salva il budget calcolato
+        // SOLO univoca: salva SOLO budget €, NON la percentuale
+        updateData['materieFirsteBudget'] = budgetEuro;
       } else {
-        updateData['acquistiVarPercent'] = numValue; // Salva la percentuale inserita  
-        updateData['acquistiVarBudget'] = budgetEuro; // Salva il budget calcolato
+        // SOLO univoca: salva SOLO budget €, NON la percentuale
+        updateData['acquistiVarBudget'] = budgetEuro;
       }
     } else {
       // Editing Budget€ o Consuntivo€ per tutte le altre voci → salva valore direttamente
@@ -803,10 +803,16 @@ export default function Budget({}: BudgetProps) {
                           data-testid={item.dataTestId ? `${item.dataTestId}-percent` : undefined}
                           onClick={item.isBidirectional ? () => {
                             const currentValue = item.percent * 100;
-                            handleEcoEdit(item.field as keyof UpdateEconomicParameters, currentValue);
+                            // Mappatura per campi bidirezionali: usa il campo percentuale
+                            const percentField = item.field === 'materieFirsteBudget' ? 'materieFirstePercent' : 
+                                                item.field === 'acquistiVarBudget' ? 'acquistiVarPercent' : item.field;
+                            handleEcoEdit(percentField as keyof UpdateEconomicParameters, currentValue);
                           } : undefined}
                         >
-                          {ecoEditingField === item.field && item.isBidirectional ? (
+                          {item.isBidirectional && (
+                            (ecoEditingField === 'materieFirstePercent' && item.field === 'materieFirsteBudget') ||
+                            (ecoEditingField === 'acquistiVarPercent' && item.field === 'acquistiVarBudget')
+                          ) ? (
                             <Input
                               value={ecoTempValue}
                               onChange={(e) => setEcoTempValue(e.target.value)}
