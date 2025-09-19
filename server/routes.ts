@@ -29,6 +29,7 @@ import {
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+
   // Authentication setup - registers /api/register, /api/login, /api/logout, /api/user
   setupAuth(app);
 
