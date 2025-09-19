@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupTraditionalAuth } from "./auth";
 import { 
   insertProductSchema, 
   insertRecipeSchema, 
@@ -30,8 +31,11 @@ import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
-  // Replit Auth setup - registers /api/login, /api/logout, /api/callback
+  // Replit Auth setup - registers /api/login, /api/logout, /api/callback  
   await setupAuth(app);
+  
+  // Traditional Auth setup - registers /api/login, /api/register, /api/logout, /api/user
+  setupTraditionalAuth(app);
 
   // Auth routes for Replit Auth
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {

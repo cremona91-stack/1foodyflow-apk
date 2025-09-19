@@ -30,7 +30,7 @@ async function comparePasswords(supplied: string, stored: string) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
-export function setupAuth(app: Express) {
+export function setupTraditionalAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "dev-secret-change-in-production",
     resave: false,
@@ -52,7 +52,7 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       const user = await storage.getUserByUsername(username);
-      if (!user || !(await comparePasswords(password, user.password))) {
+      if (!user || !user.password || !(await comparePasswords(password, user.password))) {
         return done(null, false);
       } else {
         // Return user without password field for security
@@ -83,22 +83,26 @@ export function setupAuth(app: Express) {
       });
 
       // Check username uniqueness
-      const existingUserByUsername = await storage.getUserByUsername(validatedData.username);
-      if (existingUserByUsername) {
-        return res.status(400).json({ error: "Username already exists" });
+      if (validatedData.username) {
+        const existingUserByUsername = await storage.getUserByUsername(validatedData.username);
+        if (existingUserByUsername) {
+          return res.status(400).json({ error: "Username already exists" });
+        }
       }
 
       // Check email uniqueness
-      const existingUserByEmail = await storage.getUserByEmail(validatedData.email);
-      if (existingUserByEmail) {
-        return res.status(400).json({ error: "Email already exists" });
+      if (validatedData.email) {
+        const existingUserByEmail = await storage.getUserByEmail(validatedData.email);
+        if (existingUserByEmail) {
+          return res.status(400).json({ error: "Email already exists" });
+        }
       }
 
       // Force isAdmin = false for security (prevent privilege escalation)
       const user = await storage.createUser({
-        username: validatedData.username,
-        email: validatedData.email,
-        password: await hashPassword(validatedData.password),
+        username: validatedData.username || undefined,
+        email: validatedData.email || undefined,
+        password: validatedData.password ? await hashPassword(validatedData.password) : undefined,
         isAdmin: false, // SECURITY: Force false, never trust client
       });
 
