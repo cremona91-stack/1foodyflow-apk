@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Plus, Download, TrendingUp, TrendingDown } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import type { BudgetEntry, InsertBudgetEntry, UpdateBudgetEntry } from "@shared/schema";
+import type { BudgetEntry, InsertBudgetEntry, UpdateBudgetEntry, EconomicParameters, UpdateEconomicParameters } from "@shared/schema";
 
 interface BudgetProps {}
 
@@ -18,6 +18,8 @@ export default function Budget({}: BudgetProps) {
   const [selectedMonth, setSelectedMonth] = useState<number>(1);
   const [editingEntry, setEditingEntry] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<UpdateBudgetEntry>>({});
+  const [ecoEditingField, setEcoEditingField] = useState<string | null>(null);
+  const [ecoTempValue, setEcoTempValue] = useState<string>("");
 
   // Fetch budget entries for selected month/year
   const { data: budgetEntries = [], isLoading } = useQuery({
@@ -27,11 +29,52 @@ export default function Budget({}: BudgetProps) {
         .then(res => res.json()) as Promise<BudgetEntry[]>
   });
 
+  // Fetch economic parameters for selected month/year
+  const { data: ecoParams } = useQuery({
+    queryKey: ['/api/economic-parameters', selectedYear, selectedMonth],
+    queryFn: async () => {
+      const response = await fetch(`/api/economic-parameters/${selectedYear}/${selectedMonth}`);
+      if (!response.ok && response.status === 404) {
+        // Create default parameters if none exist
+        const defaultParams = {
+          year: selectedYear,
+          month: selectedMonth,
+          materieFirstePercent: 22.10,
+          acquistiVarPercent: 3.00,
+          locazioniBudget: 0,
+          personaleBudget: 0,
+          utenzeBudget: 0,
+          manutenzionibudget: 0,
+          noleggibudget: 0,
+          prestazioniTerziBudget: 0,
+          consulenzeBudget: 0,
+          marketingBudget: 0,
+          deliveryBudget: 0,
+          trasferteBudget: 0,
+          assicurazioniBudget: 0,
+          speseBancarieBudget: 0,
+        };
+        const createResponse = await apiRequest('POST', '/api/economic-parameters', defaultParams);
+        return createResponse as EconomicParameters;
+      }
+      return response.json() as Promise<EconomicParameters>;
+    },
+  });
+
   // Create/update mutations
   const createMutation = useMutation({
     mutationFn: (data: InsertBudgetEntry) => apiRequest('POST', '/api/budget-entries', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/budget-entries', selectedYear, selectedMonth] });
+    },
+  });
+
+  // Economic parameters update mutation
+  const updateEcoParamsMutation = useMutation({
+    mutationFn: (data: UpdateEconomicParameters) => 
+      apiRequest('PUT', `/api/economic-parameters/${selectedYear}/${selectedMonth}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/economic-parameters', selectedYear, selectedMonth] });
     },
   });
 
@@ -471,7 +514,7 @@ export default function Budget({}: BudgetProps) {
                       <TableCell>0010 - Corrispettivi</TableCell>
                       <TableCell className="text-center">100,00%</TableCell>
                       <TableCell className="text-right" data-testid="eco-corrispettivi-budget">{formatCurrency(totals.totalBudget)}</TableCell>
-                      <TableCell className="text-right" data-testid="eco-corrispettivi-consuntivo">{formatCurrency(totals.totalConsuntivo2025)}</TableCell>
+                      <TableCell className="text-right" data-testid="eco-corrispettivi-consuntivo">{formatCurrency(totals.totalActualRevenue + totals.totalActualDelivery)}</TableCell>
                       <TableCell className="text-center">100,00%</TableCell>
                     </TableRow>
                     
@@ -490,7 +533,7 @@ export default function Budget({}: BudgetProps) {
                           className={`text-right ${item.highlight ? "font-medium" : ""}`}
                           data-testid={item.dataTestId ? `${item.dataTestId}-consuntivo` : undefined}
                         >
-                          {formatCurrency(totals.totalConsuntivo2025 * item.percent)}
+                          {formatCurrency((totals.totalActualRevenue + totals.totalActualDelivery) * item.percent)}
                         </TableCell>
                         <TableCell className={`text-center ${item.highlight ? "font-medium" : ""}`}>
                           {formatPercent(item.percent * 100)}
@@ -506,7 +549,7 @@ export default function Budget({}: BudgetProps) {
                         {formatCurrency(totals.totalBudget * ebitdaPercent)}
                       </TableCell>
                       <TableCell className="text-right font-bold" data-testid="eco-ebitda-consuntivo">
-                        {formatCurrency(totals.totalConsuntivo2025 * ebitdaPercent)}
+                        {formatCurrency((totals.totalActualRevenue + totals.totalActualDelivery) * ebitdaPercent)}
                       </TableCell>
                       <TableCell className="text-center font-bold" data-testid="eco-ebitda-percent">
                         {formatPercent(ebitdaPercent * 100)}
