@@ -455,8 +455,8 @@ export const insertEconomicParametersSchema = createInsertSchema(economicParamet
 }).omit({ id: true, createdAt: true });
 
 export const updateEconomicParametersSchema = z.object({
-  materieFirstePercent: z.number().min(0).max(100).optional(),
-  acquistiVarPercent: z.number().min(0).max(100).optional(),
+  materieFirstePercent: z.number().min(0).optional(),
+  acquistiVarPercent: z.number().min(0).optional(),
   locazioniBudget: z.number().min(0).optional(),
   personaleBudget: z.number().min(0).optional(),
   utenzeBudget: z.number().min(0).optional(),
