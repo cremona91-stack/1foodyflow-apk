@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Plus, Download, TrendingUp, TrendingDown } from "lucide-react";
+import { Calendar, Plus, Download, TrendingUp, TrendingDown, Save } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { BudgetEntry, InsertBudgetEntry, UpdateBudgetEntry, EconomicParameters, UpdateEconomicParameters } from "@shared/schema";
@@ -698,7 +698,34 @@ export default function Budget({}: BudgetProps) {
                     {costItems.map((item) => (
                       <TableRow key={item.code} className={item.highlight ? "bg-yellow-50 dark:bg-yellow-950/20" : ""}>
                         <TableCell className={item.highlight ? "font-medium" : ""}>{item.code} - {item.name}</TableCell>
-                        <TableCell className={`text-center ${item.highlight ? "font-medium" : ""}`}>{formatPercent(item.percent * 100)}</TableCell>
+                        <TableCell className={`text-center ${item.highlight ? "font-medium" : ""} ${item.editable ? 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20' : ''}`}
+                          data-testid={item.dataTestId ? `${item.dataTestId}-percent` : undefined}
+                          onClick={item.editable && item.field ? () => {
+                            const currentValue = item.percent * 100;
+                            handleEcoEdit(item.field as keyof UpdateEconomicParameters, currentValue);
+                          } : undefined}
+                        >
+                          {ecoEditingField === item.field && item.editable ? (
+                            <Input
+                              value={ecoTempValue}
+                              onChange={(e) => setEcoTempValue(e.target.value)}
+                              onBlur={() => {
+                                handleEcoSave(item.field as keyof UpdateEconomicParameters);
+                                setEcoEditingField(null);
+                              }}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleEcoSave(item.field as keyof UpdateEconomicParameters);
+                                  setEcoEditingField(null);
+                                }
+                              }}
+                              className="h-6 text-center"
+                              autoFocus
+                            />
+                          ) : (
+                            formatPercent(item.percent * 100)
+                          )}
+                        </TableCell>
                         <TableCell 
                           className={`text-right ${item.highlight ? "font-medium" : ""}`}
                           data-testid={item.dataTestId ? `${item.dataTestId}-budget` : undefined}
