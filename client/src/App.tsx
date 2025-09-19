@@ -5,9 +5,7 @@ import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
-import { AuthProvider } from "@/hooks/use-auth";
-import { ProtectedRoute } from "@/lib/protected-route";
-import AuthPage from "@/pages/auth-page";
+import { useAuth } from "@/hooks/useAuth";
 
 // PDF Export utilities
 import {
@@ -749,24 +747,53 @@ function FoodCostManager() {
 }
 
 function Router() {
+  const { isAuthenticated, isLoading } = useAuth();
+
   return (
     <Switch>
-      <Route path="/auth">
-        <ProtectedRoute requiredAuth={false}>
-          <AuthPage />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/">
-        <ProtectedRoute>
-          <FoodCostManager />
-        </ProtectedRoute>
-      </Route>
-      <Route>
-        <ProtectedRoute>
-          <FoodCostManager />
-        </ProtectedRoute>
-      </Route>
+      {isLoading || !isAuthenticated ? (
+        <Route path="/" component={Landing} />
+      ) : (
+        <>
+          <Route path="/" component={FoodCostManager} />
+          <Route path="/pl" component={PL} />
+        </>
+      )}
+      <Route component={FoodCostManager} />
     </Switch>
+  );
+}
+
+function Landing() {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-sage-50 to-sage-100 dark:from-sage-950 dark:to-sage-900 flex items-center justify-center p-4">
+      <div className="max-w-2xl mx-auto text-center space-y-8">
+        <div className="space-y-4">
+          <h1 className="text-5xl font-bold text-sage-900 dark:text-sage-100">
+            FoodyFlow
+          </h1>
+          <p className="text-xl text-sage-700 dark:text-sage-300 font-medium">
+            Evolve Your Eatery
+          </p>
+          <p className="text-lg text-muted-foreground max-w-lg mx-auto">
+            Sistema completo di gestione ristorante per tracciare inventario, calcolare costi alimentari, gestire ricette e ottimizzare la redditività.
+          </p>
+        </div>
+        
+        <div className="space-y-4">
+          <a 
+            href="/api/login"
+            className="inline-flex items-center justify-center px-8 py-3 text-lg font-medium text-white bg-sage-600 hover:bg-sage-700 rounded-lg transition-colors"
+            data-testid="button-login"
+          >
+            Accedi al Tuo Ristorante
+          </a>
+          <p className="text-sm text-muted-foreground">
+            Accedi con Google, GitHub, X, Apple o email/password
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -775,10 +802,8 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
         <TooltipProvider>
-          <AuthProvider>
-            <Router />
-            <Toaster />
-          </AuthProvider>
+          <Router />
+          <Toaster />
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>

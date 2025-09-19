@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { FileText, Utensils, ChefHat, Sun, Moon, LogOut } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/useAuth";
 
 interface AppHeaderProps {
   onExportPDF?: () => void;
@@ -9,7 +9,7 @@ interface AppHeaderProps {
 
 export default function AppHeader({ onExportPDF }: AppHeaderProps) {
   const { theme, setTheme } = useTheme();
-  const { logout, user } = useAuth();
+  const { user } = useAuth();
   
   const handleExportPDF = () => {
     console.log("PDF export triggered");
@@ -20,14 +20,15 @@ export default function AppHeader({ onExportPDF }: AppHeaderProps) {
     setTheme(theme === "dark" ? "light" : "dark");
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      console.log("Logout successful");
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
+  const handleLogout = () => {
+    // Replit Auth logout via redirect
+    window.location.href = "/api/logout";
   };
+
+  // Get display name from Replit Auth user
+  const displayName = user?.firstName || user?.lastName 
+    ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
+    : user?.email || 'Utente';
 
   return (
     <header className="bg-card border-b border-card-border p-6">
@@ -55,7 +56,7 @@ export default function AppHeader({ onExportPDF }: AppHeaderProps) {
         <div className="flex items-center gap-2">
           <div className="hidden sm:flex flex-col items-end text-xs text-muted-foreground">
             <span>Benvenuto</span>
-            <span className="font-medium">{user?.username}</span>
+            <span className="font-medium">{displayName}</span>
           </div>
           
           <Button
