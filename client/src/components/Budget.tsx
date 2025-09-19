@@ -152,6 +152,7 @@ export default function Budget({}: BudgetProps) {
     // Calculate total revenue for bidirectional calculations  
     const totalCorrispettivi = totals.totalBudget || 0; // Denominatore reale senza fallback artificiale
     
+    
     // Logica bidirezionale specifica per user requirements:
     // - Per "Consumi materie prime" e "Acquisti vari": editare Target % → calcolare e salvare budget €
     // - Per tutte le altre voci: editare Budget € direttamente
@@ -160,8 +161,7 @@ export default function Budget({}: BudgetProps) {
       // Validazione: blocca salvataggio se corrispettivi non impostati
       if (totalCorrispettivi <= 0) {
         // Mostra errore e blocca salvataggio
-        // TODO: Implementare toast error message
-        console.error("Impossibile salvare percentuale: imposta prima i corrispettivi del mese");
+        console.error("BLOCKED: Impossibile salvare percentuale: imposta prima i corrispettivi del mese");
         return; // Blocca il salvataggio
       }
       
@@ -817,12 +817,18 @@ export default function Budget({}: BudgetProps) {
                               value={ecoTempValue}
                               onChange={(e) => setEcoTempValue(e.target.value)}
                               onBlur={() => {
-                                handleEcoSave(item.field as keyof UpdateEconomicParameters);
+                                // Per campi bidirezionali: usa il campo percentuale corretto
+                                const percentField = item.field === 'materieFirsteBudget' ? 'materieFirstePercent' : 
+                                                    item.field === 'acquistiVarBudget' ? 'acquistiVarPercent' : item.field;
+                                handleEcoSave(percentField as keyof UpdateEconomicParameters);
                                 setEcoEditingField(null);
                               }}
                               onKeyPress={(e) => {
                                 if (e.key === 'Enter') {
-                                  handleEcoSave(item.field as keyof UpdateEconomicParameters);
+                                  // Per campi bidirezionali: usa il campo percentuale corretto
+                                  const percentField = item.field === 'materieFirsteBudget' ? 'materieFirstePercent' : 
+                                                      item.field === 'acquistiVarBudget' ? 'acquistiVarPercent' : item.field;
+                                  handleEcoSave(percentField as keyof UpdateEconomicParameters);
                                   setEcoEditingField(null);
                                 }
                               }}
