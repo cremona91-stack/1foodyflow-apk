@@ -420,6 +420,105 @@ export default function Budget({}: BudgetProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Conto Economico Section */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Conto Economico - {monthNames[selectedMonth - 1]} {selectedYear}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            {(() => {
+              // Helper function for Italian percentage formatting
+              const formatPercent = (value: number) => `${value.toFixed(2).replace('.', ',')}%`;
+              
+              // Centralized cost items array
+              const costItems = [
+                { code: '0110', name: 'Consumi materie prime', percent: 0.221, dataTestId: 'eco-materie', highlight: false },
+                { code: '0120', name: 'Acquisti vari', percent: 0.03, dataTestId: null, highlight: false },
+                { code: '0210', name: 'Locazioni locali', percent: 0.0969, dataTestId: null, highlight: false },
+                { code: '0220', name: 'Costi del personale', percent: 0.3155, dataTestId: 'eco-personale', highlight: true },
+                { code: '0240', name: 'Utenze', percent: 0.0378, dataTestId: null, highlight: false },
+                { code: '0250', name: 'Manutenzioni', percent: 0.0034, dataTestId: null, highlight: false },
+                { code: '0260', name: 'Noleggi e Leasing', percent: 0.0035, dataTestId: null, highlight: false },
+                { code: '0310', name: 'Prestazioni di terzi', percent: 0.0125, dataTestId: null, highlight: false },
+                { code: '0320', name: 'Consulenze e compensi a terzi', percent: 0.0044, dataTestId: null, highlight: false },
+                { code: '0330', name: 'Marketing', percent: 0.0239, dataTestId: null, highlight: false },
+                { code: '0340', name: 'Delivery', percent: 0.0389, dataTestId: null, highlight: false },
+                { code: '0410', name: 'Trasferte e viaggi', percent: 0.0005, dataTestId: null, highlight: false },
+                { code: '0520', name: 'Assicurazioni', percent: 0.0034, dataTestId: null, highlight: false },
+                { code: '0530', name: 'Spese bancarie', percent: 0.0019, dataTestId: null, highlight: false }
+              ];
+              
+              // Calculate total cost percentage and EBITDA
+              const totalCostPercent = costItems.reduce((sum, item) => sum + item.percent, 0);
+              const ebitdaPercent = 1 - totalCostPercent;
+              
+              return (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-80">Voce</TableHead>
+                      <TableHead className="text-center w-20">Target %</TableHead>
+                      <TableHead className="text-right w-32">Budget €</TableHead>
+                      <TableHead className="text-right w-32">Consuntivo €</TableHead>
+                      <TableHead className="text-center w-20">Consuntivo %</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {/* Revenue Row */}
+                    <TableRow className="bg-blue-50 dark:bg-blue-950/20 font-semibold">
+                      <TableCell>0010 - Corrispettivi</TableCell>
+                      <TableCell className="text-center">100,00%</TableCell>
+                      <TableCell className="text-right" data-testid="eco-corrispettivi-budget">{formatCurrency(totals.totalBudget)}</TableCell>
+                      <TableCell className="text-right" data-testid="eco-corrispettivi-consuntivo">{formatCurrency(totals.totalConsuntivo2025)}</TableCell>
+                      <TableCell className="text-center">100,00%</TableCell>
+                    </TableRow>
+                    
+                    {/* Cost Items */}
+                    {costItems.map((item) => (
+                      <TableRow key={item.code} className={item.highlight ? "bg-yellow-50 dark:bg-yellow-950/20" : ""}>
+                        <TableCell className={item.highlight ? "font-medium" : ""}>{item.code} - {item.name}</TableCell>
+                        <TableCell className={`text-center ${item.highlight ? "font-medium" : ""}`}>{formatPercent(item.percent * 100)}</TableCell>
+                        <TableCell 
+                          className={`text-right ${item.highlight ? "font-medium" : ""}`}
+                          data-testid={item.dataTestId ? `${item.dataTestId}-budget` : undefined}
+                        >
+                          {formatCurrency(totals.totalBudget * item.percent)}
+                        </TableCell>
+                        <TableCell 
+                          className={`text-right ${item.highlight ? "font-medium" : ""}`}
+                          data-testid={item.dataTestId ? `${item.dataTestId}-consuntivo` : undefined}
+                        >
+                          {formatCurrency(totals.totalConsuntivo2025 * item.percent)}
+                        </TableCell>
+                        <TableCell className={`text-center ${item.highlight ? "font-medium" : ""}`}>
+                          {formatPercent(item.percent * 100)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    
+                    {/* EBITDA Row */}
+                    <TableRow className="bg-green-50 dark:bg-green-950/20 border-t-2 font-bold">
+                      <TableCell className="font-bold">10 - EBITDA</TableCell>
+                      <TableCell className="text-center font-bold">{formatPercent(ebitdaPercent * 100)}</TableCell>
+                      <TableCell className="text-right font-bold" data-testid="eco-ebitda-budget">
+                        {formatCurrency(totals.totalBudget * ebitdaPercent)}
+                      </TableCell>
+                      <TableCell className="text-right font-bold" data-testid="eco-ebitda-consuntivo">
+                        {formatCurrency(totals.totalConsuntivo2025 * ebitdaPercent)}
+                      </TableCell>
+                      <TableCell className="text-center font-bold" data-testid="eco-ebitda-percent">
+                        {formatPercent(ebitdaPercent * 100)}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              );
+            })()}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
