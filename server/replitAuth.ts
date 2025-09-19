@@ -79,10 +79,16 @@ export async function setupAuth(app: Express) {
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
     verified: passport.AuthenticateCallback
   ) => {
-    const user = { id: tokens.claims()?.sub };
-    updateUserSession(user, tokens);
-    await upsertUser(tokens.claims());
-    verified(null, user);
+    const claims = tokens.claims();
+    await upsertUser(claims);
+    const user = await storage.getUser(claims?.sub);
+    if (user) {
+      const { password: _, ...safeUser } = user;
+      updateUserSession(safeUser, tokens);
+      verified(null, safeUser);
+    } else {
+      verified(new Error("Failed to create/retrieve user"), null);
+    }
   };
 
   for (const domain of process.env
