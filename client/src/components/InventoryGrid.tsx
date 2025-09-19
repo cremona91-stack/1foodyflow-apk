@@ -64,7 +64,7 @@ export default function InventoryGrid({
   const [validationErrors, setValidationErrors] = useState<Record<string, { initialQuantity?: string; finalQuantity?: string }>>({});
 
   // Fetch editable inventory data
-  const { data: editableInventoryData = [] } = useQuery({
+  const { data: editableInventoryData = [] } = useQuery<EditableInventory[]>({
     queryKey: ["/api/editable-inventory"],
     enabled: products.length > 0
   });
