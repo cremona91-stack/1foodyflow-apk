@@ -33,12 +33,13 @@ Preferred communication style: Simple, everyday language.
 - **Validation**: Drizzle-Zod integration for runtime type safety
 
 ### Database Schema Design
-The system manages five core entities:
+The system manages six core entities:
 - **Products**: Raw ingredients and supplies with waste tracking, supplier information, and unit pricing
 - **Recipes**: Ingredient combinations with cost calculations for preparation items
 - **Dishes**: Complete menu items with ingredient lists, selling prices, and food cost percentages
 - **Waste**: Tracking of product waste with cost implications
 - **Personal Meals**: Staff meal tracking for accurate cost accounting
+- **Budget Entries**: Monthly budget planning with coperto medio calculations, consuntivo tracking, and year-over-year analysis
 
 ### Authentication and Authorization
 Currently implements a simplified session-based system with:
@@ -77,3 +78,32 @@ Currently implements a simplified session-based system with:
 - **clsx & tailwind-merge**: Conditional CSS class composition
 - **cmdk**: Command palette functionality
 - **Embla Carousel**: Carousel/slider components for UI enhancement
+
+## Recent Changes
+
+### Budget Module Restructuring (September 19, 2025)
+
+**Major Enhancement**: Completely restructured the Budget module for advanced restaurant financial planning and year-over-year analysis.
+
+#### Database Changes:
+- **New Column**: Added `coperto_medio` (REAL) to `budget_entries` table for average cover price tracking
+- **Schema Update**: Enhanced budget_entries with proper Zod validation for new field
+
+#### Business Logic Transformation:
+- **Coperto Medio Integration**: New first column for inputting average cover price
+- **Automatic Budget Calculation**: Budget Revenue now automatically calculated as `Coperti × Coperto Medio`
+- **Split Consuntivo Tracking**: Separated into Consuntivo 2026 and Consuntivo 2025 for comparative analysis
+- **New Delta Calculation**: Changed from budget vs actual to year-over-year comparison (2026 vs 2025)
+- **Removed Obsolete Columns**: Eliminated "A Bdg" and "A A Reale" columns per user requirements
+
+#### Technical Implementation:
+- **Real-time Calculations**: Frontend automatically updates Budget Revenue, Consuntivo values, and Delta % on input changes
+- **Enhanced API**: Updated storage layer and routes to handle coperto_medio field with full CRUD operations
+- **Italian Formatting**: Maintained € currency symbols and comma decimal separators throughout
+- **Improved UX**: Color-coded Delta % with green for growth, red for decline (year-over-year semantics)
+- **Test Coverage**: End-to-end testing confirms editing, calculations, and data persistence functionality
+
+#### User Interface:
+- **New Column Structure**: Data | Coperto Medio € | Coperti | Sala Budget € | Delivery Budget € | Sala Incasso 2025 € | Delivery 2025 € | Consuntivo 2026 € | Consuntivo 2025 € | Delta %
+- **Summary Cards**: Updated to show "Consuntivo 2026", "Consuntivo 2025", and "Performance" with year-over-year comparison context
+- **Responsive Design**: Maintains horizontal scrolling and mobile-friendly layout with new column structure

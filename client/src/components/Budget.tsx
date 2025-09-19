@@ -52,47 +52,66 @@ export default function Budget({}: BudgetProps) {
   // Convert budget entries to map for easier lookup
   const budgetMap = useMemo(() => {
     const map = new Map<number, BudgetEntry>();
-    budgetEntries.forEach(entry => {
-      map.set(entry.day, entry);
-    });
+    if (budgetEntries && Array.isArray(budgetEntries)) {
+      budgetEntries.forEach(entry => {
+        map.set(entry.day, entry);
+      });
+    }
     return map;
   }, [budgetEntries]);
 
   // Calculate totals
   const totals = useMemo(() => {
+    let totalCopertoMedio = 0;
     let totalCoperti = 0;
     let totalBudgetRevenue = 0;
     let totalBudgetDelivery = 0;
     let totalActualRevenue = 0;
     let totalActualDelivery = 0;
-    let totalConsuntivo = 0;
+    let validEntries = 0;
 
-    budgetEntries.forEach(entry => {
-      totalCoperti += entry.coperti || 0;
-      totalBudgetRevenue += entry.budgetRevenue || 0;
-      totalBudgetDelivery += entry.budgetDelivery || 0;
-      totalActualRevenue += entry.actualRevenue || 0;
-      totalActualDelivery += entry.actualDelivery || 0;
-      totalConsuntivo += entry.consuntivo || 0;
-    });
+    if (budgetEntries && Array.isArray(budgetEntries)) {
+      budgetEntries.forEach(entry => {
+        totalCoperti += entry.coperti || 0;
+        totalBudgetDelivery += entry.budgetDelivery || 0;
+        totalActualRevenue += entry.actualRevenue || 0;
+        totalActualDelivery += entry.actualDelivery || 0;
+        
+        if (entry.copertoMedio && entry.copertoMedio > 0) {
+          totalCopertoMedio += entry.copertoMedio;
+          validEntries++;
+        }
+        
+        // Budget Revenue calcolato = Coperti * Coperto Medio
+        const calculatedRevenue = (entry.coperti || 0) * (entry.copertoMedio || 0);
+        totalBudgetRevenue += calculatedRevenue;
+      });
+    }
 
-    const totalBudget = totalBudgetRevenue + totalBudgetDelivery;
-    const totalActual = totalActualRevenue + totalActualDelivery;
-    const budgetPercentage = totalBudget > 0 ? ((totalBudget / totalBudget) * 100) : 0; // 100% by definition
-    const actualPercentage = totalBudget > 0 ? ((totalActual / totalBudget) * 100) : 0;
-    const deltaPercentage = actualPercentage - budgetPercentage;
+    // Media coperto medio
+    const avgCopertoMedio = validEntries > 0 ? totalCopertoMedio / validEntries : 0;
+    
+    // Consuntivo 2026 = Budget Revenue + Budget Delivery
+    const totalConsuntivo2026 = totalBudgetRevenue + totalBudgetDelivery;
+    
+    // Consuntivo 2025 = Incasso 2025 + Delivery 2025
+    const totalConsuntivo2025 = totalActualRevenue + totalActualDelivery;
+    
+    // Delta % tra Consuntivo 2026 e 2025
+    const deltaPercentage = totalConsuntivo2025 > 0 ? 
+      (((totalConsuntivo2026 - totalConsuntivo2025) / totalConsuntivo2025) * 100) : 0;
 
     return {
+      avgCopertoMedio,
       totalCoperti,
       totalBudgetRevenue,
       totalBudgetDelivery,
-      totalBudget,
+      totalBudget: totalBudgetRevenue + totalBudgetDelivery,
       totalActualRevenue,
       totalActualDelivery,
-      totalActual,
-      totalConsuntivo,
-      budgetPercentage,
-      actualPercentage,
+      totalActual: totalActualRevenue + totalActualDelivery,
+      totalConsuntivo2026,
+      totalConsuntivo2025,
       deltaPercentage
     };
   }, [budgetEntries]);
@@ -123,8 +142,8 @@ export default function Budget({}: BudgetProps) {
 
   const getPercentageColor = (value: number | null | undefined) => {
     if (!value) return "";
-    if (value < 0) return "text-green-600"; // Below budget is good
-    if (value > 0) return "text-red-600"; // Above budget is warning
+    if (value > 0) return "text-green-600"; // Growth is good (2026 > 2025)
+    if (value < 0) return "text-red-600"; // Decline is concerning (2026 < 2025)
     return "text-gray-600";
   };
 
@@ -217,25 +236,32 @@ export default function Budget({}: BudgetProps) {
               <TableHeader>
                 <TableRow className="bg-red-600 text-white hover:bg-red-600">
                   <TableHead className="text-white font-semibold min-w-[120px]">Data</TableHead>
+                  <TableHead className="text-white font-semibold text-right min-w-[100px]">Coperto Medio €</TableHead>
                   <TableHead className="text-white font-semibold text-center min-w-[80px]">Coperti</TableHead>
                   <TableHead className="text-white font-semibold text-right min-w-[120px]">Budget {selectedYear} €</TableHead>
                   <TableHead className="text-white font-semibold text-right min-w-[120px]">Delivery {selectedYear} €</TableHead>
-                  <TableHead className="text-white font-semibold text-center min-w-[80px]">A Bdg</TableHead>
                   <TableHead className="text-white font-semibold text-right min-w-[120px]">Incasso {selectedYear - 1} €</TableHead>
                   <TableHead className="text-white font-semibold text-right min-w-[120px]">Delivery {selectedYear - 1} €</TableHead>
-                  <TableHead className="text-white font-semibold text-center min-w-[80px]">A A Reale</TableHead>
-                  <TableHead className="text-white font-semibold text-center min-w-[100px]">Consuntivo</TableHead>
+                  <TableHead className="text-white font-semibold text-center min-w-[110px]">Consuntivo {selectedYear}</TableHead>
+                  <TableHead className="text-white font-semibold text-center min-w-[110px]">Consuntivo {selectedYear - 1}</TableHead>
                   <TableHead className="text-white font-semibold text-center min-w-[80px]">Delta %</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {monthDays.map(day => {
                   const entry = budgetMap.get(day);
-                  const totalBudget = (entry?.budgetRevenue || 0) + (entry?.budgetDelivery || 0);
-                  const totalActual = (entry?.actualRevenue || 0) + (entry?.actualDelivery || 0);
-                  const budgetPercentage = totalBudget > 0 ? 100 : 0; // Always 100% vs budget by definition
-                  const actualPercentage = totalBudget > 0 ? ((totalActual / totalBudget) * 100) : 0;
-                  const deltaPercentage = actualPercentage - budgetPercentage;
+                  
+                  // Calcolo automatico Budget 2026 = Coperti * Coperto Medio
+                  const calculatedBudgetRevenue = (entry?.coperti || 0) * (entry?.copertoMedio || 0);
+                  
+                  // Consuntivo 2026 = Budget 2026 + Delivery 2026
+                  const consuntivo2026 = calculatedBudgetRevenue + (entry?.budgetDelivery || 0);
+                  
+                  // Consuntivo 2025 = Incasso 2025 + Delivery 2025
+                  const consuntivo2025 = (entry?.actualRevenue || 0) + (entry?.actualDelivery || 0);
+                  
+                  // Delta % tra Consuntivo 2026 e Consuntivo 2025
+                  const deltaPercentage = consuntivo2025 > 0 ? (((consuntivo2026 - consuntivo2025) / consuntivo2025) * 100) : 0;
 
                   return (
                     <TableRow 
@@ -244,6 +270,16 @@ export default function Budget({}: BudgetProps) {
                     >
                       <TableCell className="font-medium">
                         {`${getDayOfWeek(selectedYear, selectedMonth, day)} ${day.toString().padStart(2, '0')} ${monthNames[selectedMonth - 1].slice(0, 3)} ${selectedYear}`}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Input
+                          type="text"
+                          value={entry?.copertoMedio ? entry.copertoMedio.toString() : ''}
+                          placeholder="0,00"
+                          className="w-20 text-right border-0 p-1 h-8"
+                          onChange={(e) => handleCellEdit(day, 'copertoMedio', e.target.value)}
+                          data-testid={`input-coperto-medio-${day}`}
+                        />
                       </TableCell>
                       <TableCell className="text-center">
                         <Input
@@ -256,14 +292,9 @@ export default function Budget({}: BudgetProps) {
                         />
                       </TableCell>
                       <TableCell className="text-right">
-                        <Input
-                          type="text"
-                          value={entry?.budgetRevenue ? entry.budgetRevenue.toString() : ''}
-                          placeholder="0,00"
-                          className="w-24 text-right border-0 p-1 h-8"
-                          onChange={(e) => handleCellEdit(day, 'budgetRevenue', e.target.value)}
-                          data-testid={`input-budget-revenue-${day}`}
-                        />
+                        <span className="text-sm font-mono" data-testid={`calculated-budget-revenue-${day}`}>
+                          {formatCurrency(calculatedBudgetRevenue)}
+                        </span>
                       </TableCell>
                       <TableCell className="text-right">
                         <Input
@@ -274,11 +305,6 @@ export default function Budget({}: BudgetProps) {
                           onChange={(e) => handleCellEdit(day, 'budgetDelivery', e.target.value)}
                           data-testid={`input-budget-delivery-${day}`}
                         />
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <span className="text-sm font-mono" data-testid={`text-budget-percentage-${day}`}>
-                          {formatPercentage(budgetPercentage)}
-                        </span>
                       </TableCell>
                       <TableCell className="text-right">
                         <Input
@@ -301,19 +327,14 @@ export default function Budget({}: BudgetProps) {
                         />
                       </TableCell>
                       <TableCell className="text-center">
-                        <span className={`text-sm font-mono ${getPercentageColor(actualPercentage)}`} data-testid={`text-actual-percentage-${day}`}>
-                          {formatPercentage(actualPercentage)}
+                        <span className="text-sm font-mono" data-testid={`consuntivo-2026-${day}`}>
+                          {formatCurrency(consuntivo2026)}
                         </span>
                       </TableCell>
                       <TableCell className="text-center">
-                        <Input
-                          type="text"
-                          value={entry?.consuntivo ? entry.consuntivo.toString() : ''}
-                          placeholder="0,00"
-                          className="w-20 text-center border-0 p-1 h-8"
-                          onChange={(e) => handleCellEdit(day, 'consuntivo', e.target.value)}
-                          data-testid={`input-consuntivo-${day}`}
-                        />
+                        <span className="text-sm font-mono" data-testid={`consuntivo-2025-${day}`}>
+                          {formatCurrency(consuntivo2025)}
+                        </span>
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge 
@@ -331,18 +352,14 @@ export default function Budget({}: BudgetProps) {
                 {/* Totals Row */}
                 <TableRow className="bg-gray-100 dark:bg-gray-800 font-semibold border-t-2">
                   <TableCell className="font-bold">Totale {monthNames[selectedMonth - 1]}</TableCell>
+                  <TableCell className="text-right font-bold" data-testid="total-coperto-medio">{formatCurrency(totals.avgCopertoMedio)}</TableCell>
                   <TableCell className="text-center font-bold" data-testid="total-coperti">{totals.totalCoperti}</TableCell>
                   <TableCell className="text-right font-bold" data-testid="total-budget-revenue">{formatCurrency(totals.totalBudgetRevenue)}</TableCell>
                   <TableCell className="text-right font-bold" data-testid="total-budget-delivery">{formatCurrency(totals.totalBudgetDelivery)}</TableCell>
-                  <TableCell className="text-center font-bold" data-testid="total-budget-percentage">{formatPercentage(totals.budgetPercentage)}</TableCell>
                   <TableCell className="text-right font-bold" data-testid="total-actual-revenue">{formatCurrency(totals.totalActualRevenue)}</TableCell>
                   <TableCell className="text-right font-bold" data-testid="total-actual-delivery">{formatCurrency(totals.totalActualDelivery)}</TableCell>
-                  <TableCell className="text-center font-bold" data-testid="total-actual-percentage">
-                    <span className={getPercentageColor(totals.actualPercentage)}>
-                      {formatPercentage(totals.actualPercentage)}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-center font-bold" data-testid="total-consuntivo">{formatCurrency(totals.totalConsuntivo)}</TableCell>
+                  <TableCell className="text-center font-bold" data-testid="total-consuntivo-2026">{formatCurrency(totals.totalConsuntivo2026)}</TableCell>
+                  <TableCell className="text-center font-bold" data-testid="total-consuntivo-2025">{formatCurrency(totals.totalConsuntivo2025)}</TableCell>
                   <TableCell className="text-center font-bold">
                     <Badge 
                       variant={totals.deltaPercentage < 0 ? "default" : totals.deltaPercentage > 5 ? "destructive" : "secondary"}
@@ -363,11 +380,11 @@ export default function Budget({}: BudgetProps) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Budget Totale</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Consuntivo {selectedYear}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" data-testid="summary-total-budget">
-              {formatCurrency(totals.totalBudget)}
+            <div className="text-2xl font-bold" data-testid="summary-card-consuntivo-2026">
+              {formatCurrency(totals.totalConsuntivo2026)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Sala: {formatCurrency(totals.totalBudgetRevenue)} | Delivery: {formatCurrency(totals.totalBudgetDelivery)}
@@ -377,11 +394,11 @@ export default function Budget({}: BudgetProps) {
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Incasso Reale</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Consuntivo {selectedYear - 1}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" data-testid="summary-total-actual">
-              {formatCurrency(totals.totalActual)}
+            <div className="text-2xl font-bold" data-testid="summary-card-consuntivo-2025">
+              {formatCurrency(totals.totalConsuntivo2025)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Sala: {formatCurrency(totals.totalActualRevenue)} | Delivery: {formatCurrency(totals.totalActualDelivery)}
@@ -394,11 +411,11 @@ export default function Budget({}: BudgetProps) {
             <CardTitle className="text-sm font-medium text-muted-foreground">Performance</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${getPercentageColor(totals.deltaPercentage)}`} data-testid="summary-performance">
+            <div className={`text-2xl font-bold ${getPercentageColor(totals.deltaPercentage)}`} data-testid="summary-card-performance">
               {totals.deltaPercentage > 0 ? '+' : ''}{totals.deltaPercentage.toFixed(1)}%
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              vs Budget {selectedYear}
+              {selectedYear} vs {selectedYear - 1}
             </p>
           </CardContent>
         </Card>
