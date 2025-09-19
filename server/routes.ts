@@ -812,6 +812,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Food Cost Metrics API Routes
+  app.get("/api/metrics/food-cost/:year/:month", async (req, res) => {
+    try {
+      const year = parseInt(req.params.year);
+      const month = parseInt(req.params.month);
+      
+      // Get all required data for food cost calculation
+      const [dishes, products, editableInventory, stockMovements] = await Promise.all([
+        storage.getDishes(),
+        storage.getProducts(),
+        storage.getEditableInventory(),
+        storage.getStockMovements()
+      ]);
+
+      // Create date range for the requested month
+      const startDate = new Date(year, month - 1, 1); // month - 1 because Date month is 0-based
+      const endDate = new Date(year, month, 0); // Last day of the month
+      
+      // Filter stock movements for the requested period
+      const monthlyStockMovements = stockMovements.filter(movement => {
+        const movementDate = new Date(movement.movementDate);
+        return movementDate >= startDate && movementDate <= endDate;
+      });
+
+      // Create product map for quick lookup
+      const productMap = new Map(products.map(p => [p.id, p]));
+
+      // Calculate food cost metrics using the same formula as Dashboard
+      // Note: dishes.sold is aggregate data - limitation documented for period-specific sales
+      // 1. Calculate NET REVENUE (netPrice) for food sales - using aggregate data
+      const totalFoodSales = dishes.reduce((sum, dish) => sum + (dish.netPrice * dish.sold), 0);
+      
+      // 2. Calculate THEORETICAL food cost (based on recipes) - using aggregate data
+      const totalCostOfSales = dishes.reduce((sum, dish) => sum + (dish.totalCost * dish.sold), 0);
+      const theoreticalFoodCostPercentage = totalFoodSales > 0 ? (totalCostOfSales / totalFoodSales) * 100 : 0;
+      
+      // 3. Calculate REAL food cost: (totale iniziale + totale IN - totale finale)
+      // Note: editableInventory represents current state, not period-specific
+      // Totale iniziale magazzino
+      const totaleInizialeM = editableInventory.reduce((sum, inventory) => {
+        const product = productMap.get(inventory.productId);
+        return sum + (product ? inventory.initialQuantity * product.pricePerUnit : 0);
+      }, 0);
+      
+      // Totale IN magazzino - filtered for the requested month
+      const totaleInM = monthlyStockMovements
+        .filter(movement => movement.movementType === 'in')
+        .reduce((sum, movement) => sum + (movement.totalCost || 0), 0);
+      
+      // Totale finale magazzino
+      const totaleFinaleM = editableInventory.reduce((sum, inventory) => {
+        const product = productMap.get(inventory.productId);
+        return sum + (product ? inventory.finalQuantity * product.pricePerUnit : 0);
+      }, 0);
+      
+      // REAL Food cost calculation
+      const totalFoodCost = totaleInizialeM + totaleInM - totaleFinaleM;
+      const realFoodCostPercentage = totalFoodSales > 0 ? (totalFoodCost / totalFoodSales) * 100 : 0;
+      
+      // Calculate differential: Real - Theoretical
+      const realVsTheoreticalDiff = realFoodCostPercentage - theoreticalFoodCostPercentage;
+
+      res.json({
+        year,
+        month,
+        totalFoodSales,
+        totalFoodCost,
+        foodCostPercentage: realFoodCostPercentage,
+        theoreticalFoodCostPercentage,
+        realVsTheoreticalDiff,
+        calculatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error calculating food cost metrics:", error);
+      res.status(500).json({ error: "Failed to calculate food cost metrics" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -55,6 +55,28 @@ export default function Budget({}: BudgetProps) {
     retry: false, // Don't retry on 404
   });
 
+  // Fetch food cost metrics from dashboard for integration
+  const { data: foodCostMetrics } = useQuery({
+    queryKey: ['/api/metrics/food-cost', selectedYear, selectedMonth],
+    queryFn: async () => {
+      const response = await fetch(`/api/metrics/food-cost/${selectedYear}/${selectedMonth}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch food cost metrics: ${response.status}`);
+      }
+      return response.json() as Promise<{
+        year: number;
+        month: number;
+        totalFoodSales: number;
+        totalFoodCost: number;
+        foodCostPercentage: number;
+        theoreticalFoodCostPercentage: number;
+        realVsTheoreticalDiff: number;
+        calculatedAt: string;
+      }>;
+    },
+    retry: 1,
+  });
+
   // Handle 404 errors by creating default parameters (side-effect free)
   const [defaultsCreated, setDefaultsCreated] = useState(false);
   
@@ -113,27 +135,43 @@ export default function Budget({}: BudgetProps) {
     },
   });
 
-  // Handle editing economic parameters - distinguish between percentage and budget fields
-  const handleEcoEdit = (field: keyof UpdateEconomicParameters, currentValue: number, isPercentageField: boolean = false) => {
+  // Handle editing economic parameters with bidirectional logic
+  const handleEcoEdit = (field: keyof UpdateEconomicParameters, currentValue: number, isPercentageField: boolean = false, isBudgetEuroField: boolean = false) => {
     setEcoEditingField(field);
     if (isPercentageField) {
       // For percentage fields (materie prime, acquisti vari), edit as percentage
       setEcoTempValue(currentValue.toString().replace('.', ','));
+    } else if (isBudgetEuroField) {
+      // For budget euro fields - allow editing as euro values that will convert to percentages
+      setEcoTempValue(currentValue.toString().replace('.', ','));
     } else {
-      // For budget fields, edit as absolute euro value
+      // For regular budget and consuntivo fields, edit as absolute euro value
       setEcoTempValue(currentValue.toString().replace('.', ','));
     }
   };
 
-  const handleEcoSave = (field: keyof UpdateEconomicParameters) => {
+  const handleEcoSave = (field: keyof UpdateEconomicParameters, isPercentageField: boolean = false, isBudgetEuroField: boolean = false) => {
     if (!ecoParams) return;
     
     const numValue = parseFloat(ecoTempValue.replace(',', '.'));
     if (isNaN(numValue)) return;
     
-    const updateData: Partial<UpdateEconomicParameters> = {
-      [field]: numValue,
-    };
+    let updateData: Partial<UpdateEconomicParameters> = {};
+    
+    // Calculate total revenue for bidirectional calculations
+    const totalRevenue = totals.totalActualRevenue + totals.totalActualDelivery || totals.totalBudget || 1;
+    
+    if (isPercentageField) {
+      // Editing percentage: save percentage directly
+      updateData[field] = numValue;
+    } else if (isBudgetEuroField) {
+      // Editing euro value: convert to percentage and save
+      const percentageValue = (numValue / totalRevenue) * 100;
+      updateData[field] = percentageValue;
+    } else {
+      // Regular fields (budget amounts, consuntivo amounts): save euro value directly
+      updateData[field] = numValue;
+    }
     
     updateEcoParamsMutation.mutate(updateData);
     setEcoEditingField(null);
@@ -540,139 +578,185 @@ export default function Budget({}: BudgetProps) {
                   code: '0110', 
                   name: 'Consumi materie prime', 
                   percent: (ecoParams?.materieFirstePercent || 22.10) / 100, 
+                  budgetValue: totalRevenue * ((ecoParams?.materieFirstePercent || 22.10) / 100),
+                  consuntivoValue: foodCostMetrics?.totalFoodCost || 0, // Integrazione reale food cost dalla dashboard
+                  foodCostPercent: foodCostMetrics?.foodCostPercentage || null, // Integrazione food cost dalla dashboard
                   dataTestId: 'eco-materie', 
                   highlight: false,
                   editable: true,
-                  field: 'materieFirstePercent'
+                  field: 'materieFirstePercent',
+                  consuntivoField: null, // Non editabile - viene dal food cost della dashboard
+                  isBidirectional: true,
+                  isFromDashboard: true // Flag per indicare che viene dalla dashboard
                 },
                 { 
                   code: '0120', 
                   name: 'Acquisti vari', 
                   percent: (ecoParams?.acquistiVarPercent || 3.00) / 100, 
+                  budgetValue: totalRevenue * ((ecoParams?.acquistiVarPercent || 3.00) / 100),
+                  consuntivoValue: ecoParams?.acquistiVarConsuntivo || 0,
                   dataTestId: null, 
                   highlight: false,
                   editable: true,
-                  field: 'acquistiVarPercent'
+                  field: 'acquistiVarPercent',
+                  consuntivoField: 'acquistiVarConsuntivo',
+                  isBidirectional: true
                 },
                 { 
                   code: '0210', 
                   name: 'Locazioni locali', 
                   percent: (ecoParams?.locazioniBudget || 0) / totalRevenue, 
                   budgetValue: ecoParams?.locazioniBudget || 0,
+                  consuntivoValue: ecoParams?.locazioniConsuntivo || 0,
                   dataTestId: null, 
                   highlight: false,
                   editable: true,
-                  field: 'locazioniBudget'
+                  field: 'locazioniBudget',
+                  consuntivoField: 'locazioniConsuntivo',
+                  isBidirectional: false
                 },
                 { 
                   code: '0220', 
                   name: 'Costi del personale', 
                   percent: (ecoParams?.personaleBudget || 0) / totalRevenue, 
                   budgetValue: ecoParams?.personaleBudget || 0,
+                  consuntivoValue: ecoParams?.personaleConsuntivo || 0,
                   dataTestId: 'eco-personale', 
                   highlight: true,
                   editable: true,
-                  field: 'personaleBudget'
+                  field: 'personaleBudget',
+                  consuntivoField: 'personaleConsuntivo',
+                  isBidirectional: false
                 },
                 { 
                   code: '0240', 
                   name: 'Utenze', 
                   percent: (ecoParams?.utenzeBudget || 0) / totalRevenue, 
                   budgetValue: ecoParams?.utenzeBudget || 0,
+                  consuntivoValue: ecoParams?.utenzeConsuntivo || 0,
                   dataTestId: null, 
                   highlight: false,
                   editable: true,
-                  field: 'utenzeBudget'
+                  field: 'utenzeBudget',
+                  consuntivoField: 'utenzeConsuntivo',
+                  isBidirectional: false
                 },
                 { 
                   code: '0250', 
                   name: 'Manutenzioni', 
                   percent: (ecoParams?.manutenzionibudget || 0) / totalRevenue, 
                   budgetValue: ecoParams?.manutenzionibudget || 0,
+                  consuntivoValue: ecoParams?.manutenzioniConsuntivo || 0,
                   dataTestId: null, 
                   highlight: false,
                   editable: true,
-                  field: 'manutenzionibudget'
+                  field: 'manutenzionibudget',
+                  consuntivoField: 'manutenzioniConsuntivo',
+                  isBidirectional: false
                 },
                 { 
                   code: '0260', 
                   name: 'Noleggi e Leasing', 
                   percent: (ecoParams?.noleggibudget || 0) / totalRevenue, 
                   budgetValue: ecoParams?.noleggibudget || 0,
+                  consuntivoValue: ecoParams?.noleggiConsuntivo || 0,
                   dataTestId: null, 
                   highlight: false,
                   editable: true,
-                  field: 'noleggibudget'
+                  field: 'noleggibudget',
+                  consuntivoField: 'noleggiConsuntivo',
+                  isBidirectional: false
                 },
                 { 
                   code: '0310', 
                   name: 'Prestazioni di terzi', 
                   percent: (ecoParams?.prestazioniTerziBudget || 0) / totalRevenue, 
                   budgetValue: ecoParams?.prestazioniTerziBudget || 0,
+                  consuntivoValue: ecoParams?.prestazioniTerziConsuntivo || 0,
                   dataTestId: null, 
                   highlight: false,
                   editable: true,
-                  field: 'prestazioniTerziBudget'
+                  field: 'prestazioniTerziBudget',
+                  consuntivoField: 'prestazioniTerziConsuntivo',
+                  isBidirectional: false
                 },
                 { 
                   code: '0320', 
                   name: 'Consulenze e compensi a terzi', 
                   percent: (ecoParams?.consulenzeBudget || 0) / totalRevenue, 
                   budgetValue: ecoParams?.consulenzeBudget || 0,
+                  consuntivoValue: ecoParams?.consulenzeConsuntivo || 0,
                   dataTestId: null, 
                   highlight: false,
                   editable: true,
-                  field: 'consulenzeBudget'
+                  field: 'consulenzeBudget',
+                  consuntivoField: 'consulenzeConsuntivo',
+                  isBidirectional: false
                 },
                 { 
                   code: '0330', 
                   name: 'Marketing', 
                   percent: (ecoParams?.marketingBudget || 0) / totalRevenue, 
                   budgetValue: ecoParams?.marketingBudget || 0,
+                  consuntivoValue: ecoParams?.marketingConsuntivo || 0,
                   dataTestId: null, 
                   highlight: false,
                   editable: true,
-                  field: 'marketingBudget'
+                  field: 'marketingBudget',
+                  consuntivoField: 'marketingConsuntivo',
+                  isBidirectional: false
                 },
                 { 
                   code: '0340', 
                   name: 'Delivery', 
                   percent: (ecoParams?.deliveryBudget || 0) / totalRevenue, 
                   budgetValue: ecoParams?.deliveryBudget || 0,
+                  consuntivoValue: ecoParams?.deliveryConsuntivo || 0,
                   dataTestId: null, 
                   highlight: false,
                   editable: true,
-                  field: 'deliveryBudget'
+                  field: 'deliveryBudget',
+                  consuntivoField: 'deliveryConsuntivo',
+                  isBidirectional: false
                 },
                 { 
                   code: '0410', 
                   name: 'Trasferte e viaggi', 
                   percent: (ecoParams?.trasferteBudget || 0) / totalRevenue, 
                   budgetValue: ecoParams?.trasferteBudget || 0,
+                  consuntivoValue: ecoParams?.trasferteConsuntivo || 0,
                   dataTestId: null, 
                   highlight: false,
                   editable: true,
-                  field: 'trasferteBudget'
+                  field: 'trasferteBudget',
+                  consuntivoField: 'trasferteConsuntivo',
+                  isBidirectional: false
                 },
                 { 
                   code: '0520', 
                   name: 'Assicurazioni', 
                   percent: (ecoParams?.assicurazioniBudget || 0) / totalRevenue, 
                   budgetValue: ecoParams?.assicurazioniBudget || 0,
+                  consuntivoValue: ecoParams?.assicurazioniConsuntivo || 0,
                   dataTestId: null, 
                   highlight: false,
                   editable: true,
-                  field: 'assicurazioniBudget'
+                  field: 'assicurazioniBudget',
+                  consuntivoField: 'assicurazioniConsuntivo',
+                  isBidirectional: false
                 },
                 { 
                   code: '0530', 
                   name: 'Spese bancarie', 
                   percent: (ecoParams?.speseBancarieBudget || 0) / totalRevenue, 
                   budgetValue: ecoParams?.speseBancarieBudget || 0,
+                  consuntivoValue: ecoParams?.speseBancarieConsuntivo || 0,
                   dataTestId: null, 
                   highlight: false,
                   editable: true,
-                  field: 'speseBancarieBudget'
+                  field: 'speseBancarieBudget',
+                  consuntivoField: 'speseBancarieConsuntivo',
+                  isBidirectional: false
                 }
               ];
               
@@ -763,13 +847,39 @@ export default function Budget({}: BudgetProps) {
                           )}
                         </TableCell>
                         <TableCell 
-                          className={`text-right ${item.highlight ? "font-medium" : ""}`}
+                          className={`text-right ${item.highlight ? "font-medium" : ""} ${item.editable && item.consuntivoField ? 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 bg-yellow-100 dark:bg-yellow-900/30' : ''}`}
                           data-testid={item.dataTestId ? `${item.dataTestId}-consuntivo` : undefined}
+                          onClick={item.editable && item.consuntivoField ? () => {
+                            const currentValue = item.consuntivoValue || 0;
+                            handleEcoEdit(item.consuntivoField as keyof UpdateEconomicParameters, currentValue, false, false);
+                          } : undefined}
                         >
-                          {formatCurrency((totals.totalActualRevenue + totals.totalActualDelivery) * item.percent)}
+                          {ecoEditingField === item.consuntivoField && item.editable && item.consuntivoField ? (
+                            <Input
+                              value={ecoTempValue}
+                              onChange={(e) => setEcoTempValue(e.target.value)}
+                              onBlur={() => {
+                                handleEcoSave(item.consuntivoField as keyof UpdateEconomicParameters, false, false);
+                                setEcoEditingField(null);
+                              }}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleEcoSave(item.consuntivoField as keyof UpdateEconomicParameters, false, false);
+                                  setEcoEditingField(null);
+                                }
+                              }}
+                              className="h-6 text-right"
+                              autoFocus
+                            />
+                          ) : (
+                            formatCurrency(item.consuntivoValue || 0)
+                          )}
                         </TableCell>
                         <TableCell className={`text-center ${item.highlight ? "font-medium" : ""}`}>
-                          {formatPercent(item.percent * 100)}
+                          {item.isFromDashboard && item.foodCostPercent !== null ? 
+                            formatPercent(item.foodCostPercent) : 
+                            formatPercent(((item.consuntivoValue || 0) / (totals.totalActualRevenue + totals.totalActualDelivery || 1)) * 100)
+                          }
                         </TableCell>
                       </TableRow>
                     ))}
