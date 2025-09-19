@@ -9,7 +9,8 @@ import {
   ArrowUpDown, 
   BarChart3,
   Users,
-  TrendingUp as ProfitIcon
+  TrendingUp as ProfitIcon,
+  Calendar
 } from "lucide-react";
 
 interface TabNavigationProps {
@@ -19,6 +20,7 @@ interface TabNavigationProps {
 
 const tabs = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "budget", label: "Budget", icon: Calendar },
   { id: "food-cost", label: "Food Cost", icon: Calculator },
   { id: "labour-cost", label: "Labour Cost", icon: Users },
   { id: "profit-loss", label: "P&L", icon: ProfitIcon },

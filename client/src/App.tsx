@@ -20,6 +20,7 @@ import {
 import AppHeader from "@/components/AppHeader";
 import TabNavigation from "@/components/TabNavigation";
 import { Dashboard } from "@/components/Dashboard";
+import Budget from "@/components/Budget";
 import { Users, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProductForm from "@/components/ProductForm";
@@ -533,6 +534,11 @@ function FoodCostManager() {
               personalMeals={personalMeals}
               onNavigateToSection={setActiveTab}
             />
+          )}
+
+          {/* Budget Tab */}
+          {activeTab === "budget" && (
+            <Budget />
           )}
 
           {/* Labour Cost Tab (Coming Soon) */}
