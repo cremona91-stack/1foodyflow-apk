@@ -5,6 +5,9 @@ import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/lib/protected-route";
+import AuthPage from "@/pages/auth-page";
 
 // PDF Export utilities
 import {
@@ -748,8 +751,21 @@ function FoodCostManager() {
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={FoodCostManager} />
-      <Route component={FoodCostManager} />
+      <Route path="/auth">
+        <ProtectedRoute requiredAuth={false}>
+          <AuthPage />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/">
+        <ProtectedRoute>
+          <FoodCostManager />
+        </ProtectedRoute>
+      </Route>
+      <Route>
+        <ProtectedRoute>
+          <FoodCostManager />
+        </ProtectedRoute>
+      </Route>
     </Switch>
   );
 }
@@ -759,8 +775,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
         <TooltipProvider>
-          <Router />
-          <Toaster />
+          <AuthProvider>
+            <Router />
+            <Toaster />
+          </AuthProvider>
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
