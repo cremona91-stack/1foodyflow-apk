@@ -150,20 +150,29 @@ export default function Budget({}: BudgetProps) {
     let updateData: Partial<UpdateEconomicParameters> = {};
     
     // Calculate total revenue for bidirectional calculations  
-    const totalCorrispettivi = Math.max(totals.totalBudget || 0, 1); // Denominatore unificato protetto da divisione per zero
+    const totalCorrispettivi = totals.totalBudget || 0; // Denominatore reale senza fallback artificiale
     
     // Logica bidirezionale specifica per user requirements:
     // - Per "Consumi materie prime" e "Acquisti vari": editare Target % → calcolare e salvare budget €
     // - Per tutte le altre voci: editare Budget € direttamente
     
-    if (field === 'materieFirstePercent') {
-      // User edita Target % per materie prime → calcola e salva budget €
+    if (field === 'materieFirstePercent' || field === 'acquistiVarPercent') {
+      // Validazione: blocca salvataggio se corrispettivi non impostati
+      if (totalCorrispettivi <= 0) {
+        // Mostra errore e blocca salvataggio
+        // TODO: Implementare toast error message
+        console.error("Impossibile salvare percentuale: imposta prima i corrispettivi del mese");
+        return; // Blocca il salvataggio
+      }
+      
+      // Calcola budget € dalla percentuale
       const budgetEuro = (numValue * totalCorrispettivi) / 100;
-      updateData['materieFirsteBudget'] = budgetEuro;
-    } else if (field === 'acquistiVarPercent') {
-      // User edita Target % per acquisti vari → calcola e salva budget €
-      const budgetEuro = (numValue * totalCorrispettivi) / 100;
-      updateData['acquistiVarBudget'] = budgetEuro;
+      
+      if (field === 'materieFirstePercent') {
+        updateData['materieFirsteBudget'] = budgetEuro;
+      } else {
+        updateData['acquistiVarBudget'] = budgetEuro;
+      }
     } else {
       // Editing Budget€ o Consuntivo€ per tutte le altre voci → salva valore direttamente
       updateData[field] = numValue;
