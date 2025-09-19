@@ -10,14 +10,9 @@ import {
   TrendingUp, 
   TrendingDown, 
   DollarSign, 
-  AlertTriangle,
-  CheckCircle,
-  Activity,
-  Target,
   Clock,
   Calculator
 } from "lucide-react";
-import SalesChart from "@/components/SalesChart";
 
 // Types for dashboard data
 import type { Product, Dish, Order, StockMovement } from "@shared/schema";
@@ -370,122 +365,6 @@ export function Dashboard({
         />
       </div>
 
-      {/* Interactive Charts & Analysis */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Sales Performance Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              Andamento Vendite
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <SalesChart dishes={dishes} />
-          </CardContent>
-        </Card>
-
-        {/* Cost Breakdown */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              Breakdown Costi
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Food Cost</span>
-                <span className="text-sm">{foodCostPercentage.toFixed(1)}%</span>
-              </div>
-              <Progress value={foodCostPercentage} className="h-2" />
-            </div>
-            
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Labour Cost</span>
-                <span className="text-sm">{labourCostPercentage.toFixed(1)}%</span>
-              </div>
-              <Progress value={labourCostPercentage} className="h-2" />
-            </div>
-            
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Altri Costi</span>
-                <span className="text-sm">19.2%</span>
-              </div>
-              <Progress value={19.2} className="h-2" />
-            </div>
-            
-            <div className="pt-2 border-t">
-              <div className="flex justify-between items-center font-semibold">
-                <span>Margine Netto</span>
-                <span className={mockProfitMargin > 15 ? "text-green-600 dark:text-green-400" : "text-yellow-600 dark:text-yellow-400"}>
-                  {mockProfitMargin.toFixed(1)}%
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5" />
-            Azioni Rapide
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Button 
-              variant="outline" 
-              className="h-auto flex-col gap-2 p-4"
-              onClick={() => onNavigateToSection("inventory")}
-              data-testid="button-quick-inventory"
-            >
-              <ChefHat className="h-6 w-6" />
-              <span className="font-medium">Gestisci Magazzino</span>
-              <span className="text-xs text-muted-foreground">Prodotti e ricette</span>
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="h-auto flex-col gap-2 p-4"
-              onClick={() => onNavigateToSection("orders")}
-              data-testid="button-quick-orders"
-            >
-              <DollarSign className="h-6 w-6" />
-              <span className="font-medium">Nuovo Ordine</span>
-              <span className="text-xs text-muted-foreground">Rifornimenti</span>
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="h-auto flex-col gap-2 p-4"
-              onClick={() => onNavigateToSection("waste")}
-              data-testid="button-quick-waste"
-            >
-              <AlertTriangle className="h-6 w-6" />
-              <span className="font-medium">Registra Sprechi</span>
-              <span className="text-xs text-muted-foreground">Controllo perdite</span>
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="h-auto flex-col gap-2 p-4"
-              onClick={() => onNavigateToSection("food-cost")}
-              data-testid="button-quick-food-cost"
-            >
-              <Calculator className="h-6 w-6" />
-              <span className="font-medium">Analisi Costi</span>
-              <span className="text-xs text-muted-foreground">Food cost dettagli</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
