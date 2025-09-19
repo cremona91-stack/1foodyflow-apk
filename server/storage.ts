@@ -691,7 +691,7 @@ export class DatabaseStorage implements IStorage {
     }
 
     const result = await db.update(economicParameters)
-      .set({ ...filteredUpdates, updatedAt: new Date() })
+      .set(filteredUpdates)
       .where(eq(economicParameters.id, id))
       .returning();
     return result[0];
