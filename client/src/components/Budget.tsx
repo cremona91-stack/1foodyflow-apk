@@ -31,8 +31,9 @@ export default function Budget({}: BudgetProps) {
 
   // Create economic parameters mutation (for defaults)
   const createEcoParamsMutation = useMutation({
-    mutationFn: async (params: UpdateEconomicParameters) => {
-      return await apiRequest('POST', '/api/economic-parameters', params) as EconomicParameters;
+    mutationFn: async (params: UpdateEconomicParameters & { year: number; month: number }) => {
+      const response = await apiRequest('POST', '/api/economic-parameters', params);
+      return response as unknown as EconomicParameters;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/economic-parameters', selectedYear, selectedMonth] });
@@ -80,7 +81,7 @@ export default function Budget({}: BudgetProps) {
         assicurazioniBudget: 0,
         speseBancarieBudget: 0,
       };
-      createEcoParamsMutation.mutate({ year: selectedYear, month: selectedMonth, ...defaultParams });
+      createEcoParamsMutation.mutate({ ...defaultParams, year: selectedYear, month: selectedMonth });
       setDefaultsCreated(true);
     }
   }, [ecoParamsError, selectedYear, selectedMonth, defaultsCreated, createEcoParamsMutation]);
