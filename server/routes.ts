@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth } from "./auth";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 import { 
   insertProductSchema, 
   insertRecipeSchema, 
@@ -30,8 +30,20 @@ import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
-  // Authentication setup - registers /api/register, /api/login, /api/logout, /api/user
-  setupAuth(app);
+  // Replit Auth setup - registers /api/login, /api/logout, /api/callback
+  await setupAuth(app);
+
+  // Auth routes for Replit Auth
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
 
   // Products API Routes
   app.get("/api/products", async (req, res) => {
