@@ -222,7 +222,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteProduct(id: string): Promise<boolean> {
     const result = await db.delete(products).where(eq(products.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Recipes
@@ -259,7 +259,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteRecipe(id: string): Promise<boolean> {
     const result = await db.delete(recipes).where(eq(recipes.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Dishes
@@ -303,7 +303,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteDish(id: string): Promise<boolean> {
     const result = await db.delete(dishes).where(eq(dishes.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Waste
@@ -321,7 +321,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteWaste(id: string): Promise<boolean> {
     const result = await db.delete(waste).where(eq(waste.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Personal Meals
@@ -339,7 +339,7 @@ export class DatabaseStorage implements IStorage {
 
   async deletePersonalMeal(id: string): Promise<boolean> {
     const result = await db.delete(personalMeals).where(eq(personalMeals.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Orders (Ricevimento Merci)
@@ -470,7 +470,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteOrder(id: string): Promise<boolean> {
     const result = await db.delete(orders).where(eq(orders.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Stock Movements (Magazzino In/Out)
@@ -515,7 +515,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteStockMovement(id: string): Promise<boolean> {
     const result = await db.delete(stockMovements).where(eq(stockMovements.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Inventory Snapshots
@@ -558,7 +558,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteInventorySnapshot(id: string): Promise<boolean> {
     const result = await db.delete(inventorySnapshots).where(eq(inventorySnapshots.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Editable Inventory methods
@@ -627,7 +627,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEditableInventory(id: string): Promise<boolean> {
     const result = await db.delete(editableInventory).where(eq(editableInventory.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Budget Entries implementation
@@ -672,7 +672,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteBudgetEntry(id: string): Promise<boolean> {
     const result = await db.delete(budgetEntries).where(eq(budgetEntries.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Economic Parameters implementation
