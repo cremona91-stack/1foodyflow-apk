@@ -88,6 +88,7 @@ export default function Budget({}: BudgetProps) {
     let totalBudgetDelivery = 0;
     let totalActualRevenue = 0;
     let totalActualDelivery = 0;
+    let totalConsuntivo2026 = 0;
     let validEntries = 0;
 
     if (budgetEntries && Array.isArray(budgetEntries)) {
@@ -96,6 +97,7 @@ export default function Budget({}: BudgetProps) {
         totalBudgetDelivery += entry.budgetDelivery || 0;
         totalActualRevenue += entry.actualRevenue || 0;
         totalActualDelivery += entry.actualDelivery || 0;
+        totalConsuntivo2026 += entry.consuntivo || 0;
         
         if (entry.copertoMedio && entry.copertoMedio > 0) {
           totalCopertoMedio += entry.copertoMedio;
@@ -110,9 +112,6 @@ export default function Budget({}: BudgetProps) {
 
     // Media coperto medio
     const avgCopertoMedio = validEntries > 0 ? totalCopertoMedio / validEntries : 0;
-    
-    // Consuntivo 2026 = Budget Revenue + Budget Delivery
-    const totalConsuntivo2026 = totalBudgetRevenue + totalBudgetDelivery;
     
     // Consuntivo 2025 = Incasso 2025 + Delivery 2025
     const totalConsuntivo2025 = totalActualRevenue + totalActualDelivery;
@@ -347,9 +346,14 @@ export default function Budget({}: BudgetProps) {
                         />
                       </TableCell>
                       <TableCell className="text-center">
-                        <span className="text-sm font-mono" data-testid={`consuntivo-2026-${day}`}>
-                          {formatCurrency(consuntivo2026)}
-                        </span>
+                        <Input
+                          type="text"
+                          value={entry?.consuntivo ? entry.consuntivo.toString() : ''}
+                          placeholder="0,00"
+                          className="w-24 text-right border-0 p-1 h-8"
+                          onChange={(e) => handleCellEdit(day, 'consuntivo', e.target.value)}
+                          data-testid={`input-consuntivo-${day}`}
+                        />
                       </TableCell>
                       <TableCell className="text-center bg-blue-50 dark:bg-blue-950/20">
                         <span className="text-sm font-mono" data-testid={`consuntivo-2025-${day}`}>
