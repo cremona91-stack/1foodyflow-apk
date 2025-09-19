@@ -8,6 +8,7 @@ import {
   type StockMovement,
   type InventorySnapshot,
   type EditableInventory,
+  type BudgetEntry,
   type InsertProduct,
   type InsertRecipe,
   type InsertDish,
@@ -17,6 +18,7 @@ import {
   type InsertStockMovement,
   type InsertInventorySnapshot,
   type InsertEditableInventory,
+  type InsertBudgetEntry,
   type UpdateProduct,
   type UpdateRecipe,
   type UpdateDish,
@@ -24,6 +26,7 @@ import {
   type UpdateStockMovement,
   type UpdateInventorySnapshot,
   type UpdateEditableInventory,
+  type UpdateBudgetEntry,
   type UpsertEditableInventory,
   products,
   recipes,
@@ -33,7 +36,8 @@ import {
   orders,
   stockMovements,
   inventorySnapshots,
-  editableInventory
+  editableInventory,
+  budgetEntries
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { eq, and } from "drizzle-orm";
@@ -114,6 +118,14 @@ export interface IStorage {
   updateEditableInventory(id: string, inventory: UpdateEditableInventory): Promise<EditableInventory | undefined>;
   upsertEditableInventory(inventory: UpsertEditableInventory): Promise<EditableInventory>;
   deleteEditableInventory(id: string): Promise<boolean>;
+
+  // Budget Entries
+  getBudgetEntries(): Promise<BudgetEntry[]>;
+  getBudgetEntry(id: string): Promise<BudgetEntry | undefined>;
+  getBudgetEntriesByMonth(year: number, month: number): Promise<BudgetEntry[]>;
+  createBudgetEntry(budgetEntry: InsertBudgetEntry): Promise<BudgetEntry>;
+  updateBudgetEntry(id: string, budgetEntry: UpdateBudgetEntry): Promise<BudgetEntry | undefined>;
+  deleteBudgetEntry(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -584,6 +596,51 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEditableInventory(id: string): Promise<boolean> {
     const result = await db.delete(editableInventory).where(eq(editableInventory.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Budget Entries implementation
+  async getBudgetEntries(): Promise<BudgetEntry[]> {
+    return await db.select().from(budgetEntries);
+  }
+
+  async getBudgetEntry(id: string): Promise<BudgetEntry | undefined> {
+    const result = await db.select().from(budgetEntries).where(eq(budgetEntries.id, id));
+    return result[0];
+  }
+
+  async getBudgetEntriesByMonth(year: number, month: number): Promise<BudgetEntry[]> {
+    return await db.select().from(budgetEntries)
+      .where(and(eq(budgetEntries.year, year), eq(budgetEntries.month, month)));
+  }
+
+  async createBudgetEntry(insertBudgetEntry: InsertBudgetEntry): Promise<BudgetEntry> {
+    const result = await db.insert(budgetEntries).values({
+      ...insertBudgetEntry,
+      notes: insertBudgetEntry.notes || null,
+    }).returning();
+    return result[0];
+  }
+
+  async updateBudgetEntry(id: string, updates: UpdateBudgetEntry): Promise<BudgetEntry | undefined> {
+    // Filter out undefined values
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, value]) => value !== undefined)
+    );
+
+    if (Object.keys(filteredUpdates).length === 0) {
+      return await this.getBudgetEntry(id);
+    }
+
+    const result = await db.update(budgetEntries)
+      .set({ ...filteredUpdates, updatedAt: new Date() })
+      .where(eq(budgetEntries.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteBudgetEntry(id: string): Promise<boolean> {
+    const result = await db.delete(budgetEntries).where(eq(budgetEntries.id, id));
     return result.rowCount > 0;
   }
 }

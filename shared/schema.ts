@@ -323,3 +323,51 @@ export type EditableInventory = typeof editableInventory.$inferSelect;
 export type InsertEditableInventory = z.infer<typeof insertEditableInventorySchema>;
 export type UpdateEditableInventory = z.infer<typeof updateEditableInventorySchema>;
 export type UpsertEditableInventory = z.infer<typeof upsertEditableInventorySchema>;
+
+// Budget entries table
+export const budgetEntries = pgTable("budget_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  date: text("date").notNull(), // Format: YYYY-MM-DD
+  year: integer("year").notNull(), // 2026, 2025, etc.
+  month: integer("month").notNull(), // 1-12
+  day: integer("day").notNull(), // 1-31
+  coperti: integer("coperti"), // Numero di coperti previsti
+  budgetRevenue: real("budget_revenue"), // Budget ricavi
+  budgetDelivery: real("budget_delivery"), // Budget delivery
+  actualRevenue: real("actual_revenue"), // Incasso reale (per confronti)
+  actualDelivery: real("actual_delivery"), // Delivery reale (per confronti)
+  consuntivo: real("consuntivo"), // Valore consuntivo
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Budget schemas
+export const insertBudgetEntrySchema = createInsertSchema(budgetEntries, {
+  date: z.string().min(1),
+  year: z.number().min(2020).max(2050),
+  month: z.number().min(1).max(12),
+  day: z.number().min(1).max(31),
+  coperti: z.number().min(0).optional(),
+  budgetRevenue: z.number().min(0).optional(),
+  budgetDelivery: z.number().min(0).optional(),
+  actualRevenue: z.number().min(0).optional(),
+  actualDelivery: z.number().min(0).optional(),
+  consuntivo: z.number().min(0).optional(),
+  notes: z.string().optional(),
+}).omit({ id: true, createdAt: true, updatedAt: true });
+
+export const updateBudgetEntrySchema = z.object({
+  coperti: z.number().min(0).optional(),
+  budgetRevenue: z.number().min(0).optional(),
+  budgetDelivery: z.number().min(0).optional(),
+  actualRevenue: z.number().min(0).optional(),
+  actualDelivery: z.number().min(0).optional(),
+  consuntivo: z.number().min(0).optional(),
+  notes: z.string().optional(),
+});
+
+// Budget types
+export type BudgetEntry = typeof budgetEntries.$inferSelect;
+export type InsertBudgetEntry = z.infer<typeof insertBudgetEntrySchema>;
+export type UpdateBudgetEntry = z.infer<typeof updateBudgetEntrySchema>;
