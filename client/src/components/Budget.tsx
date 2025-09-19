@@ -818,14 +818,14 @@ export default function Budget({}: BudgetProps) {
                           )}
                         </TableCell>
                         <TableCell 
-                          className={`text-right ${item.highlight ? "font-medium" : ""} ${item.editable && item.field && item.field !== 'materieFirstePercent' && item.field !== 'acquistiVarPercent' ? 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 bg-yellow-100 dark:bg-yellow-900/30' : ''}`}
+                          className={`text-right ${item.highlight ? "font-medium" : ""} ${item.editable && item.field ? 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 bg-yellow-100 dark:bg-yellow-900/30' : ''}`}
                           data-testid={item.dataTestId ? `${item.dataTestId}-budget` : undefined}
-                          onClick={item.editable && item.field && item.field !== 'materieFirstePercent' && item.field !== 'acquistiVarPercent' ? () => {
+                          onClick={item.editable && item.field ? () => {
                             const currentValue = item.budgetValue || 0;
                             handleEcoEdit(item.field as keyof UpdateEconomicParameters, currentValue, false);
                           } : undefined}
                         >
-                          {ecoEditingField === item.field && item.editable && item.field !== 'materieFirstePercent' && item.field !== 'acquistiVarPercent' ? (
+                          {ecoEditingField === item.field && item.editable && item.field ? (
                             <Input
                               value={ecoTempValue}
                               onChange={(e) => setEcoTempValue(e.target.value)}
