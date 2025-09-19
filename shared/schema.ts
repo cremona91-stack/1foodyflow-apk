@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, real, integer, json, timestamp, boolean, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, real, integer, json, timestamp, boolean, uniqueIndex, index, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -544,22 +544,40 @@ export type EconomicParameters = typeof economicParameters.$inferSelect;
 export type InsertEconomicParameters = z.infer<typeof insertEconomicParametersSchema>;
 export type UpdateEconomicParameters = z.infer<typeof updateEconomicParametersSchema>;
 
-// Users table for authentication
+// Session storage table for Replit Auth
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// Users table - Compatible with both current auth and Replit Auth
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: varchar("username", { length: 255 }).notNull().unique(),
-  email: varchar("email", { length: 255 }).notNull().unique(),
-  password: text("password").notNull(), // hashed password
-  isAdmin: boolean("is_admin").notNull().default(false),
+  // Replit Auth fields
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  // Legacy auth fields (for backwards compatibility)
+  username: varchar("username", { length: 255 }).unique(),
+  password: text("password"), // hashed password
+  isAdmin: boolean("is_admin").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// User schemas for validation
+// User schemas for validation - Compatible with both auth systems
 export const insertUserSchema = createInsertSchema(users, {
-  username: z.string().min(3).max(50),
-  email: z.string().email(),
-  password: z.string().min(6),
+  username: z.string().min(3).max(50).optional(),
+  email: z.string().email().optional(),
+  password: z.string().min(6).optional(),
 }).omit({
   id: true,
   createdAt: true,
@@ -570,6 +588,8 @@ export const selectUserSchema = createInsertSchema(users).omit({
   password: true, // Never expose password in responses
 });
 
+// Replit Auth specific types
+export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type SelectUser = Omit<User, 'password'>; // Safe user type without password
