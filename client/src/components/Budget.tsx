@@ -135,22 +135,13 @@ export default function Budget({}: BudgetProps) {
     },
   });
 
-  // Handle editing economic parameters with bidirectional logic
-  const handleEcoEdit = (field: keyof UpdateEconomicParameters, currentValue: number, isPercentageField: boolean = false, isBudgetEuroField: boolean = false) => {
+  // Handle editing economic parameters with simple bidirectional logic
+  const handleEcoEdit = (field: keyof UpdateEconomicParameters, currentValue: number) => {
     setEcoEditingField(field);
-    if (isPercentageField) {
-      // For percentage fields (materie prime, acquisti vari), edit as percentage
-      setEcoTempValue(currentValue.toString().replace('.', ','));
-    } else if (isBudgetEuroField) {
-      // For budget euro fields - allow editing as euro values that will convert to percentages
-      setEcoTempValue(currentValue.toString().replace('.', ','));
-    } else {
-      // For regular budget and consuntivo fields, edit as absolute euro value
-      setEcoTempValue(currentValue.toString().replace('.', ','));
-    }
+    setEcoTempValue(currentValue.toString().replace('.', ','));
   };
 
-  const handleEcoSave = (field: keyof UpdateEconomicParameters, isPercentageField: boolean = false, isBudgetEuroField: boolean = false) => {
+  const handleEcoSave = (field: keyof UpdateEconomicParameters) => {
     if (!ecoParams) return;
     
     const numValue = parseFloat(ecoTempValue.replace(',', '.'));
@@ -158,18 +149,18 @@ export default function Budget({}: BudgetProps) {
     
     let updateData: Partial<UpdateEconomicParameters> = {};
     
-    // Calculate total revenue for bidirectional calculations
+    // Calculate total revenue for bidirectional calculations  
     const totalRevenue = totals.totalActualRevenue + totals.totalActualDelivery || totals.totalBudget || 1;
     
-    if (isPercentageField) {
-      // Editing percentage: save percentage directly
+    // Simple bidirectional logic per user requirements:
+    // - Target% fields: save percentage, auto-calculate budget
+    // - Budget€ fields: save euro, auto-calculate percentage
+    
+    if (field === 'materieFirstePercent' || field === 'acquistiVarPercent') {
+      // Editing Target% → save percentage directly (bidirectional logic automatically handled by frontend calculations)
       updateData[field] = numValue;
-    } else if (isBudgetEuroField) {
-      // Editing euro value: convert to percentage and save
-      const percentageValue = (numValue / totalRevenue) * 100;
-      updateData[field] = percentageValue;
     } else {
-      // Regular fields (budget amounts, consuntivo amounts): save euro value directly
+      // Editing Budget€ or Consuntivo€ → save euro value directly
       updateData[field] = numValue;
     }
     
@@ -789,11 +780,13 @@ export default function Budget({}: BudgetProps) {
                     {costItems.map((item) => (
                       <TableRow key={item.code} className={item.highlight ? "bg-yellow-50 dark:bg-yellow-950/20" : ""}>
                         <TableCell className={item.highlight ? "font-medium" : ""}>{item.code} - {item.name}</TableCell>
-                        <TableCell className={`text-center ${item.highlight ? "font-medium" : ""} ${item.isBidirectional ? 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 bg-yellow-100 dark:bg-yellow-900/30' : ''}`}
+                        {/* Target % Column */}
+                        <TableCell 
+                          className={`text-center ${item.highlight ? "font-medium" : ""} ${item.isBidirectional ? 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 bg-yellow-100 dark:bg-yellow-900/30' : ''}`}
                           data-testid={item.dataTestId ? `${item.dataTestId}-percent` : undefined}
                           onClick={item.isBidirectional ? () => {
                             const currentValue = item.percent * 100;
-                            handleEcoEdit(item.field as keyof UpdateEconomicParameters, currentValue, false, false);
+                            handleEcoEdit(item.field as keyof UpdateEconomicParameters, currentValue);
                           } : undefined}
                         >
                           {ecoEditingField === item.field && item.isBidirectional ? (
@@ -801,12 +794,12 @@ export default function Budget({}: BudgetProps) {
                               value={ecoTempValue}
                               onChange={(e) => setEcoTempValue(e.target.value)}
                               onBlur={() => {
-                                handleEcoSave(item.field as keyof UpdateEconomicParameters, false, false);
+                                handleEcoSave(item.field as keyof UpdateEconomicParameters);
                                 setEcoEditingField(null);
                               }}
                               onKeyPress={(e) => {
                                 if (e.key === 'Enter') {
-                                  handleEcoSave(item.field as keyof UpdateEconomicParameters, false, false);
+                                  handleEcoSave(item.field as keyof UpdateEconomicParameters);
                                   setEcoEditingField(null);
                                 }
                               }}
@@ -817,25 +810,26 @@ export default function Budget({}: BudgetProps) {
                             formatPercent(item.percent * 100)
                           )}
                         </TableCell>
+                        {/* Budget € Column */}
                         <TableCell 
-                          className={`text-right ${item.highlight ? "font-medium" : ""} ${item.isBidirectional ? 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 bg-yellow-100 dark:bg-yellow-900/30' : ''}`}
+                          className={`text-right ${item.highlight ? "font-medium" : ""} ${!item.isBidirectional && item.field ? 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 bg-yellow-100 dark:bg-yellow-900/30' : ''}`}
                           data-testid={item.dataTestId ? `${item.dataTestId}-budget` : undefined}
-                          onClick={item.isBidirectional ? () => {
+                          onClick={!item.isBidirectional && item.field ? () => {
                             const currentValue = item.budgetValue || 0;
-                            handleEcoEdit(item.field as keyof UpdateEconomicParameters, currentValue, false, false);
+                            handleEcoEdit(item.field as keyof UpdateEconomicParameters, currentValue);
                           } : undefined}
                         >
-                          {ecoEditingField === item.field && item.isBidirectional ? (
+                          {ecoEditingField === item.field && !item.isBidirectional ? (
                             <Input
                               value={ecoTempValue}
                               onChange={(e) => setEcoTempValue(e.target.value)}
                               onBlur={() => {
-                                handleEcoSave(item.field as keyof UpdateEconomicParameters, false, false);
+                                handleEcoSave(item.field as keyof UpdateEconomicParameters);
                                 setEcoEditingField(null);
                               }}
                               onKeyPress={(e) => {
                                 if (e.key === 'Enter') {
-                                  handleEcoSave(item.field as keyof UpdateEconomicParameters, false, false);
+                                  handleEcoSave(item.field as keyof UpdateEconomicParameters);
                                   setEcoEditingField(null);
                                 }
                               }}
@@ -851,7 +845,7 @@ export default function Budget({}: BudgetProps) {
                           data-testid={item.dataTestId ? `${item.dataTestId}-consuntivo` : undefined}
                           onClick={item.editable && item.consuntivoField ? () => {
                             const currentValue = item.consuntivoValue || 0;
-                            handleEcoEdit(item.consuntivoField as keyof UpdateEconomicParameters, currentValue, false, false);
+                            handleEcoEdit(item.consuntivoField as keyof UpdateEconomicParameters, currentValue);
                           } : undefined}
                         >
                           {ecoEditingField === item.consuntivoField && item.editable && item.consuntivoField ? (
@@ -859,12 +853,12 @@ export default function Budget({}: BudgetProps) {
                               value={ecoTempValue}
                               onChange={(e) => setEcoTempValue(e.target.value)}
                               onBlur={() => {
-                                handleEcoSave(item.consuntivoField as keyof UpdateEconomicParameters, false, false);
+                                handleEcoSave(item.consuntivoField as keyof UpdateEconomicParameters);
                                 setEcoEditingField(null);
                               }}
                               onKeyPress={(e) => {
                                 if (e.key === 'Enter') {
-                                  handleEcoSave(item.consuntivoField as keyof UpdateEconomicParameters, false, false);
+                                  handleEcoSave(item.consuntivoField as keyof UpdateEconomicParameters);
                                   setEcoEditingField(null);
                                 }
                               }}
