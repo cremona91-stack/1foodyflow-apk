@@ -21,6 +21,7 @@ import AppHeader from "@/components/AppHeader";
 import TabNavigation from "@/components/TabNavigation";
 import { Dashboard } from "@/components/Dashboard";
 import Budget from "@/components/Budget";
+import PL from "@/pages/PL";
 import { Users, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProductForm from "@/components/ProductForm";
@@ -582,45 +583,9 @@ function FoodCostManager() {
             </div>
           )}
 
-          {/* Profit & Loss Tab (Coming Soon) */}
+          {/* Profit & Loss Tab */}
           {activeTab === "profit-loss" && (
-            <div className="text-center space-y-6 py-12">
-              <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center">
-                <Calculator className="h-12 w-12 text-muted-foreground" />
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-2xl font-bold">Conto Economico</h2>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                  Analisi P&L completa, margini, performance finanziaria e reporting avanzato. 
-                  Questa funzionalità sarà disponibile nelle prossime versioni.
-                </p>
-              </div>
-              <div className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-3 max-w-2xl mx-auto">
-                  <div className="bg-card p-4 rounded-lg border">
-                    <h3 className="font-semibold mb-2">Profit & Loss</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Report P&L automatici mensili e annuali
-                    </p>
-                  </div>
-                  <div className="bg-card p-4 rounded-lg border">
-                    <h3 className="font-semibold mb-2">Analisi Margini</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Margini per piatto, categoria e periodo
-                    </p>
-                  </div>
-                  <div className="bg-card p-4 rounded-lg border">
-                    <h3 className="font-semibold mb-2">Budget & Forecast</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Previsioni e confronto con obiettivi
-                    </p>
-                  </div>
-                </div>
-                <Button onClick={() => setActiveTab("dashboard")} variant="outline">
-                  Torna alla Dashboard
-                </Button>
-              </div>
-            </div>
+            <PL />
           )}
 
           {/* Inventory Tab */}
