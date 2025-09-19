@@ -331,12 +331,13 @@ export const budgetEntries = pgTable("budget_entries", {
   year: integer("year").notNull(), // 2026, 2025, etc.
   month: integer("month").notNull(), // 1-12
   day: integer("day").notNull(), // 1-31
+  copertoMedio: real("coperto_medio"), // Prezzo medio per coperto
   coperti: integer("coperti"), // Numero di coperti previsti
-  budgetRevenue: real("budget_revenue"), // Budget ricavi
+  budgetRevenue: real("budget_revenue"), // Budget ricavi (calcolato: coperti * copertoMedio)
   budgetDelivery: real("budget_delivery"), // Budget delivery
   actualRevenue: real("actual_revenue"), // Incasso reale (per confronti)
   actualDelivery: real("actual_delivery"), // Delivery reale (per confronti)
-  consuntivo: real("consuntivo"), // Valore consuntivo
+  consuntivo: real("consuntivo"), // Consuntivo 2026 (budget_revenue + budget_delivery)
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -348,6 +349,7 @@ export const insertBudgetEntrySchema = createInsertSchema(budgetEntries, {
   year: z.number().min(2020).max(2050),
   month: z.number().min(1).max(12),
   day: z.number().min(1).max(31),
+  copertoMedio: z.number().min(0).optional(),
   coperti: z.number().min(0).optional(),
   budgetRevenue: z.number().min(0).optional(),
   budgetDelivery: z.number().min(0).optional(),
@@ -358,6 +360,7 @@ export const insertBudgetEntrySchema = createInsertSchema(budgetEntries, {
 }).omit({ id: true, createdAt: true, updatedAt: true });
 
 export const updateBudgetEntrySchema = z.object({
+  copertoMedio: z.number().min(0).optional(),
   coperti: z.number().min(0).optional(),
   budgetRevenue: z.number().min(0).optional(),
   budgetDelivery: z.number().min(0).optional(),
