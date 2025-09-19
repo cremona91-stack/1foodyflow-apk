@@ -10,6 +10,7 @@ import {
   type EditableInventory,
   type BudgetEntry,
   type EconomicParameters,
+  type User,
   type InsertProduct,
   type InsertRecipe,
   type InsertDish,
@@ -21,6 +22,7 @@ import {
   type InsertEditableInventory,
   type InsertBudgetEntry,
   type InsertEconomicParameters,
+  type InsertUser,
   type UpdateProduct,
   type UpdateRecipe,
   type UpdateDish,
@@ -31,6 +33,7 @@ import {
   type UpdateBudgetEntry,
   type UpdateEconomicParameters,
   type UpsertEditableInventory,
+  type SelectUser,
   products,
   recipes,
   dishes,
@@ -41,12 +44,15 @@ import {
   inventorySnapshots,
   editableInventory,
   budgetEntries,
-  economicParameters
+  economicParameters,
+  users
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { eq, and } from "drizzle-orm";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
 
 // Configure WebSocket for Node.js environment
 if (typeof WebSocket === 'undefined') {
@@ -139,6 +145,14 @@ export interface IStorage {
   updateEconomicParameters(id: string, parameters: UpdateEconomicParameters): Promise<EconomicParameters | undefined>;
   upsertEconomicParametersByMonth(year: number, month: number, parameters: UpdateEconomicParameters): Promise<EconomicParameters>;
   deleteEconomicParameters(id: string): Promise<boolean>;
+
+  // Users authentication methods  
+  getUser(id: string): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  
+  // Session store for authentication
+  sessionStore: session.SessionStore;
 }
 
 export class DatabaseStorage implements IStorage {
