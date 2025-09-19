@@ -169,9 +169,11 @@ export default function Budget({}: BudgetProps) {
       const budgetEuro = (numValue * totalCorrispettivi) / 100;
       
       if (field === 'materieFirstePercent') {
-        updateData['materieFirsteBudget'] = budgetEuro;
+        updateData['materieFirstePercent'] = numValue; // Salva la percentuale inserita
+        updateData['materieFirsteBudget'] = budgetEuro; // Salva il budget calcolato
       } else {
-        updateData['acquistiVarBudget'] = budgetEuro;
+        updateData['acquistiVarPercent'] = numValue; // Salva la percentuale inserita  
+        updateData['acquistiVarBudget'] = budgetEuro; // Salva il budget calcolato
       }
     } else {
       // Editing Budget€ o Consuntivo€ per tutte le altre voci → salva valore direttamente
