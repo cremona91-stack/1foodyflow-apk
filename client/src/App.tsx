@@ -285,7 +285,7 @@ function FoodCostManager() {
     if (!editingOrder) return;
     
     updateOrderMutation.mutate(
-      { id: editingOrder.id, data: updatedOrder },
+      { id: editingOrder.id, data: { ...updatedOrder, notes: updatedOrder.notes || undefined, operatorName: updatedOrder.operatorName || undefined } },
       {
         onSuccess: () => {
           setEditingOrder(undefined);
@@ -320,7 +320,7 @@ function FoodCostManager() {
     if (!editingStockMovement) return;
     
     updateStockMovementMutation.mutate(
-      { id: editingStockMovement.id, data: updatedMovement },
+      { id: editingStockMovement.id, data: { ...updatedMovement, notes: updatedMovement.notes || undefined } },
       {
         onSuccess: () => {
           setEditingStockMovement(undefined);
@@ -531,7 +531,7 @@ function FoodCostManager() {
               orders={orders}
               stockMovements={stockMovements}
               inventorySnapshots={inventorySnapshots}
-              editableInventory={editableInventory}
+              editableInventory={editableInventory as any[]}
               waste={waste}
               personalMeals={personalMeals}
               onNavigateToSection={setActiveTab}
@@ -706,7 +706,7 @@ function FoodCostManager() {
                     products={products}
                     onEdit={handleEditStockMovement}
                     onDelete={handleDeleteStockMovement}
-                    selectedProductId={selectedProductForMovements}
+                    selectedProductId={selectedProductForMovements || undefined}
                     onFilterByProduct={setSelectedProductForMovements}
                   />
                 </div>
@@ -802,7 +802,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
         <TooltipProvider>
-          <Router />
+          <AuthProvider>
+            <Router />
+          </AuthProvider>
           <Toaster />
         </TooltipProvider>
       </ThemeProvider>

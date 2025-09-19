@@ -85,7 +85,7 @@ export async function setupAuth(app: Express) {
   ) => {
     const claims = tokens.claims();
     await upsertUser(claims);
-    const user = await storage.getUser(claims?.sub);
+    const user = claims?.sub ? await storage.getUser(claims.sub) : null;
     if (user) {
       const { password: _, ...safeUser } = user;
       updateUserSession(safeUser, tokens);
