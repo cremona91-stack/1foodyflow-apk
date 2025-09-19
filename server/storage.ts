@@ -33,6 +33,7 @@ import {
   type UpdateBudgetEntry,
   type UpdateEconomicParameters,
   type UpsertEditableInventory,
+  type UpsertUser,
   type SelectUser,
   products,
   recipes,
@@ -151,6 +152,8 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  // (IMPORTANT) upsertUser method is mandatory for Replit Auth
+  upsertUser(user: UpsertUser): Promise<User>;
   
   // Session store for authentication
   sessionStore: session.Store;
@@ -755,6 +758,22 @@ export class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const result = await db.insert(users).values(insertUser).returning();
     return result[0];
+  }
+
+  // (IMPORTANT) upsertUser method is mandatory for Replit Auth  
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
   }
 
   // Session store initialized in constructor
