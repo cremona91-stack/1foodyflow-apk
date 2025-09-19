@@ -112,10 +112,16 @@ export default function Budget({}: BudgetProps) {
     },
   });
 
-  // Handle editing economic parameters
-  const handleEcoEdit = (field: keyof UpdateEconomicParameters, currentValue: number) => {
+  // Handle editing economic parameters - distinguish between percentage and budget fields
+  const handleEcoEdit = (field: keyof UpdateEconomicParameters, currentValue: number, isPercentageField: boolean = false) => {
     setEcoEditingField(field);
-    setEcoTempValue(currentValue.toString().replace('.', ','));
+    if (isPercentageField) {
+      // For percentage fields (materie prime, acquisti vari), edit as percentage
+      setEcoTempValue(currentValue.toString().replace('.', ','));
+    } else {
+      // For budget fields, edit as absolute euro value
+      setEcoTempValue(currentValue.toString().replace('.', ','));
+    }
   };
 
   const handleEcoSave = (field: keyof UpdateEconomicParameters) => {
@@ -698,11 +704,11 @@ export default function Budget({}: BudgetProps) {
                     {costItems.map((item) => (
                       <TableRow key={item.code} className={item.highlight ? "bg-yellow-50 dark:bg-yellow-950/20" : ""}>
                         <TableCell className={item.highlight ? "font-medium" : ""}>{item.code} - {item.name}</TableCell>
-                        <TableCell className={`text-center ${item.highlight ? "font-medium" : ""} ${item.editable ? 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20' : ''}`}
+                        <TableCell className={`text-center ${item.highlight ? "font-medium" : ""} ${item.editable && (item.field === 'materieFirstePercent' || item.field === 'acquistiVarPercent') ? 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 bg-yellow-100 dark:bg-yellow-900/30' : ''}`}
                           data-testid={item.dataTestId ? `${item.dataTestId}-percent` : undefined}
-                          onClick={item.editable && item.field ? () => {
+                          onClick={item.editable && item.field && (item.field === 'materieFirstePercent' || item.field === 'acquistiVarPercent') ? () => {
                             const currentValue = item.percent * 100;
-                            handleEcoEdit(item.field as keyof UpdateEconomicParameters, currentValue);
+                            handleEcoEdit(item.field as keyof UpdateEconomicParameters, currentValue, true);
                           } : undefined}
                         >
                           {ecoEditingField === item.field && item.editable ? (
@@ -727,10 +733,33 @@ export default function Budget({}: BudgetProps) {
                           )}
                         </TableCell>
                         <TableCell 
-                          className={`text-right ${item.highlight ? "font-medium" : ""}`}
+                          className={`text-right ${item.highlight ? "font-medium" : ""} ${item.editable && item.field && item.field !== 'materieFirstePercent' && item.field !== 'acquistiVarPercent' ? 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 bg-yellow-100 dark:bg-yellow-900/30' : ''}`}
                           data-testid={item.dataTestId ? `${item.dataTestId}-budget` : undefined}
+                          onClick={item.editable && item.field && item.field !== 'materieFirstePercent' && item.field !== 'acquistiVarPercent' ? () => {
+                            const currentValue = item.budgetValue || 0;
+                            handleEcoEdit(item.field as keyof UpdateEconomicParameters, currentValue, false);
+                          } : undefined}
                         >
-                          {formatCurrency(totals.totalBudget * item.percent)}
+                          {ecoEditingField === item.field && item.editable && item.field !== 'materieFirstePercent' && item.field !== 'acquistiVarPercent' ? (
+                            <Input
+                              value={ecoTempValue}
+                              onChange={(e) => setEcoTempValue(e.target.value)}
+                              onBlur={() => {
+                                handleEcoSave(item.field as keyof UpdateEconomicParameters);
+                                setEcoEditingField(null);
+                              }}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleEcoSave(item.field as keyof UpdateEconomicParameters);
+                                  setEcoEditingField(null);
+                                }
+                              }}
+                              className="h-6 text-right"
+                              autoFocus
+                            />
+                          ) : (
+                            formatCurrency(totals.totalBudget * item.percent)
+                          )}
                         </TableCell>
                         <TableCell 
                           className={`text-right ${item.highlight ? "font-medium" : ""}`}
