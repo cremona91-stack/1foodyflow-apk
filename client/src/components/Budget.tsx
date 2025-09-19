@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Plus, Download, TrendingUp, TrendingDown, Save } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import type { BudgetEntry, InsertBudgetEntry, UpdateBudgetEntry, EconomicParameters, UpdateEconomicParameters } from "@shared/schema";
+import type { BudgetEntry, InsertBudgetEntry, UpdateBudgetEntry } from "@shared/schema";
 
 interface BudgetProps {}
 
@@ -31,8 +31,6 @@ export default function Budget({}: BudgetProps) {
   }, [selectedYear, selectedMonth]);
   const [editingEntry, setEditingEntry] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<UpdateBudgetEntry>>({});
-  const [ecoEditingField, setEcoEditingField] = useState<keyof UpdateEconomicParameters | null>(null);
-  const [ecoTempValue, setEcoTempValue] = useState<string>("");
 
   // Fetch budget entries for selected month/year
   const { data: budgetEntries = [], isLoading } = useQuery({
@@ -42,84 +40,9 @@ export default function Budget({}: BudgetProps) {
         .then(res => res.json()) as Promise<BudgetEntry[]>
   });
 
-  // Create economic parameters mutation (for defaults)
-  const createEcoParamsMutation = useMutation({
-    mutationFn: async (params: UpdateEconomicParameters & { year: number; month: number }) => {
-      const response = await apiRequest('POST', '/api/economic-parameters', params);
-      return response as unknown as EconomicParameters;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/economic-parameters', selectedYear, selectedMonth] });
-    },
-  });
 
-  // Fetch economic parameters for selected month/year (no side-effects)
-  const { data: ecoParams, error: ecoParamsError } = useQuery({
-    queryKey: ['/api/economic-parameters', selectedYear, selectedMonth],
-    queryFn: async () => {
-      const response = await fetch(`/api/economic-parameters/${selectedYear}/${selectedMonth}`);
-      if (!response.ok) {
-        const error = new Error(`Failed to fetch: ${response.status}`);
-        (error as any).status = response.status;
-        throw error;
-      }
-      return response.json() as Promise<EconomicParameters>;
-    },
-    retry: false, // Don't retry on 404
-  });
 
-  // Fetch food cost metrics from dashboard for integration
-  const { data: foodCostMetrics } = useQuery({
-    queryKey: ['/api/metrics/food-cost', selectedYear, selectedMonth],
-    queryFn: async () => {
-      const response = await fetch(`/api/metrics/food-cost/${selectedYear}/${selectedMonth}`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch food cost metrics: ${response.status}`);
-      }
-      return response.json() as Promise<{
-        year: number;
-        month: number;
-        totalFoodSales: number;
-        totalFoodCost: number;
-        foodCostPercentage: number;
-        theoreticalFoodCostPercentage: number;
-        realVsTheoreticalDiff: number;
-        calculatedAt: string;
-      }>;
-    },
-    retry: 1,
-  });
 
-  // Handle 404 errors by creating default parameters (side-effect free)
-  const [defaultsCreated, setDefaultsCreated] = useState(false);
-  
-  // Reset defaultsCreated when period changes
-  useEffect(() => {
-    setDefaultsCreated(false);
-  }, [selectedYear, selectedMonth]);
-
-  useEffect(() => {
-    if ((ecoParamsError as any)?.status === 404 && !defaultsCreated) {
-      const defaultParams: UpdateEconomicParameters = {
-        materieFirstePercent: 22.10,
-        acquistiVarPercent: 3.00,
-        locazioniBudget: 0,
-        personaleBudget: 0,
-        utenzeBudget: 0,
-        manutenzionibudget: 0,
-        noleggibudget: 0,
-        prestazioniTerziBudget: 0,
-        consulenzeBudget: 0,
-        marketingBudget: 0,
-        deliveryBudget: 0,
-        trasferteBudget: 0,
-        assicurazioniBudget: 0,
-        speseBancarieBudget: 0,
-      };
-      createEcoParamsMutation.mutate({ ...defaultParams, year: selectedYear, month: selectedMonth });
-      setDefaultsCreated(true);
-    }
-  }, [ecoParamsError, selectedYear, selectedMonth, defaultsCreated, createEcoParamsMutation]);
 
   // Create/update mutations
   const createMutation = useMutation({
@@ -129,14 +52,6 @@ export default function Budget({}: BudgetProps) {
     },
   });
 
-  // Economic parameters update mutation
-  const updateEcoParamsMutation = useMutation({
-    mutationFn: (data: UpdateEconomicParameters) => 
-      apiRequest('PUT', `/api/economic-parameters/${selectedYear}/${selectedMonth}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/economic-parameters', selectedYear, selectedMonth] });
-    },
-  });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateBudgetEntry }) => 
@@ -148,60 +63,7 @@ export default function Budget({}: BudgetProps) {
     },
   });
 
-  // Handle editing economic parameters with simple bidirectional logic
-  const handleEcoEdit = (field: keyof UpdateEconomicParameters, currentValue: number) => {
-    setEcoEditingField(field);
-    setEcoTempValue(currentValue.toString().replace('.', ','));
-  };
 
-  const handleEcoSave = (field: keyof UpdateEconomicParameters) => {
-    if (!ecoParams) return;
-    
-    const numValue = parseFloat(ecoTempValue.replace(',', '.'));
-    if (isNaN(numValue)) return;
-    
-    let updateData: Partial<UpdateEconomicParameters> = {};
-    
-    // Calculate total revenue for bidirectional calculations  
-    const totalCorrispettivi = totals.totalBudget || 0; // Denominatore reale senza fallback artificiale
-    
-    
-    // Logica bidirezionale specifica per user requirements:
-    // - Per "Consumi materie prime" e "Acquisti vari": editare Target % → calcolare e salvare budget €
-    // - Per tutte le altre voci: editare Budget € direttamente
-    
-    if (field === 'materieFirstePercent' || field === 'acquistiVarPercent') {
-      // Validazione: blocca salvataggio se corrispettivi non impostati
-      if (totalCorrispettivi <= 0) {
-        // Mostra errore e blocca salvataggio
-        console.error("BLOCKED: Impossibile salvare percentuale: imposta prima i corrispettivi del mese");
-        return; // Blocca il salvataggio
-      }
-      
-      // Calcola budget € dalla percentuale
-      const budgetEuro = (numValue * totalCorrispettivi) / 100;
-      
-      if (field === 'materieFirstePercent') {
-        // SOLO univoca: salva SOLO budget €, NON la percentuale
-        updateData['materieFirsteBudget'] = budgetEuro;
-      } else {
-        // SOLO univoca: salva SOLO budget €, NON la percentuale
-        updateData['acquistiVarBudget'] = budgetEuro;
-      }
-    } else {
-      // Editing Budget€ o Consuntivo€ per tutte le altre voci → salva valore direttamente
-      updateData[field] = numValue;
-    }
-    
-    updateEcoParamsMutation.mutate(updateData);
-    setEcoEditingField(null);
-    setEcoTempValue("");
-  };
-
-  const handleEcoCancel = () => {
-    setEcoEditingField(null);
-    setEcoTempValue("");
-  };
 
   // Generate all days for the month
   const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
