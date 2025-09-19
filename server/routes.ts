@@ -11,6 +11,7 @@ import {
   insertStockMovementSchema,
   insertInventorySnapshotSchema,
   insertEditableInventorySchema,
+  insertBudgetEntrySchema,
   updateProductSchema,
   updateRecipeSchema,
   updateDishSchema,
@@ -18,6 +19,7 @@ import {
   updateStockMovementSchema,
   updateInventorySnapshotSchema,
   updateEditableInventorySchema,
+  updateBudgetEntrySchema,
   upsertEditableInventorySchema
 } from "@shared/schema";
 import { z } from "zod";
@@ -626,6 +628,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Validation error", details: error.errors });
       }
       res.status(500).json({ error: "Failed to upsert editable inventory" });
+    }
+  });
+
+  // Budget Entries API Routes
+  app.get("/api/budget-entries", async (req, res) => {
+    try {
+      const budgetEntries = await storage.getBudgetEntries();
+      res.json(budgetEntries);
+    } catch (error) {
+      console.error("Error fetching budget entries:", error);
+      res.status(500).json({ error: "Failed to fetch budget entries" });
+    }
+  });
+
+  app.get("/api/budget-entries/:id", async (req, res) => {
+    try {
+      const budgetEntry = await storage.getBudgetEntry(req.params.id);
+      if (!budgetEntry) {
+        return res.status(404).json({ error: "Budget entry not found" });
+      }
+      res.json(budgetEntry);
+    } catch (error) {
+      console.error("Error fetching budget entry:", error);
+      res.status(500).json({ error: "Failed to fetch budget entry" });
+    }
+  });
+
+  app.get("/api/budget-entries/:year/:month", async (req, res) => {
+    try {
+      const year = parseInt(req.params.year);
+      const month = parseInt(req.params.month);
+      const budgetEntries = await storage.getBudgetEntriesByMonth(year, month);
+      res.json(budgetEntries);
+    } catch (error) {
+      console.error("Error fetching budget entries by month:", error);
+      res.status(500).json({ error: "Failed to fetch budget entries" });
+    }
+  });
+
+  app.post("/api/budget-entries", async (req, res) => {
+    try {
+      const validatedData = insertBudgetEntrySchema.parse(req.body);
+      const budgetEntry = await storage.createBudgetEntry(validatedData);
+      res.status(201).json(budgetEntry);
+    } catch (error) {
+      console.error("Error creating budget entry:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create budget entry" });
+    }
+  });
+
+  app.put("/api/budget-entries/:id", async (req, res) => {
+    try {
+      const validatedData = updateBudgetEntrySchema.parse(req.body);
+      const budgetEntry = await storage.updateBudgetEntry(req.params.id, validatedData);
+      if (!budgetEntry) {
+        return res.status(404).json({ error: "Budget entry not found" });
+      }
+      res.json(budgetEntry);
+    } catch (error) {
+      console.error("Error updating budget entry:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update budget entry" });
+    }
+  });
+
+  app.delete("/api/budget-entries/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteBudgetEntry(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Budget entry not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting budget entry:", error);
+      res.status(500).json({ error: "Failed to delete budget entry" });
     }
   });
 
