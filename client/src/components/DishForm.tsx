@@ -117,6 +117,7 @@ export default function DishForm({ onSubmit, products, editDish, onCancel }: Dis
                     <Input
                       {...field}
                       placeholder="Es. Spaghetti alla Carbonara"
+                      className="bg-yellow-100 dark:bg-yellow-900/30"
                       data-testid="input-dish-name"
                     />
                   </FormControl>
@@ -150,6 +151,7 @@ export default function DishForm({ onSubmit, products, editDish, onCancel }: Dis
                     placeholder="Quantità"
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
+                    className="bg-yellow-100 dark:bg-yellow-900/30"
                     data-testid="input-dish-ingredient-quantity"
                   />
                 </div>
@@ -237,6 +239,7 @@ export default function DishForm({ onSubmit, products, editDish, onCancel }: Dis
                       min="0"
                       value={field.value}
                       onChange={(e) => field.onChange(Number(e.target.value))}
+                      className="bg-yellow-100 dark:bg-yellow-900/30"
                       placeholder="0.00"
                       data-testid="input-selling-price"
                     />

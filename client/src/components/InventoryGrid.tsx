@@ -494,7 +494,7 @@ export default function InventoryGrid({
                           value={row.editValues.initialQuantity}
                           onChange={(e) => updateEditValue(row.product.id, 'initialQuantity', e.target.value)}
                           onBlur={() => handleInputBlur(row.product.id, 'initialQuantity')}
-                          className={`w-20 text-center font-mono text-sm ${
+                          className={`w-20 text-center font-mono text-sm bg-yellow-100 dark:bg-yellow-900/30 ${
                             row.validationErrors.initialQuantity ? 'border-red-500' : ''
                           }`}
                           placeholder="0.00"
@@ -538,7 +538,7 @@ export default function InventoryGrid({
                           value={row.editValues.finalQuantity}
                           onChange={(e) => updateEditValue(row.product.id, 'finalQuantity', e.target.value)}
                           onBlur={() => handleInputBlur(row.product.id, 'finalQuantity')}
-                          className={`w-20 text-center font-mono text-sm ${
+                          className={`w-20 text-center font-mono text-sm bg-yellow-100 dark:bg-yellow-900/30 ${
                             row.validationErrors.finalQuantity ? 'border-red-500' : ''
                           }`}
                           placeholder="0.00"

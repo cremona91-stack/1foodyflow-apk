@@ -95,6 +95,7 @@ export default function ProductForm({ onSubmit, editProduct, onCancel }: Product
                     <Input
                       {...field}
                       placeholder="Es. FAR-001"
+                      className="bg-yellow-100 dark:bg-yellow-900/30"
                       data-testid="input-product-code"
                     />
                   </FormControl>
@@ -113,6 +114,7 @@ export default function ProductForm({ onSubmit, editProduct, onCancel }: Product
                     <Input
                       {...field}
                       placeholder="Es. Farina Tipo 00"
+                      className="bg-yellow-100 dark:bg-yellow-900/30"
                       data-testid="input-product-name"
                     />
                   </FormControl>
@@ -132,6 +134,7 @@ export default function ProductForm({ onSubmit, editProduct, onCancel }: Product
                       {...field}
                       value={field.value || ""}
                       placeholder="Es. Grano & Co."
+                      className="bg-yellow-100 dark:bg-yellow-900/30"
                       data-testid="input-supplier"
                     />
                   </FormControl>
@@ -155,7 +158,7 @@ export default function ProductForm({ onSubmit, editProduct, onCancel }: Product
                         max="100"
                         value={field.value}
                         onChange={(e) => field.onChange(Number(e.target.value))}
-                        className="pr-8"
+                        className="pr-8 bg-yellow-100 dark:bg-yellow-900/30"
                         data-testid="input-waste"
                       />
                       <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground font-medium">
@@ -179,6 +182,7 @@ export default function ProductForm({ onSubmit, editProduct, onCancel }: Product
                       {...field}
                       value={field.value || ""}
                       placeholder="Aggiungi note sul prodotto..."
+                      className="bg-yellow-100 dark:bg-yellow-900/30"
                       rows={2}
                       data-testid="input-notes"
                     />
@@ -203,6 +207,7 @@ export default function ProductForm({ onSubmit, editProduct, onCancel }: Product
                         min="0"
                         value={field.value}
                         onChange={(e) => field.onChange(Number(e.target.value))}
+                        className="bg-yellow-100 dark:bg-yellow-900/30"
                         placeholder="0.00"
                         data-testid="input-quantity"
                       />
@@ -249,6 +254,7 @@ export default function ProductForm({ onSubmit, editProduct, onCancel }: Product
                         min="0"
                         value={field.value}
                         onChange={(e) => field.onChange(Number(e.target.value))}
+                        className="bg-yellow-100 dark:bg-yellow-900/30"
                         placeholder="0.00"
                         data-testid="input-price"
                       />
