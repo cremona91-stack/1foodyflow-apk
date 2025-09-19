@@ -12,6 +12,7 @@ import {
   insertInventorySnapshotSchema,
   insertEditableInventorySchema,
   insertBudgetEntrySchema,
+  insertEconomicParametersSchema,
   updateProductSchema,
   updateRecipeSchema,
   updateDishSchema,
@@ -20,6 +21,7 @@ import {
   updateInventorySnapshotSchema,
   updateEditableInventorySchema,
   updateBudgetEntrySchema,
+  updateEconomicParametersSchema,
   upsertEditableInventorySchema
 } from "@shared/schema";
 import { z } from "zod";
@@ -708,6 +710,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting budget entry:", error);
       res.status(500).json({ error: "Failed to delete budget entry" });
+    }
+  });
+
+  // Economic Parameters API Routes
+  app.get("/api/economic-parameters", async (req, res) => {
+    try {
+      const parameters = await storage.getEconomicParameters();
+      res.json(parameters);
+    } catch (error) {
+      console.error("Error fetching economic parameters:", error);
+      res.status(500).json({ error: "Failed to fetch economic parameters" });
+    }
+  });
+
+  app.get("/api/economic-parameters/:id", async (req, res) => {
+    try {
+      const parameters = await storage.getEconomicParameter(req.params.id);
+      if (!parameters) {
+        return res.status(404).json({ error: "Economic parameters not found" });
+      }
+      res.json(parameters);
+    } catch (error) {
+      console.error("Error fetching economic parameters:", error);
+      res.status(500).json({ error: "Failed to fetch economic parameters" });
+    }
+  });
+
+  app.get("/api/economic-parameters/:year/:month", async (req, res) => {
+    try {
+      const year = parseInt(req.params.year);
+      const month = parseInt(req.params.month);
+      const parameters = await storage.getEconomicParametersByMonth(year, month);
+      if (!parameters) {
+        return res.status(404).json({ error: "Economic parameters not found for this month" });
+      }
+      res.json(parameters);
+    } catch (error) {
+      console.error("Error fetching economic parameters by month:", error);
+      res.status(500).json({ error: "Failed to fetch economic parameters" });
+    }
+  });
+
+  app.post("/api/economic-parameters", async (req, res) => {
+    try {
+      const validatedData = insertEconomicParametersSchema.parse(req.body);
+      const parameters = await storage.createEconomicParameters(validatedData);
+      res.status(201).json(parameters);
+    } catch (error) {
+      console.error("Error creating economic parameters:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create economic parameters" });
+    }
+  });
+
+  app.put("/api/economic-parameters/:id", async (req, res) => {
+    try {
+      const validatedData = updateEconomicParametersSchema.parse(req.body);
+      const parameters = await storage.updateEconomicParameters(req.params.id, validatedData);
+      if (!parameters) {
+        return res.status(404).json({ error: "Economic parameters not found" });
+      }
+      res.json(parameters);
+    } catch (error) {
+      console.error("Error updating economic parameters:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update economic parameters" });
+    }
+  });
+
+  app.put("/api/economic-parameters/:year/:month", async (req, res) => {
+    try {
+      const year = parseInt(req.params.year);
+      const month = parseInt(req.params.month);
+      const validatedData = updateEconomicParametersSchema.parse(req.body);
+      const parameters = await storage.upsertEconomicParametersByMonth(year, month, validatedData);
+      res.json(parameters);
+    } catch (error) {
+      console.error("Error upserting economic parameters:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to upsert economic parameters" });
+    }
+  });
+
+  app.delete("/api/economic-parameters/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteEconomicParameters(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Economic parameters not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting economic parameters:", error);
+      res.status(500).json({ error: "Failed to delete economic parameters" });
     }
   });
 

@@ -9,6 +9,7 @@ import {
   type InventorySnapshot,
   type EditableInventory,
   type BudgetEntry,
+  type EconomicParameters,
   type InsertProduct,
   type InsertRecipe,
   type InsertDish,
@@ -19,6 +20,7 @@ import {
   type InsertInventorySnapshot,
   type InsertEditableInventory,
   type InsertBudgetEntry,
+  type InsertEconomicParameters,
   type UpdateProduct,
   type UpdateRecipe,
   type UpdateDish,
@@ -27,6 +29,7 @@ import {
   type UpdateInventorySnapshot,
   type UpdateEditableInventory,
   type UpdateBudgetEntry,
+  type UpdateEconomicParameters,
   type UpsertEditableInventory,
   products,
   recipes,
@@ -37,7 +40,8 @@ import {
   stockMovements,
   inventorySnapshots,
   editableInventory,
-  budgetEntries
+  budgetEntries,
+  economicParameters
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { eq, and } from "drizzle-orm";
@@ -126,6 +130,15 @@ export interface IStorage {
   createBudgetEntry(budgetEntry: InsertBudgetEntry): Promise<BudgetEntry>;
   updateBudgetEntry(id: string, budgetEntry: UpdateBudgetEntry): Promise<BudgetEntry | undefined>;
   deleteBudgetEntry(id: string): Promise<boolean>;
+
+  // Economic Parameters (Editable P&L values)
+  getEconomicParameters(): Promise<EconomicParameters[]>;
+  getEconomicParameter(id: string): Promise<EconomicParameters | undefined>;
+  getEconomicParametersByMonth(year: number, month: number): Promise<EconomicParameters | undefined>;
+  createEconomicParameters(parameters: InsertEconomicParameters): Promise<EconomicParameters>;
+  updateEconomicParameters(id: string, parameters: UpdateEconomicParameters): Promise<EconomicParameters | undefined>;
+  upsertEconomicParametersByMonth(year: number, month: number, parameters: UpdateEconomicParameters): Promise<EconomicParameters>;
+  deleteEconomicParameters(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -642,6 +655,70 @@ export class DatabaseStorage implements IStorage {
   async deleteBudgetEntry(id: string): Promise<boolean> {
     const result = await db.delete(budgetEntries).where(eq(budgetEntries.id, id));
     return result.rowCount > 0;
+  }
+
+  // Economic Parameters implementation
+  async getEconomicParameters(): Promise<EconomicParameters[]> {
+    return await db.select().from(economicParameters);
+  }
+
+  async getEconomicParameter(id: string): Promise<EconomicParameters | undefined> {
+    const result = await db.select().from(economicParameters).where(eq(economicParameters.id, id));
+    return result[0];
+  }
+
+  async getEconomicParametersByMonth(year: number, month: number): Promise<EconomicParameters | undefined> {
+    const result = await db.select().from(economicParameters)
+      .where(and(eq(economicParameters.year, year), eq(economicParameters.month, month)));
+    return result[0];
+  }
+
+  async createEconomicParameters(insertParameters: InsertEconomicParameters): Promise<EconomicParameters> {
+    const result = await db.insert(economicParameters).values({
+      ...insertParameters,
+    }).returning();
+    return result[0];
+  }
+
+  async updateEconomicParameters(id: string, updates: UpdateEconomicParameters): Promise<EconomicParameters | undefined> {
+    // Filter out undefined values
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, value]) => value !== undefined)
+    );
+
+    if (Object.keys(filteredUpdates).length === 0) {
+      return await this.getEconomicParameter(id);
+    }
+
+    const result = await db.update(economicParameters)
+      .set({ ...filteredUpdates, updatedAt: new Date() })
+      .where(eq(economicParameters.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async upsertEconomicParametersByMonth(year: number, month: number, updates: UpdateEconomicParameters): Promise<EconomicParameters> {
+    // Try to find existing record
+    const existing = await this.getEconomicParametersByMonth(year, month);
+    
+    if (existing) {
+      // Update existing record
+      const updated = await this.updateEconomicParameters(existing.id, updates);
+      return updated!;
+    } else {
+      // Create new record
+      const insertData: InsertEconomicParameters = {
+        year,
+        month,
+        ...updates,
+      };
+      return await this.createEconomicParameters(insertData);
+    }
+  }
+
+  async deleteEconomicParameters(id: string): Promise<boolean> {
+    const result = await db.delete(economicParameters).where(eq(economicParameters.id, id));
+    return (result.rowCount || 0) > 0;
   }
 }
 

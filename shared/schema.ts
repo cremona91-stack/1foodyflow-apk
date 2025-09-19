@@ -374,3 +374,76 @@ export const updateBudgetEntrySchema = z.object({
 export type BudgetEntry = typeof budgetEntries.$inferSelect;
 export type InsertBudgetEntry = z.infer<typeof insertBudgetEntrySchema>;
 export type UpdateBudgetEntry = z.infer<typeof updateBudgetEntrySchema>;
+
+// Economic parameters table for editable P&L values
+export const economicParameters = pgTable("economic_parameters", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  year: integer("year").notNull(), // 2026, 2025, etc.
+  month: integer("month").notNull(), // 1-12
+  
+  // Target percentages (editable)
+  materieFirstePercent: real("materie_prime_percent").default(22.10), // Consumi materie prime %
+  acquistiVarPercent: real("acquisti_vari_percent").default(3.00), // Acquisti vari %
+  
+  // Budget amounts (editable)
+  locazioniBudget: real("locazioni_budget").default(0), // Locazioni locali €
+  personaleBudget: real("personale_budget").default(0), // Costi del personale €
+  utenzeBudget: real("utenze_budget").default(0), // Utenze €
+  manutenzionibudget: real("manutenzioni_budget").default(0), // Manutenzioni €
+  noleggibudget: real("noleggi_budget").default(0), // Noleggi e Leasing €
+  prestazioniTerziBudget: real("prestazioni_terzi_budget").default(0), // Prestazioni di terzi €
+  consulenzeBudget: real("consulenze_budget").default(0), // Consulenze e compensi a terzi €
+  marketingBudget: real("marketing_budget").default(0), // Marketing €
+  deliveryBudget: real("delivery_budget").default(0), // Delivery €
+  trasferteBudget: real("trasferte_budget").default(0), // Trasferte e viaggi €
+  assicurazioniBudget: real("assicurazioni_budget").default(0), // Assicurazioni €
+  speseBancarieBudget: real("spese_bancarie_budget").default(0), // Spese bancarie €
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => {
+  return {
+    yearMonthIdx: uniqueIndex("economic_parameters_year_month_idx").on(table.year, table.month),
+  }
+});
+
+// Economic parameters schemas
+export const insertEconomicParametersSchema = createInsertSchema(economicParameters, {
+  year: z.number().min(2020).max(2050),
+  month: z.number().min(1).max(12),
+  materieFirstePercent: z.number().min(0).max(100).optional(),
+  acquistiVarPercent: z.number().min(0).max(100).optional(),
+  locazioniBudget: z.number().min(0).optional(),
+  personaleBudget: z.number().min(0).optional(),
+  utenzeBudget: z.number().min(0).optional(),
+  manutenzionibudget: z.number().min(0).optional(),
+  noleggibudget: z.number().min(0).optional(),
+  prestazioniTerziBudget: z.number().min(0).optional(),
+  consulenzeBudget: z.number().min(0).optional(),
+  marketingBudget: z.number().min(0).optional(),
+  deliveryBudget: z.number().min(0).optional(),
+  trasferteBudget: z.number().min(0).optional(),
+  assicurazioniBudget: z.number().min(0).optional(),
+  speseBancarieBudget: z.number().min(0).optional(),
+}).omit({ id: true, createdAt: true, updatedAt: true });
+
+export const updateEconomicParametersSchema = z.object({
+  materieFirstePercent: z.number().min(0).max(100).optional(),
+  acquistiVarPercent: z.number().min(0).max(100).optional(),
+  locazioniBudget: z.number().min(0).optional(),
+  personaleBudget: z.number().min(0).optional(),
+  utenzeBudget: z.number().min(0).optional(),
+  manutenzionibudget: z.number().min(0).optional(),
+  noleggibudget: z.number().min(0).optional(),
+  prestazioniTerziBudget: z.number().min(0).optional(),
+  consulenzeBudget: z.number().min(0).optional(),
+  marketingBudget: z.number().min(0).optional(),
+  deliveryBudget: z.number().min(0).optional(),
+  trasferteBudget: z.number().min(0).optional(),
+  assicurazioniBudget: z.number().min(0).optional(),
+  speseBancarieBudget: z.number().min(0).optional(),
+});
+
+export type EconomicParameters = typeof economicParameters.$inferSelect;
+export type InsertEconomicParameters = z.infer<typeof insertEconomicParametersSchema>;
+export type UpdateEconomicParameters = z.infer<typeof updateEconomicParametersSchema>;
