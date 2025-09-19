@@ -291,7 +291,7 @@ export function Dashboard({
           title="Food Cost %"
           value={`${foodCostPercentage.toFixed(1)}%`}
           change={realVsTheoreticalDiff}
-          changeLabel={`rispetto al teorico ${realVsTheoreticalDiff > 0 ? '+' : ''}${realVsTheoreticalDiff.toFixed(1)}%`}
+          changeLabel={`cfr FCT ${realVsTheoreticalDiff > 0 ? '+' : ''}${realVsTheoreticalDiff.toFixed(1)}%`}
           trend={realVsTheoreticalDiff > 0 ? "up" : "down"}
           status={foodCostPercentage > 30 ? "danger" : foodCostPercentage > 25 ? "warning" : "good"}
           icon={<ChefHat className="h-4 w-4" />}
