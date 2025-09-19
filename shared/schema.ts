@@ -400,7 +400,6 @@ export const economicParameters = pgTable("economic_parameters", {
   speseBancarieBudget: real("spese_bancarie_budget").default(0), // Spese bancarie €
   
   createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => {
   return {
     yearMonthIdx: uniqueIndex("economic_parameters_year_month_idx").on(table.year, table.month),
@@ -425,7 +424,7 @@ export const insertEconomicParametersSchema = createInsertSchema(economicParamet
   trasferteBudget: z.number().min(0).optional(),
   assicurazioniBudget: z.number().min(0).optional(),
   speseBancarieBudget: z.number().min(0).optional(),
-}).omit({ id: true, createdAt: true, updatedAt: true });
+}).omit({ id: true, createdAt: true });
 
 export const updateEconomicParametersSchema = z.object({
   materieFirstePercent: z.number().min(0).max(100).optional(),

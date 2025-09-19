@@ -235,8 +235,8 @@ export default function Budget({}: BudgetProps) {
 
   const getPercentageColor = (value: number | null | undefined) => {
     if (!value) return "";
-    if (value > 0) return "text-green-600"; // Growth is good (2026 > 2025)
-    if (value < 0) return "text-red-600"; // Decline is concerning (2026 < 2025)
+    if (value > 0) return "text-green-600"; // Positivo = verde
+    if (value < 0) return "text-red-600"; // Negativo = rosso  
     return "text-gray-600";
   };
 
@@ -431,8 +431,8 @@ export default function Budget({}: BudgetProps) {
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge 
-                          variant={deltaPercentage < 0 ? "default" : deltaPercentage > 5 ? "destructive" : "secondary"}
-                          className="font-mono text-xs"
+                          variant="secondary"
+                          className={`font-mono text-xs ${getPercentageColor(deltaPercentage)}`}
                           data-testid={`badge-delta-${day}`}
                         >
                           {deltaPercentage > 0 ? '+' : ''}{deltaPercentage.toFixed(1)}%
@@ -455,8 +455,8 @@ export default function Budget({}: BudgetProps) {
                   <TableCell className="text-center font-bold" data-testid="total-consuntivo-2025">{formatCurrency(totals.totalConsuntivo2025)}</TableCell>
                   <TableCell className="text-center font-bold">
                     <Badge 
-                      variant={totals.deltaPercentage < 0 ? "default" : totals.deltaPercentage > 5 ? "destructive" : "secondary"}
-                      className="font-mono"
+                      variant="secondary"
+                      className={`font-mono ${getPercentageColor(totals.deltaPercentage)}`}
                       data-testid="total-delta-percentage"
                     >
                       {totals.deltaPercentage > 0 ? '+' : ''}{totals.deltaPercentage.toFixed(1)}%
