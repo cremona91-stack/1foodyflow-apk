@@ -129,6 +129,7 @@ export default function RecipeForm({ onSubmit, products, editRecipe, onCancel }:
                     <Input
                       {...field}
                       placeholder="Es. Pasta Frolla"
+                      className="bg-yellow-100 dark:bg-yellow-900/30"
                       data-testid="input-recipe-name"
                     />
                   </FormControl>
@@ -162,6 +163,7 @@ export default function RecipeForm({ onSubmit, products, editRecipe, onCancel }:
                     placeholder="Quantità"
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
+                    className="bg-yellow-100 dark:bg-yellow-900/30"
                     data-testid="input-ingredient-quantity"
                   />
                 </div>

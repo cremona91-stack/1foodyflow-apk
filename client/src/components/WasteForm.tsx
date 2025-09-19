@@ -187,6 +187,7 @@ export default function WasteForm({ products, dishes, onSubmitWaste, onSubmitPer
                                 wasteForm.setValue("cost", value * selectedProduct.pricePerUnit);
                               }
                             }}
+                            className="bg-yellow-100 dark:bg-yellow-900/30"
                             placeholder="0.00"
                             data-testid="input-waste-quantity"
                           />
@@ -232,6 +233,7 @@ export default function WasteForm({ products, dishes, onSubmitWaste, onSubmitPer
                         <Input
                           {...field}
                           type="date"
+                          className="bg-yellow-100 dark:bg-yellow-900/30"
                           data-testid="input-waste-date"
                         />
                       </FormControl>
@@ -250,6 +252,7 @@ export default function WasteForm({ products, dishes, onSubmitWaste, onSubmitPer
                         <Textarea
                           {...field}
                           placeholder="Motivo dello spreco..."
+                          className="bg-yellow-100 dark:bg-yellow-900/30"
                           rows={2}
                           data-testid="input-waste-notes"
                         />
@@ -318,6 +321,7 @@ export default function WasteForm({ products, dishes, onSubmitWaste, onSubmitPer
                                 personalMealForm.setValue("cost", value * selectedDish.totalCost);
                               }
                             }}
+                            className="bg-yellow-100 dark:bg-yellow-900/30"
                             placeholder="1"
                             data-testid="input-personal-meal-quantity"
                           />
@@ -363,6 +367,7 @@ export default function WasteForm({ products, dishes, onSubmitWaste, onSubmitPer
                         <Input
                           {...field}
                           type="date"
+                          className="bg-yellow-100 dark:bg-yellow-900/30"
                           data-testid="input-personal-meal-date"
                         />
                       </FormControl>
@@ -381,6 +386,7 @@ export default function WasteForm({ products, dishes, onSubmitWaste, onSubmitPer
                         <Textarea
                           {...field}
                           placeholder="Note sul pasto..."
+                          className="bg-yellow-100 dark:bg-yellow-900/30"
                           rows={2}
                           data-testid="input-personal-meal-notes"
                         />

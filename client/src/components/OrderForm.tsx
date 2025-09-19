@@ -200,6 +200,7 @@ export default function OrderForm({ onSubmit, editOrder, onCancel, products }: O
                     <FormControl>
                       <Input 
                         type="date" 
+                        className="bg-yellow-100 dark:bg-yellow-900/30"
                         data-testid="input-order-date"
                         {...field} 
                       />
@@ -221,6 +222,7 @@ export default function OrderForm({ onSubmit, editOrder, onCancel, products }: O
                     <FormControl>
                       <Input 
                         placeholder="Nome operatore" 
+                        className="bg-yellow-100 dark:bg-yellow-900/30"
                         data-testid="input-operator-name"
                         value={field.value || ""}
                         onChange={field.onChange}
@@ -318,6 +320,7 @@ export default function OrderForm({ onSubmit, editOrder, onCancel, products }: O
                               min="0"
                               step="0.01"
                               placeholder="0"
+                              className="bg-yellow-100 dark:bg-yellow-900/30"
                               data-testid={`input-quantity-${index}`}
                               {...field}
                               onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
@@ -365,6 +368,7 @@ export default function OrderForm({ onSubmit, editOrder, onCancel, products }: O
                     <Textarea
                       placeholder="Note aggiuntive sull'ordine..."
                       rows={3}
+                      className="bg-yellow-100 dark:bg-yellow-900/30"
                       data-testid="input-notes"
                       value={field.value || ""}
                       onChange={field.onChange}

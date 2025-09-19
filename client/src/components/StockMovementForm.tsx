@@ -39,11 +39,11 @@ export default function StockMovementForm({ onSubmit, editMovement, onCancel, pr
     if (editMovement) {
       form.reset({
         productId: editMovement.productId,
-        movementType: editMovement.movementType,
+        movementType: editMovement.movementType as "in" | "out",
         quantity: editMovement.quantity,
         unitPrice: editMovement.unitPrice || 0,
         totalCost: editMovement.totalCost || 0,
-        source: editMovement.source,
+        source: editMovement.source as "waste" | "order" | "sale" | "personal_meal" | "adjustment",
         movementDate: editMovement.movementDate.split('T')[0],
         notes: editMovement.notes || "",
       });
@@ -207,6 +207,7 @@ export default function StockMovementForm({ onSubmit, editMovement, onCancel, pr
                         min="0"
                         step="0.01"
                         placeholder="0"
+                        className="bg-yellow-100 dark:bg-yellow-900/30"
                         data-testid="input-quantity"
                         {...field}
                         onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
@@ -232,6 +233,7 @@ export default function StockMovementForm({ onSubmit, editMovement, onCancel, pr
                         min="0"
                         step="0.01"
                         placeholder="0.00"
+                        className="bg-yellow-100 dark:bg-yellow-900/30"
                         data-testid="input-unit-price"
                         {...field}
                         onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
@@ -286,6 +288,7 @@ export default function StockMovementForm({ onSubmit, editMovement, onCancel, pr
                     <FormControl>
                       <Input 
                         type="date" 
+                        className="bg-yellow-100 dark:bg-yellow-900/30"
                         data-testid="input-movement-date"
                         {...field} 
                       />
@@ -335,8 +338,13 @@ export default function StockMovementForm({ onSubmit, editMovement, onCancel, pr
                     <Textarea
                       placeholder="Note aggiuntive sul movimento..."
                       rows={3}
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                      className="bg-yellow-100 dark:bg-yellow-900/30"
                       data-testid="input-notes"
-                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
