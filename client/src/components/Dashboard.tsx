@@ -13,9 +13,10 @@ import {
   Clock,
   Calculator
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 // Types for dashboard data
-import type { Product, Dish, Order, StockMovement } from "@shared/schema";
+import type { Product, Dish, Order, StockMovement, EconomicParameters, BudgetEntry } from "@shared/schema";
 
 interface DashboardProps {
   products: Product[];
@@ -199,6 +200,32 @@ export function Dashboard({
   personalMeals, 
   onNavigateToSection 
 }: DashboardProps) {
+  // Current period for budget data (using current month and year)
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth() + 1;
+
+  // Fetch economic parameters for EBITDA calculation
+  const { data: ecoParams } = useQuery({
+    queryKey: ['/api/economic-parameters', currentYear, currentMonth],
+    queryFn: async () => {
+      const response = await fetch(`/api/economic-parameters/${currentYear}/${currentMonth}`);
+      if (!response.ok) {
+        return null; // Return null if not found instead of throwing
+      }
+      return response.json() as Promise<EconomicParameters>;
+    },
+    retry: false
+  });
+
+  // Fetch budget entries for corrispettivi calculation
+  const { data: budgetEntries = [] } = useQuery({
+    queryKey: ['/api/budget-entries', currentYear, currentMonth],
+    queryFn: () => 
+      fetch(`/api/budget-entries/${currentYear}/${currentMonth}`)
+        .then(res => res.json()) as Promise<BudgetEntry[]>
+  });
+
   // Create product lookup map for performance
   const productMap = useMemo(() => 
     new Map(products.map(p => [p.id, p])), 
@@ -260,14 +287,56 @@ export function Dashboard({
     [personalMeals]
   );
 
-  // Mock labour cost data (to be implemented)
-  const mockLabourCost = 12500; // €12,500 mensile
-  const mockLabourTarget = 15000;
-  const labourCostPercentage = totalFoodSales > 0 ? (mockLabourCost / totalFoodSales) * 100 : 28;
+  // Labour cost impostato a 0 come richiesto dall'utente
+  const labourCostPercentage = 0;
+
+  // Calcolo EBITDA dal budget
+  const { ebitdaBudget, ebitdaPercentage, totalCorrispettivi } = useMemo(() => {
+    if (!ecoParams) {
+      return { ebitdaBudget: 0, ebitdaPercentage: 0, totalCorrispettivi: 0 };
+    }
+
+    // Calcola totale corrispettivi dal budget (similar to Budget component)
+    const totalBudgetRevenue = budgetEntries.reduce((sum, entry) => {
+      const calculatedBudgetRevenue = (entry.coperti || 0) * (entry.copertoMedio || 0);
+      return sum + calculatedBudgetRevenue + (entry.budgetDelivery || 0);
+    }, 0);
+
+    // Calculate total costs from economic parameters
+    const totalCosts = (
+      // Materie prime (calculated from percentage)
+      ((ecoParams.materieFirstePercent || 0) / 100 * totalBudgetRevenue) +
+      // Acquisti vari (calculated from percentage)  
+      ((ecoParams.acquistiVarPercent || 0) / 100 * totalBudgetRevenue) +
+      // All other budget costs
+      (ecoParams.locazioniBudget || 0) +
+      (ecoParams.personaleBudget || 0) +
+      (ecoParams.utenzeBudget || 0) +
+      (ecoParams.manutenzionibudget || 0) +
+      (ecoParams.noleggibudget || 0) +
+      (ecoParams.prestazioniTerziBudget || 0) +
+      (ecoParams.consulenzeBudget || 0) +
+      (ecoParams.marketingBudget || 0) +
+      (ecoParams.deliveryBudget || 0) +
+      (ecoParams.trasferteBudget || 0) +
+      (ecoParams.assicurazioniBudget || 0) +
+      (ecoParams.speseBancarieBudget || 0)
+    );
+
+    // EBITDA = Revenue - Total Costs
+    const ebitda = totalBudgetRevenue - totalCosts;
+    const ebitdaPerc = totalBudgetRevenue > 0 ? (ebitda / totalBudgetRevenue) * 100 : 0;
+
+    return {
+      ebitdaBudget: ebitda,
+      ebitdaPercentage: ebitdaPerc,
+      totalCorrispettivi: totalBudgetRevenue
+    };
+  }, [ecoParams, budgetEntries]);
 
   // Mock P&L data (to be implemented)
   const mockRevenue = totalFoodSales || 42000;
-  const mockProfit = mockRevenue - totalFoodCost - mockLabourCost - 8000; // 8000 = altri costi
+  const mockProfit = mockRevenue - totalFoodCost - 8000; // 8000 = altri costi (labour cost = 0)
   const mockProfitMargin = mockRevenue > 0 ? (mockProfit / mockRevenue) * 100 : 0;
 
   return (
@@ -304,11 +373,12 @@ export function Dashboard({
         />
         
         <KPICard
-          title="Margine Netto"
-          value={`${mockProfitMargin.toFixed(1)}%`}
-          change={0.8}
-          trend="up"
-          status={mockProfitMargin < 10 ? "danger" : mockProfitMargin < 15 ? "warning" : "good"}
+          title="EBITDA"
+          value={`${ebitdaPercentage.toFixed(1)}%`}
+          change={ebitdaPercentage}
+          changeLabel={`€${ebitdaBudget.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+          trend={ebitdaPercentage >= 0 ? "up" : "down"}
+          status={ebitdaPercentage >= 15 ? "good" : ebitdaPercentage >= 10 ? "warning" : "danger"}
           icon={<TrendingUp className="h-4 w-4" />}
           onClick={() => onNavigateToSection("profit-loss")}
         />
@@ -342,9 +412,9 @@ export function Dashboard({
         <PillarOverview
           title="Labour Cost"
           description="Gestione personale, turni e produttività"
-          currentValue={`€${mockLabourCost.toLocaleString()}`}
-          targetValue={`€${mockLabourTarget.toLocaleString()}`}
-          progress={Math.min(100, (mockLabourTarget / mockLabourCost) * 100) || 83}
+          currentValue="€0"
+          targetValue="€0"
+          progress={100}
           status={labourCostPercentage > 35 ? "danger" : labourCostPercentage > 30 ? "warning" : "good"}
           icon={<Users className="h-6 w-6" />}
           onExplore={() => onNavigateToSection("labour-cost")}

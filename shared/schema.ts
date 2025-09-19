@@ -404,6 +404,7 @@ export const economicParameters = pgTable("economic_parameters", {
   speseBancarieBudget: real("spese_bancarie_budget").default(0), // Spese bancarie €
   
   // Consuntivo amounts (editable)
+  materieFirsteConsuntivo: real("materie_prime_consuntivo").default(0), // Consumi materie prime consuntivo €
   acquistiVarConsuntivo: real("acquisti_vari_consuntivo").default(0), // Acquisti vari consuntivo €
   locazioniConsuntivo: real("locazioni_consuntivo").default(0), // Locazioni locali consuntivo €
   personaleConsuntivo: real("personale_consuntivo").default(0), // Costi del personale consuntivo €
@@ -417,6 +418,22 @@ export const economicParameters = pgTable("economic_parameters", {
   trasferteConsuntivo: real("trasferte_consuntivo").default(0), // Trasferte e viaggi consuntivo €
   assicurazioniConsuntivo: real("assicurazioni_consuntivo").default(0), // Assicurazioni consuntivo €
   speseBancarieConsuntivo: real("spese_bancarie_consuntivo").default(0), // Spese bancarie consuntivo €
+  
+  // Consuntivo percentages (new for bidirectional editing)
+  materieFirsteConsuntivoPercent: real("materie_prime_consuntivo_percent").default(0), // Consumi materie prime consuntivo %
+  acquistiVarConsuntivoPercent: real("acquisti_vari_consuntivo_percent").default(0), // Acquisti vari consuntivo %
+  locazioniConsuntivoPercent: real("locazioni_consuntivo_percent").default(0), // Locazioni locali consuntivo %
+  personaleConsuntivoPercent: real("personale_consuntivo_percent").default(0), // Costi del personale consuntivo %
+  utenzeConsuntivoPercent: real("utenze_consuntivo_percent").default(0), // Utenze consuntivo %
+  manutenzioniConsuntivoPercent: real("manutenzioni_consuntivo_percent").default(0), // Manutenzioni consuntivo %
+  noleggiConsuntivoPercent: real("noleggi_consuntivo_percent").default(0), // Noleggi e Leasing consuntivo %
+  prestazioniTerziConsuntivoPercent: real("prestazioni_terzi_consuntivo_percent").default(0), // Prestazioni di terzi consuntivo %
+  consulenzeConsuntivoPercent: real("consulenze_consuntivo_percent").default(0), // Consulenze e compensi a terzi consuntivo %
+  marketingConsuntivoPercent: real("marketing_consuntivo_percent").default(0), // Marketing consuntivo %
+  deliveryConsuntivoPercent: real("delivery_consuntivo_percent").default(0), // Delivery consuntivo %
+  trasferteConsuntivoPercent: real("trasferte_consuntivo_percent").default(0), // Trasferte e viaggi consuntivo %
+  assicurazioniConsuntivoPercent: real("assicurazioni_consuntivo_percent").default(0), // Assicurazioni consuntivo %
+  speseBancarieConsuntivoPercent: real("spese_bancarie_consuntivo_percent").default(0), // Spese bancarie consuntivo %
   
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => {
@@ -456,6 +473,22 @@ export const insertEconomicParametersSchema = createInsertSchema(economicParamet
   trasferteConsuntivo: z.number().min(0).optional(),
   assicurazioniConsuntivo: z.number().min(0).optional(),
   speseBancarieConsuntivo: z.number().min(0).optional(),
+  
+  // Consuntivo percentages
+  materieFirsteConsuntivoPercent: z.number().min(0).optional(),
+  acquistiVarConsuntivoPercent: z.number().min(0).optional(),
+  locazioniConsuntivoPercent: z.number().min(0).optional(),
+  personaleConsuntivoPercent: z.number().min(0).optional(),
+  utenzeConsuntivoPercent: z.number().min(0).optional(),
+  manutenzioniConsuntivoPercent: z.number().min(0).optional(),
+  noleggiConsuntivoPercent: z.number().min(0).optional(),
+  prestazioniTerziConsuntivoPercent: z.number().min(0).optional(),
+  consulenzeConsuntivoPercent: z.number().min(0).optional(),
+  marketingConsuntivoPercent: z.number().min(0).optional(),
+  deliveryConsuntivoPercent: z.number().min(0).optional(),
+  trasferteConsuntivoPercent: z.number().min(0).optional(),
+  assicurazioniConsuntivoPercent: z.number().min(0).optional(),
+  speseBancarieConsuntivoPercent: z.number().min(0).optional(),
 }).omit({ id: true, createdAt: true });
 
 export const updateEconomicParametersSchema = z.object({
@@ -488,6 +521,23 @@ export const updateEconomicParametersSchema = z.object({
   trasferteConsuntivo: z.number().min(0).optional(),
   assicurazioniConsuntivo: z.number().min(0).optional(),
   speseBancarieConsuntivo: z.number().min(0).optional(),
+  
+  // Consuntivo percentages
+  materieFirsteConsuntivo: z.number().min(0).optional(), // NEW: materie prime consuntivo €
+  materieFirsteConsuntivoPercent: z.number().min(0).optional(),
+  acquistiVarConsuntivoPercent: z.number().min(0).optional(),
+  locazioniConsuntivoPercent: z.number().min(0).optional(),
+  personaleConsuntivoPercent: z.number().min(0).optional(),
+  utenzeConsuntivoPercent: z.number().min(0).optional(),
+  manutenzioniConsuntivoPercent: z.number().min(0).optional(),
+  noleggiConsuntivoPercent: z.number().min(0).optional(),
+  prestazioniTerziConsuntivoPercent: z.number().min(0).optional(),
+  consulenzeConsuntivoPercent: z.number().min(0).optional(),
+  marketingConsuntivoPercent: z.number().min(0).optional(),
+  deliveryConsuntivoPercent: z.number().min(0).optional(),
+  trasferteConsuntivoPercent: z.number().min(0).optional(),
+  assicurazioniConsuntivoPercent: z.number().min(0).optional(),
+  speseBancarieConsuntivoPercent: z.number().min(0).optional(),
 });
 
 export type EconomicParameters = typeof economicParameters.$inferSelect;

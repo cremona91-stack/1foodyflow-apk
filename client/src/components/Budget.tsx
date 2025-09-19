@@ -385,10 +385,10 @@ export default function Budget({}: BudgetProps) {
                   <TableHead className="text-white font-semibold text-center min-w-[80px]">Coperti</TableHead>
                   <TableHead className="text-white font-semibold text-right min-w-[120px]">Budget {selectedYear} €</TableHead>
                   <TableHead className="text-white font-semibold text-right min-w-[120px]">Delivery {selectedYear} €</TableHead>
-                  <TableHead className="text-white font-semibold text-right min-w-[120px]">Incasso {selectedYear - 1} €</TableHead>
-                  <TableHead className="text-white font-semibold text-right min-w-[120px]">Delivery {selectedYear - 1} €</TableHead>
+                  <TableHead className="text-white font-semibold text-right min-w-[120px] bg-blue-100 dark:bg-blue-900/30">Incasso {selectedYear - 1} €</TableHead>
+                  <TableHead className="text-white font-semibold text-right min-w-[120px] bg-blue-100 dark:bg-blue-900/30">Delivery {selectedYear - 1} €</TableHead>
                   <TableHead className="text-white font-semibold text-center min-w-[110px]">Consuntivo {selectedYear}</TableHead>
-                  <TableHead className="text-white font-semibold text-center min-w-[110px]">Consuntivo {selectedYear - 1}</TableHead>
+                  <TableHead className="text-white font-semibold text-center min-w-[110px] bg-blue-100 dark:bg-blue-900/30">Consuntivo {selectedYear - 1}</TableHead>
                   <TableHead className="text-white font-semibold text-center min-w-[80px]">Delta %</TableHead>
                 </TableRow>
               </TableHeader>
@@ -451,22 +451,22 @@ export default function Budget({}: BudgetProps) {
                           data-testid={`input-budget-delivery-${day}`}
                         />
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right bg-blue-50 dark:bg-blue-950/20">
                         <Input
                           type="text"
                           value={entry?.actualRevenue ? entry.actualRevenue.toString() : ''}
                           placeholder="0,00"
-                          className="w-24 text-right border-0 p-1 h-8"
+                          className="w-24 text-right border-0 p-1 h-8 bg-transparent"
                           onChange={(e) => handleCellEdit(day, 'actualRevenue', e.target.value)}
                           data-testid={`input-actual-revenue-${day}`}
                         />
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right bg-blue-50 dark:bg-blue-950/20">
                         <Input
                           type="text"
                           value={entry?.actualDelivery ? entry.actualDelivery.toString() : ''}
                           placeholder="0,00"
-                          className="w-24 text-right border-0 p-1 h-8"
+                          className="w-24 text-right border-0 p-1 h-8 bg-transparent"
                           onChange={(e) => handleCellEdit(day, 'actualDelivery', e.target.value)}
                           data-testid={`input-actual-delivery-${day}`}
                         />
@@ -476,7 +476,7 @@ export default function Budget({}: BudgetProps) {
                           {formatCurrency(consuntivo2026)}
                         </span>
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center bg-blue-50 dark:bg-blue-950/20">
                         <span className="text-sm font-mono" data-testid={`consuntivo-2025-${day}`}>
                           {formatCurrency(consuntivo2025)}
                         </span>
@@ -588,13 +588,16 @@ export default function Budget({}: BudgetProps) {
                   percent: (ecoParams?.materieFirsteBudget || 0) / totalCorrispettivi, 
                   budgetValue: ecoParams?.materieFirsteBudget || 0,
                   consuntivoValue: foodCostMetrics?.totalFoodCost || 0, // Integrazione reale food cost dalla dashboard
+                  consuntivoPercent: (foodCostMetrics?.totalFoodCost || 0) / (totals.totalActualRevenue + totals.totalActualDelivery || 1),
                   foodCostPercent: foodCostMetrics?.foodCostPercentage || null, // Integrazione food cost dalla dashboard
                   dataTestId: 'eco-materie', 
                   highlight: false,
                   editable: true,
                   field: 'materieFirsteBudget',
                   consuntivoField: null, // Non editabile - viene dal food cost della dashboard
+                  consuntivoPercentField: null, // Non editabile - viene dalla dashboard
                   isBidirectional: true, // Edita Target % con formula: budget € = (target % × corrispettivi)/100
+                  isConsuntivoPercentBidirectional: false, // Non editabile - viene dalla dashboard
                   isFromDashboard: true // Flag per indicare che viene dalla dashboard
                 },
                 { 
@@ -603,12 +606,15 @@ export default function Budget({}: BudgetProps) {
                   percent: (ecoParams?.acquistiVarBudget || 0) / totalCorrispettivi, 
                   budgetValue: ecoParams?.acquistiVarBudget || 0,
                   consuntivoValue: ecoParams?.acquistiVarConsuntivo || 0,
+                  consuntivoPercent: (ecoParams?.acquistiVarConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery || 1),
                   dataTestId: null, 
                   highlight: false,
                   editable: true,
                   field: 'acquistiVarBudget',
                   consuntivoField: 'acquistiVarConsuntivo',
-                  isBidirectional: true // Edita Target % con formula: budget € = (target % × corrispettivi)/100
+                  consuntivoPercentField: 'acquistiVarConsuntivoPercent',
+                  isBidirectional: true, // Edita Target % con formula: budget € = (target % × corrispettivi)/100
+                  isConsuntivoPercentBidirectional: true // Edita Consuntivo % con formula: consuntivo € = (consuntivo % × corrispettivi)/100
                 },
                 { 
                   code: '0210', 
@@ -616,12 +622,15 @@ export default function Budget({}: BudgetProps) {
                   percent: (ecoParams?.locazioniBudget || 0) / totalCorrispettivi, 
                   budgetValue: ecoParams?.locazioniBudget || 0,
                   consuntivoValue: ecoParams?.locazioniConsuntivo || 0,
+                  consuntivoPercent: (ecoParams?.locazioniConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery || 1),
                   dataTestId: null, 
                   highlight: false,
                   editable: true,
                   field: 'locazioniBudget',
                   consuntivoField: 'locazioniConsuntivo',
-                  isBidirectional: false
+                  consuntivoPercentField: 'locazioniConsuntivoPercent',
+                  isBidirectional: false,
+                  isConsuntivoPercentBidirectional: true // Edita Consuntivo % con formula: consuntivo € = (consuntivo % × corrispettivi)/100
                 },
                 { 
                   code: '0220', 
@@ -629,12 +638,15 @@ export default function Budget({}: BudgetProps) {
                   percent: (ecoParams?.personaleBudget || 0) / totalCorrispettivi, 
                   budgetValue: ecoParams?.personaleBudget || 0,
                   consuntivoValue: ecoParams?.personaleConsuntivo || 0,
+                  consuntivoPercent: (ecoParams?.personaleConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery || 1),
                   dataTestId: 'eco-personale', 
                   highlight: true,
                   editable: true,
                   field: 'personaleBudget',
                   consuntivoField: 'personaleConsuntivo',
-                  isBidirectional: false
+                  consuntivoPercentField: 'personaleConsuntivoPercent',
+                  isBidirectional: false,
+                  isConsuntivoPercentBidirectional: true // Edita Consuntivo % con formula: consuntivo € = (consuntivo % × corrispettivi)/100
                 },
                 { 
                   code: '0240', 
