@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,7 @@ export default function Budget({}: BudgetProps) {
   const [selectedMonth, setSelectedMonth] = useState<number>(1);
   const [editingEntry, setEditingEntry] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<UpdateBudgetEntry>>({});
-  const [ecoEditingField, setEcoEditingField] = useState<string | null>(null);
+  const [ecoEditingField, setEcoEditingField] = useState<keyof UpdateEconomicParameters | null>(null);
   const [ecoTempValue, setEcoTempValue] = useState<string>("");
 
   // Fetch budget entries for selected month/year
@@ -29,37 +29,61 @@ export default function Budget({}: BudgetProps) {
         .then(res => res.json()) as Promise<BudgetEntry[]>
   });
 
-  // Fetch economic parameters for selected month/year
-  const { data: ecoParams } = useQuery({
+  // Create economic parameters mutation (for defaults)
+  const createEcoParamsMutation = useMutation({
+    mutationFn: async (params: UpdateEconomicParameters) => {
+      return await apiRequest('POST', '/api/economic-parameters', params) as EconomicParameters;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/economic-parameters', selectedYear, selectedMonth] });
+    },
+  });
+
+  // Fetch economic parameters for selected month/year (no side-effects)
+  const { data: ecoParams, error: ecoParamsError } = useQuery({
     queryKey: ['/api/economic-parameters', selectedYear, selectedMonth],
     queryFn: async () => {
       const response = await fetch(`/api/economic-parameters/${selectedYear}/${selectedMonth}`);
-      if (!response.ok && response.status === 404) {
-        // Create default parameters if none exist
-        const defaultParams = {
-          year: selectedYear,
-          month: selectedMonth,
-          materieFirstePercent: 22.10,
-          acquistiVarPercent: 3.00,
-          locazioniBudget: 0,
-          personaleBudget: 0,
-          utenzeBudget: 0,
-          manutenzionibudget: 0,
-          noleggibudget: 0,
-          prestazioniTerziBudget: 0,
-          consulenzeBudget: 0,
-          marketingBudget: 0,
-          deliveryBudget: 0,
-          trasferteBudget: 0,
-          assicurazioniBudget: 0,
-          speseBancarieBudget: 0,
-        };
-        const createResponse = await apiRequest('POST', '/api/economic-parameters', defaultParams);
-        return createResponse as EconomicParameters;
+      if (!response.ok) {
+        const error = new Error(`Failed to fetch: ${response.status}`);
+        (error as any).status = response.status;
+        throw error;
       }
       return response.json() as Promise<EconomicParameters>;
     },
+    retry: false, // Don't retry on 404
   });
+
+  // Handle 404 errors by creating default parameters (side-effect free)
+  const [defaultsCreated, setDefaultsCreated] = useState(false);
+  
+  // Reset defaultsCreated when period changes
+  useEffect(() => {
+    setDefaultsCreated(false);
+  }, [selectedYear, selectedMonth]);
+
+  useEffect(() => {
+    if ((ecoParamsError as any)?.status === 404 && !defaultsCreated) {
+      const defaultParams: UpdateEconomicParameters = {
+        materieFirstePercent: 22.10,
+        acquistiVarPercent: 3.00,
+        locazioniBudget: 0,
+        personaleBudget: 0,
+        utenzeBudget: 0,
+        manutenzionibudget: 0,
+        noleggibudget: 0,
+        prestazioniTerziBudget: 0,
+        consulenzeBudget: 0,
+        marketingBudget: 0,
+        deliveryBudget: 0,
+        trasferteBudget: 0,
+        assicurazioniBudget: 0,
+        speseBancarieBudget: 0,
+      };
+      createEcoParamsMutation.mutate({ year: selectedYear, month: selectedMonth, ...defaultParams });
+      setDefaultsCreated(true);
+    }
+  }, [ecoParamsError, selectedYear, selectedMonth, defaultsCreated, createEcoParamsMutation]);
 
   // Create/update mutations
   const createMutation = useMutation({
@@ -87,6 +111,32 @@ export default function Budget({}: BudgetProps) {
       setEditForm({});
     },
   });
+
+  // Handle editing economic parameters
+  const handleEcoEdit = (field: keyof UpdateEconomicParameters, currentValue: number) => {
+    setEcoEditingField(field);
+    setEcoTempValue(currentValue.toString().replace('.', ','));
+  };
+
+  const handleEcoSave = (field: keyof UpdateEconomicParameters) => {
+    if (!ecoParams) return;
+    
+    const numValue = parseFloat(ecoTempValue.replace(',', '.'));
+    if (isNaN(numValue)) return;
+    
+    const updateData: Partial<UpdateEconomicParameters> = {
+      [field]: numValue,
+    };
+    
+    updateEcoParamsMutation.mutate(updateData);
+    setEcoEditingField(null);
+    setEcoTempValue("");
+  };
+
+  const handleEcoCancel = () => {
+    setEcoEditingField(null);
+    setEcoTempValue("");
+  };
 
   // Generate all days for the month
   const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
@@ -475,22 +525,148 @@ export default function Budget({}: BudgetProps) {
               // Helper function for Italian percentage formatting
               const formatPercent = (value: number) => `${value.toFixed(2).replace('.', ',')}%`;
               
-              // Centralized cost items array
+              // Centralized cost items array (with editable parameters)
+              const totalRevenue = totals.totalActualRevenue + totals.totalActualDelivery || totals.totalBudget || 1;
+              
               const costItems = [
-                { code: '0110', name: 'Consumi materie prime', percent: 0.221, dataTestId: 'eco-materie', highlight: false },
-                { code: '0120', name: 'Acquisti vari', percent: 0.03, dataTestId: null, highlight: false },
-                { code: '0210', name: 'Locazioni locali', percent: 0.0969, dataTestId: null, highlight: false },
-                { code: '0220', name: 'Costi del personale', percent: 0.3155, dataTestId: 'eco-personale', highlight: true },
-                { code: '0240', name: 'Utenze', percent: 0.0378, dataTestId: null, highlight: false },
-                { code: '0250', name: 'Manutenzioni', percent: 0.0034, dataTestId: null, highlight: false },
-                { code: '0260', name: 'Noleggi e Leasing', percent: 0.0035, dataTestId: null, highlight: false },
-                { code: '0310', name: 'Prestazioni di terzi', percent: 0.0125, dataTestId: null, highlight: false },
-                { code: '0320', name: 'Consulenze e compensi a terzi', percent: 0.0044, dataTestId: null, highlight: false },
-                { code: '0330', name: 'Marketing', percent: 0.0239, dataTestId: null, highlight: false },
-                { code: '0340', name: 'Delivery', percent: 0.0389, dataTestId: null, highlight: false },
-                { code: '0410', name: 'Trasferte e viaggi', percent: 0.0005, dataTestId: null, highlight: false },
-                { code: '0520', name: 'Assicurazioni', percent: 0.0034, dataTestId: null, highlight: false },
-                { code: '0530', name: 'Spese bancarie', percent: 0.0019, dataTestId: null, highlight: false }
+                { 
+                  code: '0110', 
+                  name: 'Consumi materie prime', 
+                  percent: (ecoParams?.materieFirstePercent || 22.10) / 100, 
+                  dataTestId: 'eco-materie', 
+                  highlight: false,
+                  editable: true,
+                  field: 'materieFirstePercent'
+                },
+                { 
+                  code: '0120', 
+                  name: 'Acquisti vari', 
+                  percent: (ecoParams?.acquistiVarPercent || 3.00) / 100, 
+                  dataTestId: null, 
+                  highlight: false,
+                  editable: true,
+                  field: 'acquistiVarPercent'
+                },
+                { 
+                  code: '0210', 
+                  name: 'Locazioni locali', 
+                  percent: (ecoParams?.locazioniBudget || 0) / totalRevenue, 
+                  budgetValue: ecoParams?.locazioniBudget || 0,
+                  dataTestId: null, 
+                  highlight: false,
+                  editable: true,
+                  field: 'locazioniBudget'
+                },
+                { 
+                  code: '0220', 
+                  name: 'Costi del personale', 
+                  percent: (ecoParams?.personaleBudget || 0) / totalRevenue, 
+                  budgetValue: ecoParams?.personaleBudget || 0,
+                  dataTestId: 'eco-personale', 
+                  highlight: true,
+                  editable: true,
+                  field: 'personaleBudget'
+                },
+                { 
+                  code: '0240', 
+                  name: 'Utenze', 
+                  percent: (ecoParams?.utenzeBudget || 0) / totalRevenue, 
+                  budgetValue: ecoParams?.utenzeBudget || 0,
+                  dataTestId: null, 
+                  highlight: false,
+                  editable: true,
+                  field: 'utenzeBudget'
+                },
+                { 
+                  code: '0250', 
+                  name: 'Manutenzioni', 
+                  percent: (ecoParams?.manutenzionibudget || 0) / totalRevenue, 
+                  budgetValue: ecoParams?.manutenzionibudget || 0,
+                  dataTestId: null, 
+                  highlight: false,
+                  editable: true,
+                  field: 'manutenzionibudget'
+                },
+                { 
+                  code: '0260', 
+                  name: 'Noleggi e Leasing', 
+                  percent: (ecoParams?.noleggibudget || 0) / totalRevenue, 
+                  budgetValue: ecoParams?.noleggibudget || 0,
+                  dataTestId: null, 
+                  highlight: false,
+                  editable: true,
+                  field: 'noleggibudget'
+                },
+                { 
+                  code: '0310', 
+                  name: 'Prestazioni di terzi', 
+                  percent: (ecoParams?.prestazioniTerziBudget || 0) / totalRevenue, 
+                  budgetValue: ecoParams?.prestazioniTerziBudget || 0,
+                  dataTestId: null, 
+                  highlight: false,
+                  editable: true,
+                  field: 'prestazioniTerziBudget'
+                },
+                { 
+                  code: '0320', 
+                  name: 'Consulenze e compensi a terzi', 
+                  percent: (ecoParams?.consulenzeBudget || 0) / totalRevenue, 
+                  budgetValue: ecoParams?.consulenzeBudget || 0,
+                  dataTestId: null, 
+                  highlight: false,
+                  editable: true,
+                  field: 'consulenzeBudget'
+                },
+                { 
+                  code: '0330', 
+                  name: 'Marketing', 
+                  percent: (ecoParams?.marketingBudget || 0) / totalRevenue, 
+                  budgetValue: ecoParams?.marketingBudget || 0,
+                  dataTestId: null, 
+                  highlight: false,
+                  editable: true,
+                  field: 'marketingBudget'
+                },
+                { 
+                  code: '0340', 
+                  name: 'Delivery', 
+                  percent: (ecoParams?.deliveryBudget || 0) / totalRevenue, 
+                  budgetValue: ecoParams?.deliveryBudget || 0,
+                  dataTestId: null, 
+                  highlight: false,
+                  editable: true,
+                  field: 'deliveryBudget'
+                },
+                { 
+                  code: '0410', 
+                  name: 'Trasferte e viaggi', 
+                  percent: (ecoParams?.trasferteBudget || 0) / totalRevenue, 
+                  budgetValue: ecoParams?.trasferteBudget || 0,
+                  dataTestId: null, 
+                  highlight: false,
+                  editable: true,
+                  field: 'trasferteBudget'
+                },
+                { 
+                  code: '0520', 
+                  name: 'Assicurazioni', 
+                  percent: (ecoParams?.assicurazioniBudget || 0) / totalRevenue, 
+                  budgetValue: ecoParams?.assicurazioniBudget || 0,
+                  dataTestId: null, 
+                  highlight: false,
+                  editable: true,
+                  field: 'assicurazioniBudget'
+                },
+                { 
+                  code: '0530', 
+                  name: 'Spese bancarie', 
+                  percent: (ecoParams?.speseBancarieBudget || 0) / totalRevenue, 
+                  budgetValue: ecoParams?.speseBancarieBudget || 0,
+                  dataTestId: null, 
+                  highlight: false,
+                  editable: true,
+                  field: 'speseBancarieBudget'
+                }
               ];
               
               // Calculate total cost percentage and EBITDA
