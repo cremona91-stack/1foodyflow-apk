@@ -822,7 +822,8 @@ export default function Budget({}: BudgetProps) {
                           data-testid={item.dataTestId ? `${item.dataTestId}-budget` : undefined}
                           onClick={item.editable && item.field ? () => {
                             const currentValue = item.budgetValue || 0;
-                            handleEcoEdit(item.field as keyof UpdateEconomicParameters, currentValue, false);
+                            const isBidirectional = item.field === 'materieFirstePercent' || item.field === 'acquistiVarPercent';
+                            handleEcoEdit(item.field as keyof UpdateEconomicParameters, currentValue, false, isBidirectional);
                           } : undefined}
                         >
                           {ecoEditingField === item.field && item.editable && item.field ? (
@@ -830,12 +831,14 @@ export default function Budget({}: BudgetProps) {
                               value={ecoTempValue}
                               onChange={(e) => setEcoTempValue(e.target.value)}
                               onBlur={() => {
-                                handleEcoSave(item.field as keyof UpdateEconomicParameters);
+                                const isBidirectional = item.field === 'materieFirstePercent' || item.field === 'acquistiVarPercent';
+                                handleEcoSave(item.field as keyof UpdateEconomicParameters, false, isBidirectional);
                                 setEcoEditingField(null);
                               }}
                               onKeyPress={(e) => {
                                 if (e.key === 'Enter') {
-                                  handleEcoSave(item.field as keyof UpdateEconomicParameters);
+                                  const isBidirectional = item.field === 'materieFirstePercent' || item.field === 'acquistiVarPercent';
+                                  handleEcoSave(item.field as keyof UpdateEconomicParameters, false, isBidirectional);
                                   setEcoEditingField(null);
                                 }
                               }}

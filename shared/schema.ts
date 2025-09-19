@@ -425,8 +425,8 @@ export const economicParameters = pgTable("economic_parameters", {
 export const insertEconomicParametersSchema = createInsertSchema(economicParameters, {
   year: z.number().min(2020).max(2050),
   month: z.number().min(1).max(12),
-  materieFirstePercent: z.number().min(0).max(100).optional(),
-  acquistiVarPercent: z.number().min(0).max(100).optional(),
+  materieFirstePercent: z.number().min(0).optional(),
+  acquistiVarPercent: z.number().min(0).optional(),
   locazioniBudget: z.number().min(0).optional(),
   personaleBudget: z.number().min(0).optional(),
   utenzeBudget: z.number().min(0).optional(),
