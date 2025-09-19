@@ -107,3 +107,26 @@ Currently implements a simplified session-based system with:
 - **New Column Structure**: Data | Coperto Medio € | Coperti | Sala Budget € | Delivery Budget € | Sala Incasso 2025 € | Delivery 2025 € | Consuntivo 2026 € | Consuntivo 2025 € | Delta %
 - **Summary Cards**: Updated to show "Consuntivo 2026", "Consuntivo 2025", and "Performance" with year-over-year comparison context
 - **Responsive Design**: Maintains horizontal scrolling and mobile-friendly layout with new column structure
+
+### Complete Architectural Separation (September 19, 2025)
+
+**Major Architectural Transformation**: Successfully completed full separation between Budget planning and P&L economic analysis sections.
+
+#### Architectural Changes:
+- **New P&L Page**: Created dedicated `client/src/pages/PL.tsx` as sole owner of economic performance analysis
+- **Budget Simplification**: Completely removed all economic logic from `client/src/components/Budget.tsx`
+- **Clean Separation**: Budget = planning only, P&L = economic analysis only
+- **Month/Year Synchronization**: Implemented localStorage-based synchronization between Budget and P&L sections
+
+#### Technical Implementation:
+- **Complete Code Removal**: Eliminated all EconomicParameters queries, mutations, states, and handlers from Budget.tsx
+- **P&L Autonomy**: P&L page now manages its own economic parameters with full CRUD operations
+- **Bidirectional Editing**: Maintained full bidirectional editing capabilities in P&L section
+- **Synchronized Navigation**: Both sections share month/year selection via localStorage keys (foodyflow-selected-year, foodyflow-selected-month)
+- **Route Integration**: Added `/pl` route to App.tsx with proper navigation
+
+#### Business Benefits:
+- **Clear Responsibility**: Budget focuses purely on revenue planning, P&L handles all economic analysis
+- **Improved UX**: Users can switch between sections while maintaining selected time period
+- **Better Performance**: Reduced component complexity and improved rendering efficiency
+- **Maintainability**: Cleaner codebase with distinct separation of concerns
