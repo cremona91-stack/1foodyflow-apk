@@ -142,6 +142,11 @@ export default function Budget({}: BudgetProps) {
       if (isNaN(numericValue)) {
         numericValue = 0;
       }
+      
+      // Special handling for integer fields (coperti should be integer)
+      if (field === 'coperti') {
+        numericValue = Math.round(numericValue); // Convert decimals to integers for coperti
+      }
     }
 
     if (entry) {
