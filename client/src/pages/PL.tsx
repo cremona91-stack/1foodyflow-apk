@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "lucide-react";
 
 // Types
 import type { UpdateEconomicParameters, BudgetEntry, EconomicParameters } from "@shared/schema";
@@ -17,10 +19,29 @@ interface FoodCostMetrics {
 }
 
 export default function PL() {
-  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth() + 1);
+  // Load saved month/year from localStorage or use defaults
+  const [selectedYear, setSelectedYear] = useState(() => {
+    const saved = localStorage.getItem('foodyflow-selected-year');
+    return saved ? parseInt(saved) : new Date().getFullYear();
+  });
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const saved = localStorage.getItem('foodyflow-selected-month');
+    return saved ? parseInt(saved) : new Date().getMonth() + 1;
+  });
   const [ecoEditingField, setEcoEditingField] = useState<keyof UpdateEconomicParameters | null>(null);
   const [ecoTempValue, setEcoTempValue] = useState<string>('');
+
+  // Save to localStorage when month/year changes
+  useEffect(() => {
+    localStorage.setItem('foodyflow-selected-year', selectedYear.toString());
+    localStorage.setItem('foodyflow-selected-month', selectedMonth.toString());
+  }, [selectedYear, selectedMonth]);
+
+  // Month names for display
+  const monthNames = [
+    "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+    "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
+  ];
 
   // Query for economic parameters
   const { data: ecoParams, refetch: refetchEcoParams } = useQuery<EconomicParameters>({
@@ -354,11 +375,54 @@ export default function PL() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="space-y-2">
+      <div className="space-y-4">
         <h1 className="text-3xl font-bold">Conto Economico (P&L)</h1>
         <p className="text-muted-foreground">
-          Gestione completa del conto economico con analisi dei costi e margini per {selectedMonth}/{selectedYear}
+          Gestione completa del conto economico con analisi dei costi e margini
         </p>
+        
+        {/* Month/Year Selector */}
+        <div className="flex items-center gap-4 bg-card p-4 rounded-lg">
+          <Calendar className="w-5 h-5 text-muted-foreground" />
+          <div className="flex items-center gap-2">
+            <Select 
+              value={selectedMonth.toString()} 
+              onValueChange={(value) => setSelectedMonth(parseInt(value))}
+              data-testid="select-month"
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {monthNames.map((month, index) => (
+                  <SelectItem key={index + 1} value={(index + 1).toString()}>
+                    {month}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select 
+              value={selectedYear.toString()} 
+              onValueChange={(value) => setSelectedYear(parseInt(value))}
+              data-testid="select-year"
+            >
+              <SelectTrigger className="w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[2024, 2025, 2026, 2027].map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Badge variant="outline" className="ml-auto">
+            {monthNames[selectedMonth - 1]} {selectedYear}
+          </Badge>
+        </div>
       </div>
 
       {/* Economic Table */}

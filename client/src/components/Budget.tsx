@@ -14,8 +14,21 @@ interface BudgetProps {}
 
 export default function Budget({}: BudgetProps) {
   const queryClient = useQueryClient();
-  const [selectedYear, setSelectedYear] = useState<number>(2026);
-  const [selectedMonth, setSelectedMonth] = useState<number>(1);
+  // Load saved month/year from localStorage or use defaults
+  const [selectedYear, setSelectedYear] = useState<number>(() => {
+    const saved = localStorage.getItem('foodyflow-selected-year');
+    return saved ? parseInt(saved) : 2026;
+  });
+  const [selectedMonth, setSelectedMonth] = useState<number>(() => {
+    const saved = localStorage.getItem('foodyflow-selected-month');
+    return saved ? parseInt(saved) : 1;
+  });
+
+  // Save to localStorage when month/year changes
+  useEffect(() => {
+    localStorage.setItem('foodyflow-selected-year', selectedYear.toString());
+    localStorage.setItem('foodyflow-selected-month', selectedMonth.toString());
+  }, [selectedYear, selectedMonth]);
   const [editingEntry, setEditingEntry] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<UpdateBudgetEntry>>({});
   const [ecoEditingField, setEcoEditingField] = useState<keyof UpdateEconomicParameters | null>(null);
