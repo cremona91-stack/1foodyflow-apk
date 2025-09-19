@@ -567,7 +567,7 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   // Legacy auth fields (for backwards compatibility)
   username: varchar("username", { length: 255 }).unique(),
-  password: text("password"), // hashed password
+  password: text("password"), // hashed password - nullable for Replit Auth users
   isAdmin: boolean("is_admin").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
