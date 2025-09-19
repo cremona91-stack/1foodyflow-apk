@@ -912,7 +912,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/setup-admin", async (req, res) => {
     try {
       // Check if admin user already exists
-      const existingAdmin = await storage.findUserByUsername("admin");
+      const existingAdmin = await storage.getUserByUsername("admin");
       if (existingAdmin) {
         return res.status(409).json({ 
           error: "Admin user already exists",
