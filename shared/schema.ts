@@ -399,6 +399,21 @@ export const economicParameters = pgTable("economic_parameters", {
   assicurazioniBudget: real("assicurazioni_budget").default(0), // Assicurazioni €
   speseBancarieBudget: real("spese_bancarie_budget").default(0), // Spese bancarie €
   
+  // Consuntivo amounts (editable)
+  acquistiVarConsuntivo: real("acquisti_vari_consuntivo").default(0), // Acquisti vari consuntivo €
+  locazioniConsuntivo: real("locazioni_consuntivo").default(0), // Locazioni locali consuntivo €
+  personaleConsuntivo: real("personale_consuntivo").default(0), // Costi del personale consuntivo €
+  utenzeConsuntivo: real("utenze_consuntivo").default(0), // Utenze consuntivo €
+  manutenzioniConsuntivo: real("manutenzioni_consuntivo").default(0), // Manutenzioni consuntivo €
+  noleggiConsuntivo: real("noleggi_consuntivo").default(0), // Noleggi e Leasing consuntivo €
+  prestazioniTerziConsuntivo: real("prestazioni_terzi_consuntivo").default(0), // Prestazioni di terzi consuntivo €
+  consulenzeConsuntivo: real("consulenze_consuntivo").default(0), // Consulenze e compensi a terzi consuntivo €
+  marketingConsuntivo: real("marketing_consuntivo").default(0), // Marketing consuntivo €
+  deliveryConsuntivo: real("delivery_consuntivo").default(0), // Delivery consuntivo €
+  trasferteConsuntivo: real("trasferte_consuntivo").default(0), // Trasferte e viaggi consuntivo €
+  assicurazioniConsuntivo: real("assicurazioni_consuntivo").default(0), // Assicurazioni consuntivo €
+  speseBancarieConsuntivo: real("spese_bancarie_consuntivo").default(0), // Spese bancarie consuntivo €
+  
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => {
   return {
@@ -424,6 +439,19 @@ export const insertEconomicParametersSchema = createInsertSchema(economicParamet
   trasferteBudget: z.number().min(0).optional(),
   assicurazioniBudget: z.number().min(0).optional(),
   speseBancarieBudget: z.number().min(0).optional(),
+  acquistiVarConsuntivo: z.number().min(0).optional(),
+  locazioniConsuntivo: z.number().min(0).optional(),
+  personaleConsuntivo: z.number().min(0).optional(),
+  utenzeConsuntivo: z.number().min(0).optional(),
+  manutenzioniConsuntivo: z.number().min(0).optional(),
+  noleggiConsuntivo: z.number().min(0).optional(),
+  prestazioniTerziConsuntivo: z.number().min(0).optional(),
+  consulenzeConsuntivo: z.number().min(0).optional(),
+  marketingConsuntivo: z.number().min(0).optional(),
+  deliveryConsuntivo: z.number().min(0).optional(),
+  trasferteConsuntivo: z.number().min(0).optional(),
+  assicurazioniConsuntivo: z.number().min(0).optional(),
+  speseBancarieConsuntivo: z.number().min(0).optional(),
 }).omit({ id: true, createdAt: true });
 
 export const updateEconomicParametersSchema = z.object({
@@ -441,6 +469,19 @@ export const updateEconomicParametersSchema = z.object({
   trasferteBudget: z.number().min(0).optional(),
   assicurazioniBudget: z.number().min(0).optional(),
   speseBancarieBudget: z.number().min(0).optional(),
+  acquistiVarConsuntivo: z.number().min(0).optional(),
+  locazioniConsuntivo: z.number().min(0).optional(),
+  personaleConsuntivo: z.number().min(0).optional(),
+  utenzeConsuntivo: z.number().min(0).optional(),
+  manutenzioniConsuntivo: z.number().min(0).optional(),
+  noleggiConsuntivo: z.number().min(0).optional(),
+  prestazioniTerziConsuntivo: z.number().min(0).optional(),
+  consulenzeConsuntivo: z.number().min(0).optional(),
+  marketingConsuntivo: z.number().min(0).optional(),
+  deliveryConsuntivo: z.number().min(0).optional(),
+  trasferteConsuntivo: z.number().min(0).optional(),
+  assicurazioniConsuntivo: z.number().min(0).optional(),
+  speseBancarieConsuntivo: z.number().min(0).optional(),
 });
 
 export type EconomicParameters = typeof economicParameters.$inferSelect;
