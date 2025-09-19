@@ -689,28 +689,6 @@ function FoodCostManager() {
                 personalMeals={personalMeals}
                 onViewMovements={handleViewMovements}
               />
-              
-              {/* Stock Movement Management */}
-              <div className="md:flex md:gap-6 space-y-6 md:space-y-0">
-                <div className="md:w-1/2">
-                  <StockMovementForm 
-                    products={products} 
-                    onSubmit={editingStockMovement ? handleUpdateStockMovement : handleAddStockMovement}
-                    editMovement={editingStockMovement}
-                    onCancel={editingStockMovement ? handleCancelEditStockMovement : undefined}
-                  />
-                </div>
-                <div className="md:w-1/2">
-                  <StockMovementList 
-                    movements={stockMovements} 
-                    products={products}
-                    onEdit={handleEditStockMovement}
-                    onDelete={handleDeleteStockMovement}
-                    selectedProductId={selectedProductForMovements || undefined}
-                    onFilterByProduct={setSelectedProductForMovements}
-                  />
-                </div>
-              </div>
             </div>
           )}
 
