@@ -150,7 +150,7 @@ export default function Budget({}: BudgetProps) {
     let updateData: Partial<UpdateEconomicParameters> = {};
     
     // Calculate total revenue for bidirectional calculations  
-    const totalRevenue = totals.totalActualRevenue + totals.totalActualDelivery || totals.totalBudget || 1;
+    const totalCorrispettivi = Math.max(totals.totalBudget || 0, 1); // Denominatore unificato protetto da divisione per zero
     
     // Simple bidirectional logic per user requirements:
     // - Target% fields: save percentage, auto-calculate budget
@@ -561,42 +561,43 @@ export default function Budget({}: BudgetProps) {
               // Helper function for Italian percentage formatting
               const formatPercent = (value: number) => `${value.toFixed(2).replace('.', ',')}%`;
               
-              // Centralized cost items array (with editable parameters)
-              const totalRevenue = totals.totalActualRevenue + totals.totalActualDelivery || totals.totalBudget || 1;
+              // Centralized cost items array (with unified percentage calculation)
+              // Denominator unificato: corrispettivi totali per la formula budget€ / corrispettivi  
+              const totalCorrispettivi = Math.max(totals.totalBudget || 0, 1); // Protegge da divisione per zero
               
               const costItems = [
                 { 
                   code: '0110', 
                   name: 'Consumi materie prime', 
-                  percent: (ecoParams?.materieFirstePercent || 22.10) / 100, 
-                  budgetValue: totalRevenue * ((ecoParams?.materieFirstePercent || 22.10) / 100),
+                  percent: (ecoParams?.materieFirsteBudget || 0) / totalCorrispettivi, 
+                  budgetValue: ecoParams?.materieFirsteBudget || 0,
                   consuntivoValue: foodCostMetrics?.totalFoodCost || 0, // Integrazione reale food cost dalla dashboard
                   foodCostPercent: foodCostMetrics?.foodCostPercentage || null, // Integrazione food cost dalla dashboard
                   dataTestId: 'eco-materie', 
                   highlight: false,
                   editable: true,
-                  field: 'materieFirstePercent',
+                  field: 'materieFirsteBudget',
                   consuntivoField: null, // Non editabile - viene dal food cost della dashboard
-                  isBidirectional: true,
+                  isBidirectional: false,
                   isFromDashboard: true // Flag per indicare che viene dalla dashboard
                 },
                 { 
                   code: '0120', 
                   name: 'Acquisti vari', 
-                  percent: (ecoParams?.acquistiVarPercent || 3.00) / 100, 
-                  budgetValue: totalRevenue * ((ecoParams?.acquistiVarPercent || 3.00) / 100),
+                  percent: (ecoParams?.acquistiVarBudget || 0) / totalCorrispettivi, 
+                  budgetValue: ecoParams?.acquistiVarBudget || 0,
                   consuntivoValue: ecoParams?.acquistiVarConsuntivo || 0,
                   dataTestId: null, 
                   highlight: false,
                   editable: true,
-                  field: 'acquistiVarPercent',
+                  field: 'acquistiVarBudget',
                   consuntivoField: 'acquistiVarConsuntivo',
-                  isBidirectional: true
+                  isBidirectional: false
                 },
                 { 
                   code: '0210', 
                   name: 'Locazioni locali', 
-                  percent: (ecoParams?.locazioniBudget || 0) / totalRevenue, 
+                  percent: (ecoParams?.locazioniBudget || 0) / totalCorrispettivi, 
                   budgetValue: ecoParams?.locazioniBudget || 0,
                   consuntivoValue: ecoParams?.locazioniConsuntivo || 0,
                   dataTestId: null, 
@@ -609,7 +610,7 @@ export default function Budget({}: BudgetProps) {
                 { 
                   code: '0220', 
                   name: 'Costi del personale', 
-                  percent: (ecoParams?.personaleBudget || 0) / totalRevenue, 
+                  percent: (ecoParams?.personaleBudget || 0) / totalCorrispettivi, 
                   budgetValue: ecoParams?.personaleBudget || 0,
                   consuntivoValue: ecoParams?.personaleConsuntivo || 0,
                   dataTestId: 'eco-personale', 
@@ -622,7 +623,7 @@ export default function Budget({}: BudgetProps) {
                 { 
                   code: '0240', 
                   name: 'Utenze', 
-                  percent: (ecoParams?.utenzeBudget || 0) / totalRevenue, 
+                  percent: (ecoParams?.utenzeBudget || 0) / totalCorrispettivi, 
                   budgetValue: ecoParams?.utenzeBudget || 0,
                   consuntivoValue: ecoParams?.utenzeConsuntivo || 0,
                   dataTestId: null, 
@@ -635,7 +636,7 @@ export default function Budget({}: BudgetProps) {
                 { 
                   code: '0250', 
                   name: 'Manutenzioni', 
-                  percent: (ecoParams?.manutenzionibudget || 0) / totalRevenue, 
+                  percent: (ecoParams?.manutenzionibudget || 0) / totalCorrispettivi, 
                   budgetValue: ecoParams?.manutenzionibudget || 0,
                   consuntivoValue: ecoParams?.manutenzioniConsuntivo || 0,
                   dataTestId: null, 
@@ -648,7 +649,7 @@ export default function Budget({}: BudgetProps) {
                 { 
                   code: '0260', 
                   name: 'Noleggi e Leasing', 
-                  percent: (ecoParams?.noleggibudget || 0) / totalRevenue, 
+                  percent: (ecoParams?.noleggibudget || 0) / totalCorrispettivi, 
                   budgetValue: ecoParams?.noleggibudget || 0,
                   consuntivoValue: ecoParams?.noleggiConsuntivo || 0,
                   dataTestId: null, 
@@ -661,7 +662,7 @@ export default function Budget({}: BudgetProps) {
                 { 
                   code: '0310', 
                   name: 'Prestazioni di terzi', 
-                  percent: (ecoParams?.prestazioniTerziBudget || 0) / totalRevenue, 
+                  percent: (ecoParams?.prestazioniTerziBudget || 0) / totalCorrispettivi, 
                   budgetValue: ecoParams?.prestazioniTerziBudget || 0,
                   consuntivoValue: ecoParams?.prestazioniTerziConsuntivo || 0,
                   dataTestId: null, 
@@ -674,7 +675,7 @@ export default function Budget({}: BudgetProps) {
                 { 
                   code: '0320', 
                   name: 'Consulenze e compensi a terzi', 
-                  percent: (ecoParams?.consulenzeBudget || 0) / totalRevenue, 
+                  percent: (ecoParams?.consulenzeBudget || 0) / totalCorrispettivi, 
                   budgetValue: ecoParams?.consulenzeBudget || 0,
                   consuntivoValue: ecoParams?.consulenzeConsuntivo || 0,
                   dataTestId: null, 
@@ -687,7 +688,7 @@ export default function Budget({}: BudgetProps) {
                 { 
                   code: '0330', 
                   name: 'Marketing', 
-                  percent: (ecoParams?.marketingBudget || 0) / totalRevenue, 
+                  percent: (ecoParams?.marketingBudget || 0) / totalCorrispettivi, 
                   budgetValue: ecoParams?.marketingBudget || 0,
                   consuntivoValue: ecoParams?.marketingConsuntivo || 0,
                   dataTestId: null, 
@@ -700,7 +701,7 @@ export default function Budget({}: BudgetProps) {
                 { 
                   code: '0340', 
                   name: 'Delivery', 
-                  percent: (ecoParams?.deliveryBudget || 0) / totalRevenue, 
+                  percent: (ecoParams?.deliveryBudget || 0) / totalCorrispettivi, 
                   budgetValue: ecoParams?.deliveryBudget || 0,
                   consuntivoValue: ecoParams?.deliveryConsuntivo || 0,
                   dataTestId: null, 
@@ -713,7 +714,7 @@ export default function Budget({}: BudgetProps) {
                 { 
                   code: '0410', 
                   name: 'Trasferte e viaggi', 
-                  percent: (ecoParams?.trasferteBudget || 0) / totalRevenue, 
+                  percent: (ecoParams?.trasferteBudget || 0) / totalCorrispettivi, 
                   budgetValue: ecoParams?.trasferteBudget || 0,
                   consuntivoValue: ecoParams?.trasferteConsuntivo || 0,
                   dataTestId: null, 
@@ -726,7 +727,7 @@ export default function Budget({}: BudgetProps) {
                 { 
                   code: '0520', 
                   name: 'Assicurazioni', 
-                  percent: (ecoParams?.assicurazioniBudget || 0) / totalRevenue, 
+                  percent: (ecoParams?.assicurazioniBudget || 0) / totalCorrispettivi, 
                   budgetValue: ecoParams?.assicurazioniBudget || 0,
                   consuntivoValue: ecoParams?.assicurazioniConsuntivo || 0,
                   dataTestId: null, 
@@ -739,7 +740,7 @@ export default function Budget({}: BudgetProps) {
                 { 
                   code: '0530', 
                   name: 'Spese bancarie', 
-                  percent: (ecoParams?.speseBancarieBudget || 0) / totalRevenue, 
+                  percent: (ecoParams?.speseBancarieBudget || 0) / totalCorrispettivi, 
                   budgetValue: ecoParams?.speseBancarieBudget || 0,
                   consuntivoValue: ecoParams?.speseBancarieConsuntivo || 0,
                   dataTestId: null, 

@@ -381,9 +381,13 @@ export const economicParameters = pgTable("economic_parameters", {
   year: integer("year").notNull(), // 2026, 2025, etc.
   month: integer("month").notNull(), // 1-12
   
-  // Target percentages (editable)
+  // Target percentages (editable) - DEPRECATED: ora si calcola da budget€ / corrispettivi
   materieFirstePercent: real("materie_prime_percent").default(22.10), // Consumi materie prime %
   acquistiVarPercent: real("acquisti_vari_percent").default(3.00), // Acquisti vari %
+  
+  // Budget amounts for materie prime and acquisti vari (NEW)
+  materieFirsteBudget: real("materie_prime_budget").default(0), // Consumi materie prime €
+  acquistiVarBudget: real("acquisti_vari_budget").default(0), // Acquisti vari €
   
   // Budget amounts (editable)
   locazioniBudget: real("locazioni_budget").default(0), // Locazioni locali €
