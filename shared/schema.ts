@@ -543,3 +543,33 @@ export const updateEconomicParametersSchema = z.object({
 export type EconomicParameters = typeof economicParameters.$inferSelect;
 export type InsertEconomicParameters = z.infer<typeof insertEconomicParametersSchema>;
 export type UpdateEconomicParameters = z.infer<typeof updateEconomicParametersSchema>;
+
+// Users table for authentication
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  username: varchar("username", { length: 255 }).notNull().unique(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  password: text("password").notNull(), // hashed password
+  isAdmin: boolean("is_admin").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User schemas for validation
+export const insertUserSchema = createInsertSchema(users, {
+  username: z.string().min(3).max(50),
+  email: z.string().email(),
+  password: z.string().min(6),
+}).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const selectUserSchema = createInsertSchema(users).omit({
+  password: true, // Never expose password in responses
+});
+
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type SelectUser = Omit<User, 'password'>; // Safe user type without password
