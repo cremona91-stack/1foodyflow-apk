@@ -578,7 +578,7 @@ export default function Budget({}: BudgetProps) {
                   editable: true,
                   field: 'materieFirsteBudget',
                   consuntivoField: null, // Non editabile - viene dal food cost della dashboard
-                  isBidirectional: false,
+                  isBidirectional: true, // Edita Target % con formula: budget € = (target % × corrispettivi)/100
                   isFromDashboard: true // Flag per indicare che viene dalla dashboard
                 },
                 { 
@@ -592,7 +592,7 @@ export default function Budget({}: BudgetProps) {
                   editable: true,
                   field: 'acquistiVarBudget',
                   consuntivoField: 'acquistiVarConsuntivo',
-                  isBidirectional: false
+                  isBidirectional: true // Edita Target % con formula: budget € = (target % × corrispettivi)/100
                 },
                 { 
                   code: '0210', 
