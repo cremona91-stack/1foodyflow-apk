@@ -38,13 +38,14 @@ interface KPICardProps {
   title: string;
   value: string;
   change?: number;
+  changeLabel?: string;
   icon: React.ReactNode;
   trend?: "up" | "down" | "stable";
   status?: "good" | "warning" | "danger";
   onClick?: () => void;
 }
 
-function KPICard({ title, value, change, icon, trend, status = "good", onClick }: KPICardProps) {
+function KPICard({ title, value, change, changeLabel, icon, trend, status = "good", onClick }: KPICardProps) {
   const getBadgeVariant = () => {
     // For change/differential: we'll use custom classes, not variants
     if (change !== undefined) {
@@ -88,7 +89,9 @@ function KPICard({ title, value, change, icon, trend, status = "good", onClick }
           {change !== undefined && (
             <Badge variant={getBadgeVariant()} className={`flex items-center gap-1 ${getChangeClasses()}`}>
               {getTrendIcon()}
-              <span className="text-xs">{change > 0 ? '+' : ''}{change}%</span>
+              <span className="text-xs">
+                {changeLabel ? changeLabel : `${change > 0 ? '+' : ''}${change.toFixed(1)}%`}
+              </span>
             </Badge>
           )}
         </div>
@@ -208,11 +211,15 @@ export function Dashboard({
   );
   
   // Calculate food cost metrics using the new formula: (totale iniziale + totale IN - totale finale)
-  const { totalFoodSales, totalFoodCost, foodCostPercentage } = useMemo(() => {
+  const { totalFoodSales, totalFoodCost, foodCostPercentage, theoreticalFoodCostPercentage, realVsTheoreticalDiff } = useMemo(() => {
     // Use NET REVENUE (netPrice) instead of gross revenue (sellingPrice) for Food Cost calculation
     const sales = dishes.reduce((sum, dish) => sum + (dish.netPrice * dish.sold), 0);
     
-    // Calculate food cost according to formula: (totale iniziale magazzino + totale IN magazzino - totale finale magazzino)
+    // Calculate THEORETICAL food cost (based on recipes)
+    const totalCostOfSales = dishes.reduce((sum, dish) => sum + (dish.totalCost * dish.sold), 0);
+    const theoreticalPercentage = sales > 0 ? (totalCostOfSales / sales) * 100 : 0;
+    
+    // Calculate REAL food cost according to formula: (totale iniziale magazzino + totale IN magazzino - totale finale magazzino)
     // Using data from sezione magazzino (editableInventory + stockMovements)
     
     // 1. Totale iniziale magazzino (from editableInventory)
@@ -232,14 +239,19 @@ export function Dashboard({
       return sum + (product ? inventory.finalQuantity * product.pricePerUnit : 0);
     }, 0);
     
-    // Food cost calculation
+    // REAL Food cost calculation
     const foodCostValue = totaleInizialeM + totaleInM - totaleFinaleM;
-    const percentage = sales > 0 ? (foodCostValue / sales) * 100 : 0;
+    const realPercentage = sales > 0 ? (foodCostValue / sales) * 100 : 0;
+    
+    // Calculate differential: Real - Theoretical
+    const differential = realPercentage - theoreticalPercentage;
     
     return {
       totalFoodSales: sales,
       totalFoodCost: foodCostValue,
-      foodCostPercentage: percentage
+      foodCostPercentage: realPercentage,
+      theoreticalFoodCostPercentage: theoreticalPercentage,
+      realVsTheoreticalDiff: differential
     };
   }, [dishes, productMap, editableInventory, stockMovements]);
   
@@ -278,8 +290,9 @@ export function Dashboard({
         <KPICard
           title="Food Cost %"
           value={`${foodCostPercentage.toFixed(1)}%`}
-          change={-2.1}
-          trend="down"
+          change={realVsTheoreticalDiff}
+          changeLabel={`rispetto al teorico ${realVsTheoreticalDiff > 0 ? '+' : ''}${realVsTheoreticalDiff.toFixed(1)}%`}
+          trend={realVsTheoreticalDiff > 0 ? "up" : "down"}
           status={foodCostPercentage > 30 ? "danger" : foodCostPercentage > 25 ? "warning" : "good"}
           icon={<ChefHat className="h-4 w-4" />}
           onClick={() => onNavigateToSection("food-cost")}
