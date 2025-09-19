@@ -759,7 +759,7 @@ export default function Budget({}: BudgetProps) {
                               autoFocus
                             />
                           ) : (
-                            formatCurrency(totals.totalBudget * item.percent)
+                            formatCurrency(item.budgetValue || 0)
                           )}
                         </TableCell>
                         <TableCell 
