@@ -152,15 +152,20 @@ export default function Budget({}: BudgetProps) {
     // Calculate total revenue for bidirectional calculations  
     const totalCorrispettivi = Math.max(totals.totalBudget || 0, 1); // Denominatore unificato protetto da divisione per zero
     
-    // Simple bidirectional logic per user requirements:
-    // - Target% fields: save percentage, auto-calculate budget
-    // - Budget€ fields: save euro, auto-calculate percentage
+    // Logica bidirezionale specifica per user requirements:
+    // - Per "Consumi materie prime" e "Acquisti vari": editare Target % → calcolare e salvare budget €
+    // - Per tutte le altre voci: editare Budget € direttamente
     
-    if (field === 'materieFirstePercent' || field === 'acquistiVarPercent') {
-      // Editing Target% → save percentage directly (bidirectional logic automatically handled by frontend calculations)
-      updateData[field] = numValue;
+    if (field === 'materieFirstePercent') {
+      // User edita Target % per materie prime → calcola e salva budget €
+      const budgetEuro = (numValue * totalCorrispettivi) / 100;
+      updateData['materieFirsteBudget'] = budgetEuro;
+    } else if (field === 'acquistiVarPercent') {
+      // User edita Target % per acquisti vari → calcola e salva budget €
+      const budgetEuro = (numValue * totalCorrispettivi) / 100;
+      updateData['acquistiVarBudget'] = budgetEuro;
     } else {
-      // Editing Budget€ or Consuntivo€ → save euro value directly
+      // Editing Budget€ o Consuntivo€ per tutte le altre voci → salva valore direttamente
       updateData[field] = numValue;
     }
     

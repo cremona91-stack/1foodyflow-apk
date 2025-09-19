@@ -460,7 +460,9 @@ export const insertEconomicParametersSchema = createInsertSchema(economicParamet
 
 export const updateEconomicParametersSchema = z.object({
   materieFirstePercent: z.number().min(0).optional(),
+  materieFirsteBudget: z.number().min(0).optional(), // Consumi materie prime Budget €
   acquistiVarPercent: z.number().min(0).optional(),
+  acquistiVarBudget: z.number().min(0).optional(), // Acquisti vari Budget €
   locazioniBudget: z.number().min(0).optional(),
   personaleBudget: z.number().min(0).optional(),
   utenzeBudget: z.number().min(0).optional(),
