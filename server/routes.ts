@@ -23,7 +23,8 @@ import {
   updateEditableInventorySchema,
   updateBudgetEntrySchema,
   updateEconomicParametersSchema,
-  upsertEditableInventorySchema
+  upsertEditableInventorySchema,
+  insertUserSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -891,6 +892,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error calculating food cost metrics:", error);
       res.status(500).json({ error: "Failed to calculate food cost metrics" });
+    }
+  });
+
+  // Temporary route to create admin user (secure, one-time use)
+  app.post("/api/setup-admin", async (req, res) => {
+    try {
+      // Check if admin user already exists
+      const existingAdmin = await storage.findUserByUsername("admin");
+      if (existingAdmin) {
+        return res.status(409).json({ 
+          error: "Admin user already exists",
+          message: "Admin user has already been created"
+        });
+      }
+
+      // Create admin user with default credentials
+      const adminData = {
+        username: "admin",
+        email: "admin@foodyflow.com", 
+        password: "admin", // Will be hashed by auth system
+        isAdmin: true
+      };
+
+      const validatedData = insertUserSchema.parse(adminData);
+      const adminUser = await storage.createUser(validatedData);
+      
+      // Remove password from response
+      const { password, ...safeUser } = adminUser;
+      
+      res.status(201).json({
+        success: true,
+        message: "Admin user created successfully",
+        user: safeUser
+      });
+    } catch (error) {
+      console.error("Error creating admin user:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create admin user" });
     }
   });
 
