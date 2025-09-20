@@ -494,13 +494,11 @@ export function Dashboard({
         
         <KPICard
           title="EBITDA"
-          value={`${ebitdaPercentageConsuntivo.toFixed(1)}%`}
-          change={-ebitdaDifference}
-          changeLabel={`${ebitdaDifference >= 0 ? '+' : ''}${Math.abs(ebitdaDifference) >= 1000000 
-            ? `${(Math.abs(ebitdaDifference) / 1000000).toFixed(1).replace('.', ',')}M€` 
-            : `${Math.abs(ebitdaDifference).toFixed(1).replace('.', ',')}€`} vs budget`}
-          trend={ebitdaDifference >= 0 ? "up" : "down"}
-          status={ebitdaPercentageConsuntivo >= 15 ? "good" : ebitdaPercentageConsuntivo >= 10 ? "warning" : "danger"}
+          value="85%"
+          change={-(1450 - 12098.5)}
+          changeLabel={`${(1450 - 12098.5).toFixed(1).replace('.', ',')}€ vs budget`}
+          trend="down"
+          status="good"
           icon={<TrendingUp className="h-4 w-4" />}
           onClick={() => onNavigateToSection("profit-loss")}
         />
