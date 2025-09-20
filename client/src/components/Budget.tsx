@@ -251,14 +251,7 @@ export default function Budget({}: BudgetProps) {
           {/* Summary Badges */}
           <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t">
             <Badge variant="outline" className="text-sm">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              Coperto Medio: {formatCurrency(totals.avgCopertoMedio)}
-            </Badge>
-            <Badge variant="outline" className="text-sm">
-              Coperti Totali: {totals.totalCoperti.toLocaleString('it-IT')}
-            </Badge>
-            <Badge variant="outline" className="text-sm">
-              Budget Totale: {formatCurrency(totals.totalBudget)}
+              Budget 2026: {formatCurrency(totals.totalBudget)}
             </Badge>
             <Badge variant="outline" className="text-sm">
               Consuntivo 2026: {formatCurrency(totals.totalConsuntivo2026)}
@@ -272,7 +265,7 @@ export default function Budget({}: BudgetProps) {
               data-testid="summary-delta-badge"
             >
               <span className="mr-1">{totals.deltaPercentage > 0 ? '↗' : '↘'}</span>
-              Delta: {totals.deltaPercentage > 0 ? '+' : ''}{totals.deltaPercentage.toFixed(1)}%
+              Performance: {totals.deltaPercentage > 0 ? '+' : ''}{totals.deltaPercentage.toFixed(1)}%
             </Badge>
           </div>
         </CardHeader>
