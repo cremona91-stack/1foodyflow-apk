@@ -70,8 +70,8 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
       {primaryTabs.map((tab, index) => renderTab(tab, `primary-${index}`))}
       
       {/* Visual separator with fork icon */}
-      <div className="flex items-center justify-center px-2 text-muted-foreground/50">
-        <Utensils className="h-4 w-4" />
+      <div className="flex items-center justify-center px-2">
+        <Utensils className="h-4 w-4 text-red-500" />
       </div>
       
       {/* Management section tabs */}
