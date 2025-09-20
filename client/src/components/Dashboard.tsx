@@ -290,10 +290,10 @@ export function Dashboard({
   // Labour cost impostato a 0 come richiesto dall'utente
   const labourCostPercentage = 0;
 
-  // Calcolo EBITDA dal budget
-  const { ebitdaBudget, ebitdaPercentage, totalCorrispettivi } = useMemo(() => {
+  // Calcolo EBITDA dal budget E consuntivo
+  const { ebitdaBudget, ebitdaPercentageBudget, ebitdaPercentageConsuntivo, ebitdaDifference, totalCorrispettivi } = useMemo(() => {
     if (!ecoParams) {
-      return { ebitdaBudget: 0, ebitdaPercentage: 0, totalCorrispettivi: 0 };
+      return { ebitdaBudget: 0, ebitdaPercentageBudget: 0, ebitdaPercentageConsuntivo: 0, ebitdaDifference: 0, totalCorrispettivi: 0 };
     }
 
     // Calcola totale corrispettivi dal budget (similar to Budget component)
@@ -302,8 +302,13 @@ export function Dashboard({
       return sum + calculatedBudgetRevenue + (entry.budgetDelivery || 0);
     }, 0);
 
-    // Calculate total costs from economic parameters
-    const totalCosts = (
+    // Calcola totale corrispettivi dal consuntivo (actual revenue)
+    const totalConsuntivoRevenue = budgetEntries.reduce((sum, entry) => {
+      return sum + (entry.actualRevenue || 0) + (entry.actualDelivery || 0);
+    }, 0);
+
+    // Calculate total costs from economic parameters (for percentage calculation)
+    const totalCostsBudget = (
       // Materie prime (calculated from percentage)
       ((ecoParams.materieFirstePercent || 0) / 100 * totalBudgetRevenue) +
       // Acquisti vari (calculated from percentage)  
@@ -323,13 +328,43 @@ export function Dashboard({
       (ecoParams.speseBancarieBudget || 0)
     );
 
-    // EBITDA = Revenue - Total Costs
-    const ebitda = totalBudgetRevenue - totalCosts;
-    const ebitdaPerc = totalBudgetRevenue > 0 ? (ebitda / totalBudgetRevenue) * 100 : 0;
+    // Calculate total costs for consuntivo (similar logic applied to consuntivo revenue)
+    const totalCostsConsuntivo = (
+      // Materie prime (calculated from percentage applied to consuntivo)
+      ((ecoParams.materieFirstePercent || 0) / 100 * totalConsuntivoRevenue) +
+      // Acquisti vari (calculated from percentage applied to consuntivo)  
+      ((ecoParams.acquistiVarPercent || 0) / 100 * totalConsuntivoRevenue) +
+      // All other budget costs (assume same as budget for now)
+      (ecoParams.locazioniBudget || 0) +
+      (ecoParams.personaleBudget || 0) +
+      (ecoParams.utenzeBudget || 0) +
+      (ecoParams.manutenzionibudget || 0) +
+      (ecoParams.noleggibudget || 0) +
+      (ecoParams.prestazioniTerziBudget || 0) +
+      (ecoParams.consulenzeBudget || 0) +
+      (ecoParams.marketingBudget || 0) +
+      (ecoParams.deliveryBudget || 0) +
+      (ecoParams.trasferteBudget || 0) +
+      (ecoParams.assicurazioniBudget || 0) +
+      (ecoParams.speseBancarieBudget || 0)
+    );
+
+    // EBITDA Budget = Revenue Budget - Total Costs Budget
+    const ebitdaBudget = totalBudgetRevenue - totalCostsBudget;
+    const ebitdaPercBudget = totalBudgetRevenue > 0 ? (ebitdaBudget / totalBudgetRevenue) * 100 : 0;
+
+    // EBITDA Consuntivo = Revenue Consuntivo - Total Costs Consuntivo  
+    const ebitdaConsuntivo = totalConsuntivoRevenue - totalCostsConsuntivo;
+    const ebitdaPercConsuntivo = totalConsuntivoRevenue > 0 ? (ebitdaConsuntivo / totalConsuntivoRevenue) * 100 : 0;
+
+    // Differenza = Consuntivo - Budget
+    const difference = ebitdaPercConsuntivo - ebitdaPercBudget;
 
     return {
-      ebitdaBudget: ebitda,
-      ebitdaPercentage: ebitdaPerc,
+      ebitdaBudget: ebitdaBudget,
+      ebitdaPercentageBudget: ebitdaPercBudget,
+      ebitdaPercentageConsuntivo: ebitdaPercConsuntivo,
+      ebitdaDifference: difference,
       totalCorrispettivi: totalBudgetRevenue
     };
   }, [ecoParams, budgetEntries]);
@@ -374,11 +409,11 @@ export function Dashboard({
         
         <KPICard
           title="EBITDA"
-          value={`${ebitdaPercentage.toFixed(1)}%`}
-          change={ebitdaPercentage}
-          changeLabel={`€${ebitdaBudget.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
-          trend={ebitdaPercentage >= 0 ? "up" : "down"}
-          status={ebitdaPercentage >= 15 ? "good" : ebitdaPercentage >= 10 ? "warning" : "danger"}
+          value={`${ebitdaPercentageConsuntivo.toFixed(1)}%`}
+          change={-ebitdaDifference}
+          changeLabel={`${ebitdaDifference >= 0 ? '+' : ''}${ebitdaDifference.toFixed(1)}% vs budget`}
+          trend={ebitdaDifference >= 0 ? "up" : "down"}
+          status={ebitdaPercentageConsuntivo >= 15 ? "good" : ebitdaPercentageConsuntivo >= 10 ? "warning" : "danger"}
           icon={<TrendingUp className="h-4 w-4" />}
           onClick={() => onNavigateToSection("profit-loss")}
         />
