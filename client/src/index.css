@@ -23,12 +23,50 @@ body::before {
     repeat,
     no-repeat;
   background-size: 
-    350px 350px,
-    200px 200px,
+    150px 150px,
+    100px 100px,
     cover;
   opacity: 0.04;
   z-index: -1;
   pointer-events: none;
+}
+
+/* Mobile responsive background adjustments */
+@media (min-width: 768px) {
+  body::before {
+    background-size: 
+      350px 350px,
+      200px 200px,
+      cover;
+  }
+}
+
+/* Mobile-optimized scrolling for tables */
+.mobile-table-scroll {
+  @apply overflow-x-auto max-w-full;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Better touch targets for mobile */
+@media (max-width: 767px) {
+  .mobile-touch-target {
+    @apply min-h-11 min-w-11;
+  }
+  
+  /* Hide less important info on mobile */
+  .mobile-hide {
+    @apply hidden;
+  }
+  
+  /* Stack content vertically on mobile */
+  .mobile-stack {
+    @apply flex-col gap-2;
+  }
+  
+  /* Larger text for mobile readability */
+  .mobile-text-large {
+    @apply text-base;
+  }
 }
 
 /* LIGHT MODE */

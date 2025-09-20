@@ -502,15 +502,15 @@ export default function PL() {
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="mobile-table-scroll">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-80">Voce</TableHead>
-                  <TableHead className="text-center w-20">Target %</TableHead>
-                  <TableHead className="text-right w-32">Budget €</TableHead>
-                  <TableHead className="text-right w-32">Consuntivo €</TableHead>
-                  <TableHead className="text-center w-20">Consuntivo %</TableHead>
+                  <TableHead className="w-48 md:w-80 text-xs md:text-sm mobile-text-large">Voce</TableHead>
+                  <TableHead className="text-center w-16 md:w-20 text-xs md:text-sm">Target %</TableHead>
+                  <TableHead className="text-right w-20 md:w-32 text-xs md:text-sm">Budget €</TableHead>
+                  <TableHead className="text-right w-20 md:w-32 text-xs md:text-sm">Consuntivo €</TableHead>
+                  <TableHead className="text-center w-16 md:w-20 text-xs md:text-sm">Consuntivo %</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

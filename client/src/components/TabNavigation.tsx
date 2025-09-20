@@ -52,25 +52,27 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
         size="default"
         onClick={() => onTabChange(tab.id)}
         data-testid={`tab-${tab.id}`}
-        className={`flex-1 rounded-none py-3 px-4 text-sm hover-elevate transition-colors flex items-center justify-center gap-2 ${
+        className={`flex-1 min-w-0 rounded-none py-3 px-2 md:px-4 text-xs md:text-sm hover-elevate transition-colors flex items-center justify-center gap-1 md:gap-2 mobile-touch-target ${
           isActive 
             ? "bg-background border-b-2 border-primary text-primary font-medium" 
             : "text-muted-foreground"
         }`}
+        aria-label={tab.label}
+        title={tab.label}
       >
-        <Icon className="h-4 w-4" />
-        <span className="hidden sm:inline">{tab.label}</span>
+        <Icon className="h-4 w-4 flex-shrink-0" />
+        <span className="hidden sm:inline truncate mobile-text-large">{tab.label}</span>
       </Button>
     );
   };
   
   return (
-    <nav className="flex bg-muted border-b border-border">
+    <nav className="flex bg-muted border-b border-border mobile-table-scroll">
       {/* Primary operational tabs */}
       {primaryTabs.map((tab, index) => renderTab(tab, `primary-${index}`))}
       
       {/* Visual separator with fork icon */}
-      <div className="flex items-center justify-center px-2">
+      <div className="flex items-center justify-center px-1 md:px-2 flex-shrink-0">
         <Utensils className="h-4 w-4 text-red-500" />
       </div>
       

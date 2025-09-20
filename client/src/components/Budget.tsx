@@ -365,20 +365,20 @@ export default function Budget({}: BudgetProps) {
       {/* Budget Table */}
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="mobile-table-scroll">
             <Table>
               <TableHeader>
                 <TableRow className="bg-red-600 text-white hover:bg-red-600">
-                  <TableHead className="text-white font-semibold w-[90px]">Data</TableHead>
-                  <TableHead className="text-white font-semibold text-right w-[70px]">C.M. €</TableHead>
-                  <TableHead className="text-white font-semibold text-center w-[60px]">Cop.</TableHead>
-                  <TableHead className="text-white font-semibold text-right w-[80px]">Budget €</TableHead>
-                  <TableHead className="text-white font-semibold text-right w-[80px]">Del. €</TableHead>
-                  <TableHead className="text-white font-semibold text-right w-[80px] bg-blue-100 dark:bg-blue-900/30">Inc. 25 €</TableHead>
-                  <TableHead className="text-white font-semibold text-right w-[80px] bg-blue-100 dark:bg-blue-900/30">Del. 25 €</TableHead>
-                  <TableHead className="text-white font-semibold text-center w-[80px]">Cons. 26</TableHead>
-                  <TableHead className="text-white font-semibold text-center w-[80px] bg-blue-100 dark:bg-blue-900/30">Cons. 25</TableHead>
-                  <TableHead className="text-white font-semibold text-center w-[60px]">Δ%</TableHead>
+                  <TableHead className="text-white font-semibold w-[60px] md:w-[90px] text-xs md:text-sm">Data</TableHead>
+                  <TableHead className="text-white font-semibold text-right w-[50px] md:w-[70px] text-xs md:text-sm">C.M. €</TableHead>
+                  <TableHead className="text-white font-semibold text-center w-[40px] md:w-[60px] text-xs md:text-sm">Cop.</TableHead>
+                  <TableHead className="text-white font-semibold text-right w-[60px] md:w-[80px] text-xs md:text-sm mobile-hide">Budget €</TableHead>
+                  <TableHead className="text-white font-semibold text-right w-[60px] md:w-[80px] text-xs md:text-sm mobile-hide">Del. €</TableHead>
+                  <TableHead className="text-white font-semibold text-right w-[60px] md:w-[80px] bg-blue-100 dark:bg-blue-900/30 text-xs md:text-sm mobile-hide">Inc. 25 €</TableHead>
+                  <TableHead className="text-white font-semibold text-right w-[60px] md:w-[80px] bg-blue-100 dark:bg-blue-900/30 text-xs md:text-sm mobile-hide">Del. 25 €</TableHead>
+                  <TableHead className="text-white font-semibold text-center w-[60px] md:w-[80px] text-xs md:text-sm">Cons. 26</TableHead>
+                  <TableHead className="text-white font-semibold text-center w-[60px] md:w-[80px] bg-blue-100 dark:bg-blue-900/30 text-xs md:text-sm">Cons. 25</TableHead>
+                  <TableHead className="text-white font-semibold text-center w-[40px] md:w-[60px] text-xs md:text-sm">Δ%</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -425,12 +425,12 @@ export default function Budget({}: BudgetProps) {
                           data-testid={`input-coperti-${day}`}
                         />
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right mobile-hide">
                         <span className="text-xs font-mono" data-testid={`calculated-budget-revenue-${day}`}>
                           {formatCurrency(calculatedBudgetRevenue)}
                         </span>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right mobile-hide">
                         <Input
                           type="text"
                           value={entry?.budgetDelivery ? entry.budgetDelivery.toString() : ''}
@@ -440,7 +440,7 @@ export default function Budget({}: BudgetProps) {
                           data-testid={`input-budget-delivery-${day}`}
                         />
                       </TableCell>
-                      <TableCell className="text-right bg-blue-50 dark:bg-blue-950/20">
+                      <TableCell className="text-right bg-blue-50 dark:bg-blue-950/20 mobile-hide">
                         <Input
                           type="text"
                           value={entry?.actualRevenue ? entry.actualRevenue.toString() : ''}
@@ -450,7 +450,7 @@ export default function Budget({}: BudgetProps) {
                           data-testid={`input-actual-revenue-${day}`}
                         />
                       </TableCell>
-                      <TableCell className="text-right bg-blue-50 dark:bg-blue-950/20">
+                      <TableCell className="text-right bg-blue-50 dark:bg-blue-950/20 mobile-hide">
                         <Input
                           type="text"
                           value={entry?.actualDelivery ? entry.actualDelivery.toString() : ''}
@@ -494,10 +494,10 @@ export default function Budget({}: BudgetProps) {
                   <TableCell className="font-bold">Totale {monthNames[selectedMonth - 1]}</TableCell>
                   <TableCell className="text-right font-bold" data-testid="total-coperto-medio">{formatCurrency(totals.avgCopertoMedio)}</TableCell>
                   <TableCell className="text-center font-bold" data-testid="total-coperti">{totals.totalCoperti}</TableCell>
-                  <TableCell className="text-right font-bold" data-testid="total-budget-revenue">{formatCurrency(totals.totalBudgetRevenue)}</TableCell>
-                  <TableCell className="text-right font-bold" data-testid="total-budget-delivery">{formatCurrency(totals.totalBudgetDelivery)}</TableCell>
-                  <TableCell className="text-right font-bold" data-testid="total-actual-revenue">{formatCurrency(totals.totalActualRevenue)}</TableCell>
-                  <TableCell className="text-right font-bold" data-testid="total-actual-delivery">{formatCurrency(totals.totalActualDelivery)}</TableCell>
+                  <TableCell className="text-right font-bold mobile-hide" data-testid="total-budget-revenue">{formatCurrency(totals.totalBudgetRevenue)}</TableCell>
+                  <TableCell className="text-right font-bold mobile-hide" data-testid="total-budget-delivery">{formatCurrency(totals.totalBudgetDelivery)}</TableCell>
+                  <TableCell className="text-right font-bold mobile-hide" data-testid="total-actual-revenue">{formatCurrency(totals.totalActualRevenue)}</TableCell>
+                  <TableCell className="text-right font-bold mobile-hide" data-testid="total-actual-delivery">{formatCurrency(totals.totalActualDelivery)}</TableCell>
                   <TableCell className="text-center font-bold" data-testid="total-consuntivo-2026">{formatCurrency(totals.totalConsuntivo2026)}</TableCell>
                   <TableCell className="text-center font-bold" data-testid="total-consuntivo-2025">{formatCurrency(totals.totalConsuntivo2025)}</TableCell>
                   <TableCell className="text-center font-bold">

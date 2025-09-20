@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { FileText, Utensils, ChefHat, Sun, Moon, LogOut } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/use-auth";
 
 interface AppHeaderProps {
   onExportPDF?: () => void;
@@ -25,38 +25,39 @@ export default function AppHeader({ onExportPDF }: AppHeaderProps) {
     window.location.href = "/api/logout";
   };
 
-  // Get display name from Replit Auth user
-  const displayName = user?.firstName || user?.lastName 
-    ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
-    : user?.email || 'Utente';
+  // Get display name from Replit Auth user - user can be any object
+  const displayName = (user as any)?.firstName || (user as any)?.lastName 
+    ? `${(user as any)?.firstName || ''} ${(user as any)?.lastName || ''}`.trim()
+    : (user as any)?.email || 'Utente';
 
   return (
-    <header className="bg-card border-b border-card-border p-6">
-      <div className="flex items-center justify-between">
+    <header className="bg-card border-b border-card-border p-3 md:p-6">
+      <div className="flex items-center justify-between gap-2">
         <Button 
           onClick={handleExportPDF}
           variant="destructive"
           size="sm"
           data-testid="button-export-pdf"
-          className="flex items-center gap-1"
+          className="flex items-center gap-1 mobile-touch-target shrink-0"
+          aria-label="Esporta PDF"
         >
           <FileText className="h-3 w-3" />
-          Esporta PDF
+          <span className="hidden sm:inline">Esporta PDF</span>
         </Button>
         
-        <div className="flex flex-col items-center text-center">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+        <div className="flex flex-col items-center text-center min-w-0 flex-1">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground truncate">
             FoodyFlow
           </h1>
-          <p className="text-sm italic text-muted-foreground mt-2">
+          <p className="text-xs sm:text-sm italic text-muted-foreground mt-1 hidden sm:block">
             Evolve Your Eatery
           </p>
         </div>
         
-        <div className="flex items-center gap-2">
-          <div className="hidden sm:flex flex-col items-end text-xs text-muted-foreground">
+        <div className="flex items-center gap-1 md:gap-2 shrink-0">
+          <div className="hidden lg:flex flex-col items-end text-xs text-muted-foreground">
             <span>Benvenuto</span>
-            <span className="font-medium">{displayName}</span>
+            <span className="font-medium truncate max-w-20">{displayName}</span>
           </div>
           
           <Button
@@ -64,14 +65,15 @@ export default function AppHeader({ onExportPDF }: AppHeaderProps) {
             size="sm"
             onClick={toggleTheme}
             data-testid="button-theme-toggle"
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 mobile-touch-target"
+            aria-label={theme === "dark" ? "Attiva modalità chiara" : "Attiva modalità scura"}
           >
             {theme === "dark" ? (
               <Sun className="h-4 w-4" />
             ) : (
               <Moon className="h-4 w-4" />
             )}
-            {theme === "dark" ? "Light" : "Dark"}
+            <span className="hidden md:inline">{theme === "dark" ? "Light" : "Dark"}</span>
           </Button>
           
           <Button
@@ -79,10 +81,11 @@ export default function AppHeader({ onExportPDF }: AppHeaderProps) {
             size="sm"
             onClick={handleLogout}
             data-testid="button-logout"
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 mobile-touch-target"
+            aria-label="Logout - Esci dall'applicazione"
           >
             <LogOut className="h-4 w-4" />
-            Esci
+            <span className="hidden sm:inline">Esci</span>
           </Button>
         </div>
       </div>
