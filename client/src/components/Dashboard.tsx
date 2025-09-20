@@ -34,7 +34,7 @@ interface KPICardProps {
   title: string;
   value: string;
   change?: number;
-  changeLabel?: string;
+  changeLabel?: string | React.ReactNode;
   icon: React.ReactNode;
   trend?: "up" | "down" | "stable";
   status?: "good" | "warning" | "danger";
@@ -201,9 +201,15 @@ export function Dashboard({
   onNavigateToSection 
 }: DashboardProps) {
   // Current period for budget data (using current month and year)
-  const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
-  const currentMonth = currentDate.getMonth() + 1;
+  // Sync with P&L and Budget localStorage values
+  const currentYear = (() => {
+    const saved = localStorage.getItem('foodyflow-selected-year');
+    return saved ? parseInt(saved) : new Date().getFullYear();
+  })();
+  const currentMonth = (() => {
+    const saved = localStorage.getItem('foodyflow-selected-month');
+    return saved ? parseInt(saved) : new Date().getMonth() + 1;
+  })();
 
   // Fetch economic parameters for EBITDA calculation
   const { data: ecoParams } = useQuery({
@@ -478,8 +484,8 @@ export function Dashboard({
           changeLabel={
             <div className="flex flex-col text-xs leading-tight">
               <span>cfr FCT {realVsTheoreticalDiff > 0 ? '+' : ''}{realVsTheoreticalDiff.toFixed(1)}%</span>
-              <span className={`${ecoParams?.materieFirsteBudget && ((ecoParams.materieFirsteBudget / totalCorrispettivi) * 100) > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
-                cfr FCB {ecoParams?.materieFirsteBudget ? ((ecoParams.materieFirsteBudget / totalCorrispettivi) * 100).toFixed(1) : '0.0'}%
+              <span className={`${ecoParams?.materieFirsteBudget && totalCorrispettivi > 0 && ((ecoParams.materieFirsteBudget / totalCorrispettivi) * 100) > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
+                cfr FCB {ecoParams?.materieFirsteBudget && totalCorrispettivi > 0 ? ((ecoParams.materieFirsteBudget / totalCorrispettivi) * 100).toFixed(1) : '0.0'}%
               </span>
             </div>
           }

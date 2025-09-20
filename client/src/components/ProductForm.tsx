@@ -25,6 +25,7 @@ export default function ProductForm({ onSubmit, editProduct, onCancel }: Product
       code: "",
       name: "",
       supplier: "",
+      supplierEmail: "",
       waste: 0,
       notes: "",
       quantity: 0,
@@ -40,6 +41,7 @@ export default function ProductForm({ onSubmit, editProduct, onCancel }: Product
         code: editProduct.code,
         name: editProduct.name,
         supplier: editProduct.supplier || "",
+        supplierEmail: editProduct.supplierEmail || "",
         waste: editProduct.waste,
         notes: editProduct.notes || "",
         quantity: editProduct.quantity,
@@ -51,6 +53,7 @@ export default function ProductForm({ onSubmit, editProduct, onCancel }: Product
         code: "",
         name: "",
         supplier: "",
+        supplierEmail: "",
         waste: 0,
         notes: "",
         quantity: 0,
@@ -136,6 +139,27 @@ export default function ProductForm({ onSubmit, editProduct, onCancel }: Product
                       placeholder="Es. Grano & Co."
                       className="bg-yellow-100 dark:bg-yellow-900/30"
                       data-testid="input-supplier"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="supplierEmail"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email Fornitore</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      value={field.value || ""}
+                      type="email"
+                      placeholder="Es. info@granoeco.it"
+                      className="bg-yellow-100 dark:bg-yellow-900/30"
+                      data-testid="input-supplier-email"
                     />
                   </FormControl>
                   <FormMessage />

@@ -190,6 +190,7 @@ export class DatabaseStorage implements IStorage {
     if (updates.code !== undefined) sanitizedUpdates.code = updates.code;
     if (updates.name !== undefined) sanitizedUpdates.name = updates.name;
     if (updates.supplier !== undefined) sanitizedUpdates.supplier = updates.supplier;
+    if (updates.supplierEmail !== undefined) sanitizedUpdates.supplierEmail = updates.supplierEmail;
     if (updates.waste !== undefined) sanitizedUpdates.waste = updates.waste;
     if (updates.notes !== undefined) sanitizedUpdates.notes = updates.notes;
     if (updates.quantity !== undefined) sanitizedUpdates.quantity = updates.quantity;

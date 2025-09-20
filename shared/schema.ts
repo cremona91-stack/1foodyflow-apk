@@ -23,6 +23,7 @@ export const products = pgTable("products", {
   code: varchar("code").notNull().unique(),
   name: text("name").notNull(),
   supplier: text("supplier"),
+  supplierEmail: text("supplier_email"),
   waste: real("waste").notNull().default(0),
   notes: text("notes"),
   quantity: real("quantity").notNull(),
@@ -150,6 +151,7 @@ export const insertProductSchema = createInsertSchema(products).omit({
   quantity: z.number().min(0),
   pricePerUnit: z.number().min(0),
   unit: z.enum(["kg", "l", "pezzo"]),
+  supplierEmail: z.string().email().optional().or(z.literal("")),
 });
 
 export const insertRecipeSchema = createInsertSchema(recipes).omit({
@@ -239,6 +241,7 @@ export const updateProductSchema = insertProductSchema.partial().omit({
   quantity: z.number().min(0).optional(),
   pricePerUnit: z.number().min(0).optional(),
   unit: z.enum(["kg", "l", "pezzo"]).optional(),
+  supplierEmail: z.string().email().optional().or(z.literal("")).optional(),
 });
 
 export const updateRecipeSchema = z.object({
