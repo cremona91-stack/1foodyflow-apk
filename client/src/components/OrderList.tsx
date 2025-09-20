@@ -66,8 +66,27 @@ export default function OrderList({ orders, products, onEdit, onDelete, onView }
   // Mutation per inviare email ordine
   const sendEmailMutation = useMutation({
     mutationFn: async (orderId: string) => {
-      const response = await apiRequest('POST', `/api/orders/${orderId}/send-email`, {});
-      return response.json();
+      try {
+        const response = await apiRequest('POST', `/api/orders/${orderId}/send-email`, {});
+        return response.json();
+      } catch (error: any) {
+        // Estrai il messaggio dal server se disponibile
+        let serverMessage = "Non è stato possibile inviare l'email dell'ordine.";
+        if (error.message) {
+          try {
+            // Il formato dell'errore è "status: jsonResponse"
+            const statusMatch = error.message.match(/^\d+: (.+)$/);
+            if (statusMatch) {
+              const jsonResponse = JSON.parse(statusMatch[1]);
+              serverMessage = jsonResponse.message || jsonResponse.error || serverMessage;
+            }
+          } catch {
+            // Se non riesce a parsare, usa il messaggio originale
+            serverMessage = error.message;
+          }
+        }
+        throw new Error(serverMessage);
+      }
     },
     onSuccess: (data) => {
       toast({
