@@ -1,8 +1,8 @@
 import { apiRequest } from "./queryClient";
 import type { 
-  Product, Recipe, Dish, Waste, PersonalMeal, Order, StockMovement, InventorySnapshot,
-  InsertProduct, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal, InsertOrder, InsertStockMovement, InsertInventorySnapshot,
-  UpdateProduct, UpdateRecipe, UpdateDish, UpdateOrder, UpdateStockMovement, UpdateInventorySnapshot
+  Product, Supplier, Recipe, Dish, Waste, PersonalMeal, Order, StockMovement, InventorySnapshot,
+  InsertProduct, InsertSupplier, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal, InsertOrder, InsertStockMovement, InsertInventorySnapshot,
+  UpdateProduct, UpdateSupplier, UpdateRecipe, UpdateDish, UpdateOrder, UpdateStockMovement, UpdateInventorySnapshot
 } from "@shared/schema";
 
 // Products API
@@ -35,6 +35,39 @@ export const productsApi = {
 
   async deleteProduct(id: string): Promise<void> {
     await apiRequest("DELETE", `/api/products/${id}`);
+  },
+};
+
+// Suppliers API
+export const suppliersApi = {
+  async getSuppliers(): Promise<Supplier[]> {
+    const response = await fetch("/api/suppliers", { credentials: "include" });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch suppliers: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async getSupplier(id: string): Promise<Supplier> {
+    const response = await fetch(`/api/suppliers/${id}`, { credentials: "include" });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch supplier: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async createSupplier(data: InsertSupplier): Promise<Supplier> {
+    const response = await apiRequest("POST", "/api/suppliers", data);
+    return response.json();
+  },
+
+  async updateSupplier(id: string, data: UpdateSupplier): Promise<Supplier> {
+    const response = await apiRequest("PUT", `/api/suppliers/${id}`, data);
+    return response.json();
+  },
+
+  async deleteSupplier(id: string): Promise<void> {
+    await apiRequest("DELETE", `/api/suppliers/${id}`);
   },
 };
 
@@ -262,6 +295,7 @@ export const inventorySnapshotsApi = {
 
 export const api = {
   products: productsApi,
+  suppliers: suppliersApi,
   recipes: recipesApi,
   dishes: dishesApi,
   waste: wasteApi,

@@ -35,6 +35,7 @@ const primaryTabs = [
 const managementTabs = [
   { id: "inventory", label: "Inventario", icon: Warehouse },
   { id: "recipes", label: "Ricette", icon: ChefHat },
+  { id: "suppliers", label: "Fornitori", icon: Users },
   { id: "orders", label: "Ordini", icon: Truck },
   { id: "warehouse", label: "Magazzino", icon: ArrowUpDown },
   { id: "waste", label: "Sprechi/Staff Food", icon: Trash2 },
@@ -61,7 +62,7 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
         title={tab.label}
       >
         <Icon className="h-4 w-4 flex-shrink-0" />
-        <span className="hidden sm:inline truncate mobile-text-large">{tab.label}</span>
+        <span className="hidden sm:inline mobile-text-large">{tab.label}</span>
       </Button>
     );
   };

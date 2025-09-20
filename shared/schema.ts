@@ -17,11 +17,23 @@ export const dishIngredientSchema = z.object({
   cost: z.number().min(0),
 });
 
+// Suppliers table
+export const suppliers = pgTable("suppliers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  email: text("email"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Product/Ingredient table
 export const products = pgTable("products", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   code: varchar("code").notNull().unique(),
   name: text("name").notNull(),
+  supplierId: varchar("supplier_id").references(() => suppliers.id, { onDelete: "set null" }),
+  // Keep legacy fields for backward compatibility during migration
   supplier: text("supplier"),
   supplierEmail: text("supplier_email"),
   waste: real("waste").notNull().default(0),
@@ -141,6 +153,22 @@ export const editableInventory = pgTable("editable_inventory", {
 });
 
 // Zod schemas for validation
+export const insertSupplierSchema = createInsertSchema(suppliers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  name: z.string().min(1, "Nome fornitore richiesto"),
+  email: z.string().email().optional().or(z.literal("")),
+  notes: z.string().optional(),
+});
+
+export const updateSupplierSchema = z.object({
+  name: z.string().min(1, "Nome fornitore richiesto").optional(),
+  email: z.string().email().optional().or(z.literal("")),
+  notes: z.string().optional(),
+});
+
 export const insertProductSchema = createInsertSchema(products).omit({
   id: true,
   createdAt: true,
@@ -151,6 +179,8 @@ export const insertProductSchema = createInsertSchema(products).omit({
   quantity: z.number().min(0),
   pricePerUnit: z.number().min(0),
   unit: z.enum(["kg", "l", "pezzo"]),
+  supplierId: z.string().optional().or(z.literal("")),
+  // Keep legacy fields for backward compatibility
   supplierEmail: z.string().email().optional().or(z.literal("")),
 });
 
@@ -300,6 +330,9 @@ export const upsertEditableInventorySchema = z.object({
 });
 
 // Types
+export type Supplier = typeof suppliers.$inferSelect;
+export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
+export type UpdateSupplier = z.infer<typeof updateSupplierSchema>;
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type UpdateProduct = z.infer<typeof updateProductSchema>;

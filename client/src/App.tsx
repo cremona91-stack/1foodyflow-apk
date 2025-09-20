@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -24,6 +24,7 @@ import { Dashboard } from "@/components/Dashboard";
 import Budget from "@/components/Budget";
 import PL from "@/pages/PL";
 import Recipes from "@/pages/Recipes";
+import Suppliers from "@/pages/Suppliers";
 import { Users, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProductForm from "@/components/ProductForm";
@@ -41,6 +42,7 @@ import SalesChart from "@/components/SalesChart";
 // API Hooks
 import {
   useProducts,
+  useSuppliers,
   useDishes,
   useWaste,
   usePersonalMeals,
@@ -70,6 +72,20 @@ import type { Product, Dish, Order, StockMovement, InventorySnapshot, InsertProd
 function FoodCostManager() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [maxFoodCost, setMaxFoodCost] = useState(30);
+  const [, navigate] = useLocation();
+  
+  // Handle tab changes with navigation for special tabs
+  const handleTabChange = (tabId: string) => {
+    if (tabId === "recipes") {
+      navigate("/ricette");
+    } else if (tabId === "suppliers") {
+      navigate("/fornitori");
+    } else if (tabId === "profit-loss") {
+      navigate("/pl");
+    } else {
+      setActiveTab(tabId);
+    }
+  };
   
   // Edit state - keep as local state
   const [editingProduct, setEditingProduct] = useState<Product | undefined>();
@@ -459,7 +475,7 @@ function FoodCostManager() {
       <div className="w-full max-w-6xl mx-auto bg-card shadow-xl flex flex-col">
         <AppHeader onExportPDF={handleExportPDF} />
         
-        <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+        <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} />
         
         <div className="flex-grow p-4 sm:p-8 overflow-y-auto">
           {/* Dashboard Tab */}
@@ -648,6 +664,7 @@ function Router() {
           <Route path="/" component={FoodCostManager} />
           <Route path="/pl" component={PL} />
           <Route path="/ricette" component={Recipes} />
+          <Route path="/fornitori" component={Suppliers} />
         </>
       )}
       <Route component={FoodCostManager} />
@@ -674,7 +691,7 @@ function Landing() {
         <div className="space-y-4">
           <a 
             href="/api/login"
-            className="inline-flex items-center justify-center px-8 py-3 text-lg font-medium text-white bg-sage-600 hover:bg-sage-700 rounded-lg transition-colors"
+            className="inline-flex items-center justify-center px-8 py-3 text-lg font-medium text-gray-900 bg-sage-600 hover:bg-sage-700 hover:text-white rounded-lg transition-colors"
             data-testid="button-login"
           >
             Accedi al Tuo Ristorante

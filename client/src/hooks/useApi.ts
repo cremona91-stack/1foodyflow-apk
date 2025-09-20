@@ -2,9 +2,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import type { 
-  Product, Recipe, Dish, Waste, PersonalMeal, Order, StockMovement, InventorySnapshot,
-  InsertProduct, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal, InsertOrder, InsertStockMovement, InsertInventorySnapshot,
-  UpdateProduct, UpdateRecipe, UpdateDish, UpdateOrder, UpdateStockMovement, UpdateInventorySnapshot
+  Product, Supplier, Recipe, Dish, Waste, PersonalMeal, Order, StockMovement, InventorySnapshot,
+  InsertProduct, InsertSupplier, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal, InsertOrder, InsertStockMovement, InsertInventorySnapshot,
+  UpdateProduct, UpdateSupplier, UpdateRecipe, UpdateDish, UpdateOrder, UpdateStockMovement, UpdateInventorySnapshot
 } from "@shared/schema";
 
 // Products hooks
@@ -87,6 +87,92 @@ export function useDeleteProduct() {
       toast({
         title: "Errore",
         description: error.message || "Errore durante l'eliminazione del prodotto",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+// Suppliers hooks
+export function useSuppliers() {
+  return useQuery({
+    queryKey: ["/api/suppliers"],
+    queryFn: api.suppliers.getSuppliers,
+  });
+}
+
+export function useSupplier(id: string) {
+  return useQuery({
+    queryKey: ["/api/suppliers", id],
+    queryFn: () => api.suppliers.getSupplier(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreateSupplier() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: api.suppliers.createSupplier,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+      toast({
+        title: "Successo",
+        description: "Fornitore creato con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante la creazione del fornitore",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useUpdateSupplier() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateSupplier }) =>
+      api.suppliers.updateSupplier(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+      toast({
+        title: "Successo",
+        description: "Fornitore aggiornato con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante l'aggiornamento del fornitore",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useDeleteSupplier() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: api.suppliers.deleteSupplier,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+      toast({
+        title: "Successo",
+        description: "Fornitore eliminato con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante l'eliminazione del fornitore",
         variant: "destructive",
       });
     },

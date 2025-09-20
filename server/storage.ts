@@ -11,6 +11,7 @@ import {
   type BudgetEntry,
   type EconomicParameters,
   type User,
+  type Supplier,
   type InsertProduct,
   type InsertRecipe,
   type InsertDish,
@@ -23,7 +24,9 @@ import {
   type InsertBudgetEntry,
   type InsertEconomicParameters,
   type InsertUser,
+  type InsertSupplier,
   type UpdateProduct,
+  type UpdateSupplier,
   type UpdateRecipe,
   type UpdateDish,
   type UpdateOrder,
@@ -36,6 +39,7 @@ import {
   type UpsertUser,
   type SelectUser,
   products,
+  suppliers,
   recipes,
   dishes,
   waste,
@@ -68,6 +72,13 @@ const db = drizzle(pool);
 
 // Storage interface for Food Cost Manager
 export interface IStorage {
+  // Suppliers
+  getSuppliers(): Promise<Supplier[]>;
+  getSupplier(id: string): Promise<Supplier | undefined>;
+  createSupplier(supplier: InsertSupplier): Promise<Supplier>;
+  updateSupplier(id: string, supplier: UpdateSupplier): Promise<Supplier | undefined>;
+  deleteSupplier(id: string): Promise<boolean>;
+  
   // Products
   getProducts(): Promise<Product[]>;
   getProduct(id: string): Promise<Product | undefined>;
@@ -160,6 +171,46 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // Suppliers
+  async getSuppliers(): Promise<Supplier[]> {
+    return await db.select().from(suppliers);
+  }
+
+  async getSupplier(id: string): Promise<Supplier | undefined> {
+    const result = await db.select().from(suppliers).where(eq(suppliers.id, id));
+    return result[0];
+  }
+
+  async createSupplier(insertSupplier: InsertSupplier): Promise<Supplier> {
+    const result = await db.insert(suppliers).values({
+      ...insertSupplier,
+      email: insertSupplier.email || null,
+      notes: insertSupplier.notes || null,
+    }).returning();
+    return result[0];
+  }
+
+  async updateSupplier(id: string, updates: UpdateSupplier): Promise<Supplier | undefined> {
+    const sanitizedUpdates: any = {};
+    if (updates.name !== undefined) sanitizedUpdates.name = updates.name;
+    if (updates.email !== undefined) sanitizedUpdates.email = updates.email || null;
+    if (updates.notes !== undefined) sanitizedUpdates.notes = updates.notes || null;
+    
+    // Always update the updatedAt timestamp
+    sanitizedUpdates.updatedAt = new Date();
+    
+    const result = await db.update(suppliers)
+      .set(sanitizedUpdates)
+      .where(eq(suppliers.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteSupplier(id: string): Promise<boolean> {
+    const result = await db.delete(suppliers).where(eq(suppliers.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
   // Products
   async getProducts(): Promise<Product[]> {
     return await db.select().from(products);
