@@ -498,6 +498,11 @@ function FoodCostManager() {
             <PL />
           )}
 
+          {/* Recipes Tab */}
+          {activeTab === "recipes" && (
+            <Recipes />
+          )}
+
           {/* Inventory Tab */}
           {activeTab === "inventory" && (
             <div className="md:flex md:gap-6 space-y-6 md:space-y-0">
