@@ -295,107 +295,147 @@ export function Dashboard({
   // Labour cost impostato a 0 come richiesto dall'utente
   const labourCostPercentage = 0;
 
-  // Calcolo EBITDA dal budget E consuntivo
+  // Calcolo EBITDA dal budget E consuntivo (using same logic as P&L)
   const { ebitdaBudget, ebitdaPercentageBudget, ebitdaPercentageConsuntivo, ebitdaDifference, totalCorrispettivi } = useMemo(() => {
-    if (!ecoParams) {
+    if (!ecoParams || !foodCostMetrics) {
       return { ebitdaBudget: 0, ebitdaPercentageBudget: 0, ebitdaPercentageConsuntivo: 0, ebitdaDifference: 0, totalCorrispettivi: 0 };
     }
 
-    // Calcola totale corrispettivi dal budget (similar to Budget component)
-    const totalBudgetRevenue = budgetEntries.reduce((sum, entry) => {
+    // Calculate totals exactly like P&L
+    const totals = budgetEntries.reduce((acc, entry) => {
       const calculatedBudgetRevenue = (entry.coperti || 0) * (entry.copertoMedio || 0);
-      return sum + calculatedBudgetRevenue + (entry.budgetDelivery || 0);
-    }, 0);
+      const consuntivo2026 = calculatedBudgetRevenue + (entry.budgetDelivery || 0);
+      const consuntivo2025 = (entry.actualRevenue || 0) + (entry.actualDelivery || 0);
 
-    // Calcola totale corrispettivi dal consuntivo (actual revenue)
-    const totalConsuntivoRevenue = budgetEntries.reduce((sum, entry) => {
-      return sum + (entry.actualRevenue || 0) + (entry.actualDelivery || 0);
-    }, 0);
+      return {
+        totalBudget: acc.totalBudget + consuntivo2026,
+        totalActualRevenue: acc.totalActualRevenue + (entry.actualRevenue || 0),
+        totalActualDelivery: acc.totalActualDelivery + (entry.actualDelivery || 0)
+      };
+    }, {
+      totalBudget: 0,
+      totalActualRevenue: 0,
+      totalActualDelivery: 0
+    });
 
-    // Calculate total costs from economic parameters (same as P&L)
-    const totalCostsBudget = (
-      // Materie prime (use budget field like P&L)
-      (ecoParams.materieFirsteBudget || 0) +
-      // Acquisti vari (use budget field like P&L)  
-      (ecoParams.acquistiVarBudget || 0) +
-      // All other budget costs
-      (ecoParams.locazioniBudget || 0) +
-      (ecoParams.personaleBudget || 0) +
-      (ecoParams.utenzeBudget || 0) +
-      (ecoParams.manutenzionibudget || 0) +
-      (ecoParams.noleggibudget || 0) +
-      (ecoParams.prestazioniTerziBudget || 0) +
-      (ecoParams.consulenzeBudget || 0) +
-      (ecoParams.marketingBudget || 0) +
-      (ecoParams.deliveryBudget || 0) +
-      (ecoParams.trasferteBudget || 0) +
-      (ecoParams.assicurazioniBudget || 0) +
-      (ecoParams.speseBancarieBudget || 0)
-    );
-
-    // Use food cost from API (same as P&L) - check actual property name
-    const foodCostFromAPI = (foodCostMetrics as any)?.totalFoodCost || 0;
-
-    // Calculate cost percentages for consuntivo using the same logic as P&L
-    const totalCostPercentConsuntivo = (
-      // Materie prime (calculated from foodCostFromAPI like P&L)
-      (totalConsuntivoRevenue > 0 ? (foodCostFromAPI / totalConsuntivoRevenue) * 100 : 0) +
-      // Acquisti vari (calculated from consuntivo value like P&L)  
-      (totalConsuntivoRevenue > 0 ? (ecoParams.acquistiVarConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
-      // All other costs as percentages of consuntivo revenue
-      (totalConsuntivoRevenue > 0 ? (ecoParams.locazioniConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
-      (totalConsuntivoRevenue > 0 ? (ecoParams.personaleConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
-      (totalConsuntivoRevenue > 0 ? (ecoParams.utenzeConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
-      (totalConsuntivoRevenue > 0 ? (ecoParams.manutenzioniConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
-      (totalConsuntivoRevenue > 0 ? (ecoParams.noleggiConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
-      (totalConsuntivoRevenue > 0 ? (ecoParams.prestazioniTerziConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
-      (totalConsuntivoRevenue > 0 ? (ecoParams.consulenzeConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
-      (totalConsuntivoRevenue > 0 ? (ecoParams.marketingConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
-      (totalConsuntivoRevenue > 0 ? (ecoParams.deliveryConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
-      (totalConsuntivoRevenue > 0 ? (ecoParams.trasferteConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
-      (totalConsuntivoRevenue > 0 ? (ecoParams.assicurazioniConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
-      (totalConsuntivoRevenue > 0 ? (ecoParams.speseBancarieConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0)
-    );
-
-    // Calculate total costs consuntivo in EURO (not percentage) for EBITDA euro calculation
-    const totalCostsConsuntivoEuro = (
-      // Materie prime (use foodCostFromAPI directly like P&L)
-      foodCostFromAPI +
-      // All other costs consuntivo in euro
-      (ecoParams.acquistiVarConsuntivo || 0) +
-      (ecoParams.locazioniConsuntivo || 0) +
-      (ecoParams.personaleConsuntivo || 0) +
-      (ecoParams.utenzeConsuntivo || 0) +
-      (ecoParams.manutenzioniConsuntivo || 0) +
-      (ecoParams.noleggiConsuntivo || 0) +
-      (ecoParams.prestazioniTerziConsuntivo || 0) +
-      (ecoParams.consulenzeConsuntivo || 0) +
-      (ecoParams.marketingConsuntivo || 0) +
-      (ecoParams.deliveryConsuntivo || 0) +
-      (ecoParams.trasferteConsuntivo || 0) +
-      (ecoParams.assicurazioniConsuntivo || 0) +
-      (ecoParams.speseBancarieConsuntivo || 0)
-    );
-
-    // EBITDA Budget = Revenue Budget - Total Costs Budget (in euro)
-    const ebitdaBudget = totalBudgetRevenue - totalCostsBudget;
-    const ebitdaPercBudget = totalBudgetRevenue > 0 ? (ebitdaBudget / totalBudgetRevenue) * 100 : 0;
-
-    // EBITDA Consuntivo in euro = Revenue Consuntivo - Total Costs Consuntivo (in euro)
-    const ebitdaConsuntivoEuro = totalConsuntivoRevenue - totalCostsConsuntivoEuro;
+    const totalCorrispettivi = totals.totalBudget;
+    const totalConsuntivoRevenue = totals.totalActualRevenue + totals.totalActualDelivery;
     
-    // EBITDA Consuntivo % = 100% - Total Cost % (same logic as P&L)
-    const ebitdaPercConsuntivo = 100 - totalCostPercentConsuntivo;
+    // Use food cost from API (same as P&L)
+    const foodCostFromAPI = foodCostMetrics?.totalFoodCost || 0;
+    const foodCostPercent = totalConsuntivoRevenue > 0 ? (foodCostFromAPI / totalConsuntivoRevenue) : 0;
+
+    // Build cost items exactly like P&L to ensure consistency
+    const costItems = [
+      {
+        percent: (ecoParams?.materieFirsteBudget || 0) / totalCorrispettivi,
+        budgetValue: ecoParams?.materieFirsteBudget || 0,
+        consuntivoValue: foodCostFromAPI, // Use API value like P&L
+        consuntivoPercent: foodCostPercent,
+      },
+      {
+        percent: (ecoParams?.acquistiVarBudget || 0) / totalCorrispettivi,
+        budgetValue: ecoParams?.acquistiVarBudget || 0,
+        consuntivoValue: ecoParams?.acquistiVarConsuntivo || 0,
+        consuntivoPercent: totalConsuntivoRevenue > 0 ? (ecoParams?.acquistiVarConsuntivo || 0) / totalConsuntivoRevenue : 0,
+      },
+      // Add all other cost items like P&L
+      {
+        percent: (ecoParams?.locazioniBudget || 0) / totalCorrispettivi,
+        budgetValue: ecoParams?.locazioniBudget || 0,
+        consuntivoValue: ecoParams?.locazioniConsuntivo || 0,
+        consuntivoPercent: totalConsuntivoRevenue > 0 ? (ecoParams?.locazioniConsuntivo || 0) / totalConsuntivoRevenue : 0,
+      },
+      {
+        percent: (ecoParams?.personaleBudget || 0) / totalCorrispettivi,
+        budgetValue: ecoParams?.personaleBudget || 0,
+        consuntivoValue: ecoParams?.personaleConsuntivo || 0,
+        consuntivoPercent: totalConsuntivoRevenue > 0 ? (ecoParams?.personaleConsuntivo || 0) / totalConsuntivoRevenue : 0,
+      },
+      {
+        percent: (ecoParams?.utenzeBudget || 0) / totalCorrispettivi,
+        budgetValue: ecoParams?.utenzeBudget || 0,
+        consuntivoValue: ecoParams?.utenzeConsuntivo || 0,
+        consuntivoPercent: totalConsuntivoRevenue > 0 ? (ecoParams?.utenzeConsuntivo || 0) / totalConsuntivoRevenue : 0,
+      },
+      {
+        percent: (ecoParams?.manutenzionibudget || 0) / totalCorrispettivi,
+        budgetValue: ecoParams?.manutenzionibudget || 0,
+        consuntivoValue: ecoParams?.manutenzioniConsuntivo || 0,
+        consuntivoPercent: totalConsuntivoRevenue > 0 ? (ecoParams?.manutenzioniConsuntivo || 0) / totalConsuntivoRevenue : 0,
+      },
+      {
+        percent: (ecoParams?.noleggibudget || 0) / totalCorrispettivi,
+        budgetValue: ecoParams?.noleggibudget || 0,
+        consuntivoValue: ecoParams?.noleggiConsuntivo || 0,
+        consuntivoPercent: totalConsuntivoRevenue > 0 ? (ecoParams?.noleggiConsuntivo || 0) / totalConsuntivoRevenue : 0,
+      },
+      {
+        percent: (ecoParams?.prestazioniTerziBudget || 0) / totalCorrispettivi,
+        budgetValue: ecoParams?.prestazioniTerziBudget || 0,
+        consuntivoValue: ecoParams?.prestazioniTerziConsuntivo || 0,
+        consuntivoPercent: totalConsuntivoRevenue > 0 ? (ecoParams?.prestazioniTerziConsuntivo || 0) / totalConsuntivoRevenue : 0,
+      },
+      {
+        percent: (ecoParams?.consulenzeBudget || 0) / totalCorrispettivi,
+        budgetValue: ecoParams?.consulenzeBudget || 0,
+        consuntivoValue: ecoParams?.consulenzeConsuntivo || 0,
+        consuntivoPercent: totalConsuntivoRevenue > 0 ? (ecoParams?.consulenzeConsuntivo || 0) / totalConsuntivoRevenue : 0,
+      },
+      {
+        percent: (ecoParams?.marketingBudget || 0) / totalCorrispettivi,
+        budgetValue: ecoParams?.marketingBudget || 0,
+        consuntivoValue: ecoParams?.marketingConsuntivo || 0,
+        consuntivoPercent: totalConsuntivoRevenue > 0 ? (ecoParams?.marketingConsuntivo || 0) / totalConsuntivoRevenue : 0,
+      },
+      {
+        percent: (ecoParams?.deliveryBudget || 0) / totalCorrispettivi,
+        budgetValue: ecoParams?.deliveryBudget || 0,
+        consuntivoValue: ecoParams?.deliveryConsuntivo || 0,
+        consuntivoPercent: totalConsuntivoRevenue > 0 ? (ecoParams?.deliveryConsuntivo || 0) / totalConsuntivoRevenue : 0,
+      },
+      {
+        percent: (ecoParams?.trasferteBudget || 0) / totalCorrispettivi,
+        budgetValue: ecoParams?.trasferteBudget || 0,
+        consuntivoValue: ecoParams?.trasferteConsuntivo || 0,
+        consuntivoPercent: totalConsuntivoRevenue > 0 ? (ecoParams?.trasferteConsuntivo || 0) / totalConsuntivoRevenue : 0,
+      },
+      {
+        percent: (ecoParams?.assicurazioniBudget || 0) / totalCorrispettivi,
+        budgetValue: ecoParams?.assicurazioniBudget || 0,
+        consuntivoValue: ecoParams?.assicurazioniConsuntivo || 0,
+        consuntivoPercent: totalConsuntivoRevenue > 0 ? (ecoParams?.assicurazioniConsuntivo || 0) / totalConsuntivoRevenue : 0,
+      },
+      {
+        percent: (ecoParams?.speseBancarieBudget || 0) / totalCorrispettivi,
+        budgetValue: ecoParams?.speseBancarieBudget || 0,
+        consuntivoValue: ecoParams?.speseBancarieConsuntivo || 0,
+        consuntivoPercent: totalConsuntivoRevenue > 0 ? (ecoParams?.speseBancarieConsuntivo || 0) / totalConsuntivoRevenue : 0,
+      }
+    ];
+
+    // Calculate EBITDA exactly like P&L
+    const totalCostPercent = costItems.reduce((sum, item) => sum + item.percent, 0);
+    const totalCostPercentConsuntivo = costItems.reduce((sum, item) => sum + item.consuntivoPercent, 0);
+    
+    const ebitdaPercent = 1 - totalCostPercent;
+    const ebitdaPercentConsuntivo = 1 - totalCostPercentConsuntivo;
+    
+    // Calculate actual EBITDA values in euros exactly like P&L
+    const totalCostsBudgetEuros = costItems.reduce((sum, item) => sum + (item.budgetValue || 0), 0);
+    const totalCostsConsuntivoEuros = costItems.reduce((sum, item) => sum + (item.consuntivoValue || 0), 0);
+    const ebitdaBudgetEuros = totals.totalBudget - totalCostsBudgetEuros;
+    const ebitdaConsuntivoEuros = (totals.totalActualRevenue + totals.totalActualDelivery) - totalCostsConsuntivoEuros;
 
     // Differenza in EURO = EBITDA Consuntivo Euro - EBITDA Budget Euro
-    const differenceEuro = ebitdaConsuntivoEuro - ebitdaBudget;
+    const differenceEuro = ebitdaConsuntivoEuros - ebitdaBudgetEuros;
 
     return {
-      ebitdaBudget: ebitdaBudget,
-      ebitdaPercentageBudget: ebitdaPercBudget,
-      ebitdaPercentageConsuntivo: ebitdaPercConsuntivo,
+      ebitdaBudget: ebitdaBudgetEuros,
+      ebitdaPercentageBudget: ebitdaPercent * 100,
+      ebitdaPercentageConsuntivo: ebitdaPercentConsuntivo * 100,
       ebitdaDifference: differenceEuro,
-      totalCorrispettivi: totalBudgetRevenue
+      totalCorrispettivi: totalCorrispettivi
     };
   }, [ecoParams, budgetEntries, foodCostMetrics]);
 
