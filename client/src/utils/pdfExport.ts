@@ -16,19 +16,22 @@ interface PDFExportOptions {
 
 // Enhanced PDF header setup
 const setupPDFHeader = (doc: jsPDF, title: string, subtitle?: string) => {
+  // Calculate center X position dynamically
+  const centerX = doc.internal.pageSize.width / 2;
+  
   // Header
   doc.setFontSize(20);
   doc.setFont("helvetica", "bold");
-  doc.text("FoodyFlow", 105, 20, { align: "center" });
+  doc.text("FoodyFlow", centerX, 20, { align: "center" });
   
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
-  doc.text(title, 105, 30, { align: "center" });
+  doc.text(title, centerX, 30, { align: "center" });
   
   if (subtitle) {
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
-    doc.text(subtitle, 105, 40, { align: "center" });
+    doc.text(subtitle, centerX, 40, { align: "center" });
   }
   
   // Date
@@ -41,7 +44,7 @@ const setupPDFHeader = (doc: jsPDF, title: string, subtitle?: string) => {
     hour: '2-digit',
     minute: '2-digit'
   });
-  doc.text(`Data generazione: ${date}`, 105, subtitle ? 50 : 40, { align: "center" });
+  doc.text(`Data generazione: ${date}`, centerX, subtitle ? 50 : 40, { align: "center" });
   
   // Add line separator
   const startY = subtitle ? 60 : 50;
@@ -55,6 +58,7 @@ const setupPDFHeader = (doc: jsPDF, title: string, subtitle?: string) => {
 const addUnifiedFooter = (doc: jsPDF, footerText?: string): void => {
   const totalPages = doc.getNumberOfPages();
   const pageHeight = doc.internal.pageSize.height;
+  const centerX = doc.internal.pageSize.width / 2;
   
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
@@ -62,7 +66,7 @@ const addUnifiedFooter = (doc: jsPDF, footerText?: string): void => {
     doc.setFont("helvetica", "normal");
     
     if (footerText) {
-      doc.text(footerText, 105, pageHeight - 15, { align: "center" });
+      doc.text(footerText, centerX, pageHeight - 15, { align: "center" });
     }
     
     const pageNumber = `Pagina ${i} di ${totalPages}`;
@@ -86,11 +90,11 @@ export const exportTableToPDF = (options: PDFExportOptions): void => {
       const value = row[col.dataKey];
       if (value === null || value === undefined) return '';
       if (typeof value === 'number') {
-        // Format currency and percentages
-        if (col.dataKey.includes('€') || col.dataKey.includes('euro') || col.dataKey.includes('costo') || col.dataKey.includes('prezzo') || col.dataKey.includes('Budget') || col.dataKey.includes('Incasso')) {
+        // Format currency and percentages based on header content
+        if (col.header.includes('€') || col.header.includes('Budget') || col.header.includes('Incasso') || col.header.includes('C.M.')) {
           return `€${value.toFixed(2)}`;
         }
-        if (col.dataKey.includes('Percentage') || col.dataKey.includes('%')) {
+        if (col.header.includes('%') || col.dataKey.includes('Percentage') || col.dataKey.includes('Delta')) {
           return `${value.toFixed(1)}%`;
         }
         return value.toFixed(2);
