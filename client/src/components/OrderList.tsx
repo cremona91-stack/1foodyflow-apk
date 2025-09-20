@@ -45,6 +45,8 @@ export default function OrderList({ orders, products, onEdit, onDelete, onView }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      // Invalida anche i stock movements perché il server crea automaticamente movimenti IN quando l'ordine è "confirmed"
+      queryClient.invalidateQueries({ queryKey: ['/api/stock-movements'] });
       toast({
         title: "Status aggiornato",
         description: "Lo status dell'ordine è stato modificato con successo."
