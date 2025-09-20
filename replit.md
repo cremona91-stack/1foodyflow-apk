@@ -81,6 +81,23 @@ Currently implements a simplified session-based system with:
 
 ## Recent Changes
 
+### Mobile App Development Strategy (September 20, 2025)
+
+**Technology Decision**: Implemented Capacitor-based native app strategy for unified codebase maintenance.
+
+#### Strategic Benefits:
+- **Single Codebase**: Web app React code directly becomes mobile app
+- **Cost Optimization**: Zero additional development/maintenance costs
+- **Instant Synchronization**: Changes to web app automatically reflect in mobile app
+- **Native Access**: Full access to device APIs when needed (camera, notifications, etc.)
+- **Store Deployment**: Direct deployment to Play Store and Apple App Store
+
+#### Technical Approach:
+- **Capacitor Integration**: Wraps existing React web app for native deployment
+- **Unified Development**: Single `npm run dev` workflow for all platforms
+- **Shared Assets**: Icons, images, and resources unified across platforms
+- **Progressive Enhancement**: Web-first approach with mobile-specific optimizations
+
 ### Budget Module Restructuring (September 19, 2025)
 
 **Major Enhancement**: Completely restructured the Budget module for advanced restaurant financial planning and year-over-year analysis.

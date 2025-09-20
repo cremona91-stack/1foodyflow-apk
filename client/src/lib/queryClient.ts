@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { Capacitor } from "@capacitor/core";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -7,12 +8,25 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Get the appropriate base URL for API requests
+const getApiBaseUrl = (): string => {
+  if (Capacitor.isNativePlatform()) {
+    // In mobile app, use external API URL
+    return import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+  }
+  // In web browser, use relative URLs (same origin)
+  return '';
+};
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  const baseUrl = getApiBaseUrl();
+  const fullUrl = baseUrl + url;
+  
+  const res = await fetch(fullUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
@@ -29,7 +43,10 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    const baseUrl = getApiBaseUrl();
+    const fullUrl = baseUrl + queryKey.join("/");
+    
+    const res = await fetch(fullUrl, {
       credentials: "include",
     });
 
