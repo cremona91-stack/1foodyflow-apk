@@ -12,7 +12,6 @@ import {
   exportInventoryToPDF,
   exportProductsToPDF,
   exportOrdersToPDF,
-  exportRecipesToPDF,
   exportDishesToPDF,
   exportWasteToPDF
 } from "@/utils/pdfExport";
@@ -41,7 +40,6 @@ import SalesChart from "@/components/SalesChart";
 // API Hooks
 import {
   useProducts,
-  useRecipes,
   useDishes,
   useWaste,
   usePersonalMeals,
@@ -66,7 +64,7 @@ import {
 } from "@/hooks/useApi";
 
 // Types
-import type { Product, Recipe, Dish, Order, StockMovement, InventorySnapshot, InsertProduct, InsertWaste, InsertPersonalMeal, InsertOrder, InsertStockMovement, InsertInventorySnapshot } from "@shared/schema";
+import type { Product, Dish, Order, StockMovement, InventorySnapshot, InsertProduct, InsertWaste, InsertPersonalMeal, InsertOrder, InsertStockMovement, InsertInventorySnapshot } from "@shared/schema";
 
 function FoodCostManager() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -80,7 +78,6 @@ function FoodCostManager() {
   
   // React Query hooks for data fetching
   const { data: products = [], isLoading: isLoadingProducts } = useProducts();
-  const { data: recipes = [], isLoading: isLoadingRecipes } = useRecipes();
   const { data: dishes = [], isLoading: isLoadingDishes } = useDishes();
   const { data: waste = [], isLoading: isLoadingWaste } = useWaste();
   const { data: personalMeals = [], isLoading: isLoadingPersonalMeals } = usePersonalMeals();
@@ -384,9 +381,6 @@ function FoodCostManager() {
           exportProductsToPDF(products);
           break;
           
-        case "recipes":
-          exportRecipesToPDF(recipes, products);
-          break;
           
         case "sales-detail":
           // Usa la stessa funzione dei piatti ma con focus sulle vendite
@@ -415,7 +409,7 @@ function FoodCostManager() {
   };
 
   // Show loading state while data is being fetched
-  const isLoading = isLoadingProducts || isLoadingRecipes || isLoadingDishes || isLoadingWaste || isLoadingPersonalMeals || isLoadingOrders || isLoadingStockMovements || isLoadingInventorySnapshots;
+  const isLoading = isLoadingProducts || isLoadingDishes || isLoadingWaste || isLoadingPersonalMeals || isLoadingOrders || isLoadingStockMovements || isLoadingInventorySnapshots;
 
   if (isLoading) {
     return (
