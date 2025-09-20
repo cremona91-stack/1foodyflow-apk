@@ -17,7 +17,8 @@ import {
   User,
   FileText,
   Euro,
-  ChevronDown
+  ChevronDown,
+  Mail
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -57,6 +58,28 @@ export default function OrderList({ orders, products, onEdit, onDelete, onView }
       toast({
         title: "Errore",
         description: "Non è stato possibile aggiornare lo status dell'ordine.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Mutation per inviare email ordine
+  const sendEmailMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const response = await apiRequest('POST', `/api/orders/${orderId}/send-email`, {});
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Email inviata",
+        description: data.message || "Email ordine inviata con successo ai fornitori."
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error sending email:', error);
+      toast({
+        title: "Errore invio email",
+        description: error.message || "Non è stato possibile inviare l'email dell'ordine.",
         variant: "destructive"
       });
     }
@@ -232,6 +255,17 @@ export default function OrderList({ orders, products, onEdit, onDelete, onView }
                     data-testid={`button-toggle-${order.id}`}
                   >
                     <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => sendEmailMutation.mutate(order.id)}
+                    disabled={sendEmailMutation.isPending}
+                    className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                    data-testid={`button-email-${order.id}`}
+                    title="Invia email ordine ai fornitori"
+                  >
+                    <Mail className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
