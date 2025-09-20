@@ -188,7 +188,7 @@ export default function InventoryGrid({
   };
 
   const startEditing = (productId: string, row: InventoryRowData) => {
-    setEditingRows(prev => new Set([...prev, productId]));
+    setEditingRows(prev => new Set([...Array.from(prev), productId]));
     setEditValues(prev => ({
       ...prev,
       [productId]: {
@@ -326,9 +326,9 @@ export default function InventoryGrid({
 
   const getVarianceColor = (variance: number): string => {
     if (variance > 0) {
-      return "text-gray-600 dark:text-gray-400"; // Grigio per positivo
+      return "text-red-600 dark:text-red-400"; // Rosso per positivo (perdita)
     } else if (variance < 0) {
-      return "text-red-600 dark:text-red-400"; // Rosso per negativo
+      return "text-green-600 dark:text-green-400"; // Verde per negativo (risparmio)
     }
     return "text-muted-foreground"; // Neutro per zero
   };
@@ -397,8 +397,8 @@ export default function InventoryGrid({
               <TrendingDown className="h-4 w-4 text-orange-600" />
               <div>
                 <p className="text-sm text-muted-foreground">Valore Varianza</p>
-                <p className={`text-lg font-semibold ${getTotalVarianceValue() >= 0 ? 'text-gray-600' : 'text-red-600'}`} data-testid="stat-variance-value">
-                  €{getTotalVarianceValue().toFixed(2)}
+                <p className={`text-lg font-semibold ${getTotalVarianceValue() >= 0 ? 'text-red-600' : 'text-green-600'}`} data-testid="stat-variance-value">
+                  €{getTotalVarianceValue() >= 0 ? `-${getTotalVarianceValue().toFixed(2)}` : `+${Math.abs(getTotalVarianceValue()).toFixed(2)}`}
                 </p>
               </div>
             </div>
@@ -567,8 +567,8 @@ export default function InventoryGrid({
                        row.variance < 0 ? <TrendingDown className="h-3 w-3" /> : null}
                       {row.variance >= 0 ? '+' : ''}{row.variance.toFixed(2)}
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      €{(row.variance * row.product.pricePerUnit).toFixed(2)}
+                    <div className={`text-xs ${getVarianceColor(row.variance)}`}>
+                      €{row.variance >= 0 ? `-${(row.variance * row.product.pricePerUnit).toFixed(2)}` : `+${Math.abs(row.variance * row.product.pricePerUnit).toFixed(2)}`}
                     </div>
                   </div>
                 </div>
