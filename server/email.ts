@@ -2,11 +2,12 @@
 import sgMail from '@sendgrid/mail';
 import type { Order } from '@shared/schema';
 
-if (!process.env.SENDGRID_API_KEY) {
+const apiKey = process.env.SENDGRID_API_KEY;
+if (!apiKey) {
   throw new Error("SENDGRID_API_KEY environment variable must be set");
 }
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+sgMail.setApiKey(apiKey);
 
 interface EmailParams {
   to: string;
@@ -22,8 +23,8 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       to: params.to,
       from: params.from,
       subject: params.subject,
-      text: params.text,
-      html: params.html,
+      text: params.text || '',
+      html: params.html || '',
     });
     console.log(`Email inviata con successo a ${params.to}`);
     return true;

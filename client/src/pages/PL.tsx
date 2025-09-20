@@ -70,7 +70,7 @@ export default function PL() {
       totalBudget: acc.totalBudget + consuntivo2026,
       totalActualRevenue: acc.totalActualRevenue + (entry.actualRevenue || 0),
       totalActualDelivery: acc.totalActualDelivery + (entry.actualDelivery || 0),
-      totalConsuntivo: acc.totalConsuntivo + (entry.consuntivo || 0)
+      totalConsuntivo: acc.totalConsuntivo + consuntivo2025  // Fixed: use actualRevenue + actualDelivery like Dashboard
     };
   }, {
     totalBudget: 0,
