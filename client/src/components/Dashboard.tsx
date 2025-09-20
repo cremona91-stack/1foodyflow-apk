@@ -349,21 +349,44 @@ export function Dashboard({
       (totalConsuntivoRevenue > 0 ? (ecoParams.speseBancarieConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0)
     );
 
-    // EBITDA Budget = Revenue Budget - Total Costs Budget
+    // Calculate total costs consuntivo in EURO (not percentage) for EBITDA euro calculation
+    const totalCostsConsuntivoEuro = (
+      // Materie prime (use totalFoodCost directly)
+      totalFoodCost +
+      // All other costs consuntivo in euro
+      (ecoParams.acquistiVarConsuntivo || 0) +
+      (ecoParams.locazioniConsuntivo || 0) +
+      (ecoParams.personaleConsuntivo || 0) +
+      (ecoParams.utenzeConsuntivo || 0) +
+      (ecoParams.manutenzioniConsuntivo || 0) +
+      (ecoParams.noleggiConsuntivo || 0) +
+      (ecoParams.prestazioniTerziConsuntivo || 0) +
+      (ecoParams.consulenzeConsuntivo || 0) +
+      (ecoParams.marketingConsuntivo || 0) +
+      (ecoParams.deliveryConsuntivo || 0) +
+      (ecoParams.trasferteConsuntivo || 0) +
+      (ecoParams.assicurazioniConsuntivo || 0) +
+      (ecoParams.speseBancarieConsuntivo || 0)
+    );
+
+    // EBITDA Budget = Revenue Budget - Total Costs Budget (in euro)
     const ebitdaBudget = totalBudgetRevenue - totalCostsBudget;
     const ebitdaPercBudget = totalBudgetRevenue > 0 ? (ebitdaBudget / totalBudgetRevenue) * 100 : 0;
 
+    // EBITDA Consuntivo in euro = Revenue Consuntivo - Total Costs Consuntivo (in euro)
+    const ebitdaConsuntivoEuro = totalConsuntivoRevenue - totalCostsConsuntivoEuro;
+    
     // EBITDA Consuntivo % = 100% - Total Cost % (same logic as P&L)
     const ebitdaPercConsuntivo = 100 - totalCostPercentConsuntivo;
 
-    // Differenza = Consuntivo - Budget
-    const difference = ebitdaPercConsuntivo - ebitdaPercBudget;
+    // Differenza in EURO = EBITDA Consuntivo Euro - EBITDA Budget Euro
+    const differenceEuro = ebitdaConsuntivoEuro - ebitdaBudget;
 
     return {
       ebitdaBudget: ebitdaBudget,
       ebitdaPercentageBudget: ebitdaPercBudget,
       ebitdaPercentageConsuntivo: ebitdaPercConsuntivo,
-      ebitdaDifference: difference,
+      ebitdaDifference: differenceEuro,
       totalCorrispettivi: totalBudgetRevenue
     };
   }, [ecoParams, budgetEntries, totalFoodCost]);
@@ -410,7 +433,9 @@ export function Dashboard({
           title="EBITDA"
           value={`${ebitdaPercentageConsuntivo.toFixed(1)}%`}
           change={-ebitdaDifference}
-          changeLabel={`${ebitdaDifference >= 0 ? '+' : ''}${ebitdaDifference.toFixed(1)}% vs budget`}
+          changeLabel={`${ebitdaDifference >= 0 ? '+' : ''}${Math.abs(ebitdaDifference) >= 1000000 
+            ? `${(Math.abs(ebitdaDifference) / 1000000).toFixed(1).replace('.', ',')}M€` 
+            : `${Math.abs(ebitdaDifference).toFixed(1).replace('.', ',')}€`} vs budget`}
           trend={ebitdaDifference >= 0 ? "up" : "down"}
           status={ebitdaPercentageConsuntivo >= 15 ? "good" : ebitdaPercentageConsuntivo >= 10 ? "warning" : "danger"}
           icon={<TrendingUp className="h-4 w-4" />}
