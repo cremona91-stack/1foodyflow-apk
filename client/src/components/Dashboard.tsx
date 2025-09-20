@@ -475,7 +475,14 @@ export function Dashboard({
           title="Food Cost %"
           value={`${foodCostPercentage.toFixed(1)}%`}
           change={realVsTheoreticalDiff}
-          changeLabel={`cfr FCT ${realVsTheoreticalDiff > 0 ? '+' : ''}${realVsTheoreticalDiff.toFixed(1)}% | cfr FCB ${ecoParams?.materieFirsteBudget ? ((ecoParams.materieFirsteBudget / totalCorrispettivi) * 100).toFixed(1) : '0.0'}%`}
+          changeLabel={
+            <div className="flex flex-col text-xs leading-tight">
+              <span>cfr FCT {realVsTheoreticalDiff > 0 ? '+' : ''}{realVsTheoreticalDiff.toFixed(1)}%</span>
+              <span className={`${ecoParams?.materieFirsteBudget && ((ecoParams.materieFirsteBudget / totalCorrispettivi) * 100) > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
+                cfr FCB {ecoParams?.materieFirsteBudget ? ((ecoParams.materieFirsteBudget / totalCorrispettivi) * 100).toFixed(1) : '0.0'}%
+              </span>
+            </div>
+          }
           trend={realVsTheoreticalDiff > 0 ? "up" : "down"}
           status={foodCostPercentage > 30 ? "danger" : foodCostPercentage > 25 ? "warning" : "good"}
           icon={<ChefHat className="h-4 w-4" />}
@@ -494,11 +501,11 @@ export function Dashboard({
         
         <KPICard
           title="EBITDA"
-          value="85%"
-          change={-(1450 - 12098.5)}
-          changeLabel={`${(1450 - 12098.5).toFixed(1).replace('.', ',')}€ vs budget`}
-          trend="down"
-          status="good"
+          value={`${ebitdaPercentageConsuntivo.toFixed(1)}%`}
+          change={ebitdaDifference}
+          changeLabel={`${ebitdaDifference.toFixed(1).replace('.', ',')}€ vs budget`}
+          trend={ebitdaDifference >= 0 ? "up" : "down"}
+          status={ebitdaPercentageConsuntivo > 20 ? "good" : ebitdaPercentageConsuntivo > 10 ? "warning" : "danger"}
           icon={<TrendingUp className="h-4 w-4" />}
           onClick={() => onNavigateToSection("profit-loss")}
         />
