@@ -520,7 +520,7 @@ export function Dashboard({
         <PillarOverview
           title="Food Cost"
           description="Controllo costi ingredienti, ricette e sprechi"
-          currentValue={`€${totalFoodCost.toFixed(0)}`}
+          currentValue={`€${totalFoodCost.toFixed(1)}`}
           targetValue="€10,500"
           progress={Math.min(100, (10500 / totalFoodCost) * 100) || 75}
           status={foodCostPercentage > 30 ? "danger" : foodCostPercentage > 25 ? "warning" : "good"}
@@ -545,7 +545,7 @@ export function Dashboard({
         <PillarOverview
           title="Conto Economico"
           description="P&L, margini e performance finanziaria"
-          currentValue={`€${mockProfit.toFixed(0)}`}
+          currentValue={`€${mockProfit.toFixed(1)}`}
           targetValue="€8,000"
           progress={Math.min(100, (mockProfit / 8000) * 100) || 92}
           status={mockProfitMargin < 10 ? "danger" : mockProfitMargin < 15 ? "warning" : "good"}

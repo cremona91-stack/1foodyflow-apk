@@ -209,7 +209,7 @@ export default function OrderList({ orders, products, onEdit, onDelete, onView }
                     <div className="flex items-center gap-1">
                       <Euro className="h-4 w-4" />
                       <span className="font-semibold" data-testid={`text-total-${order.id}`}>
-                        €{order.totalAmount.toFixed(2)}
+                        €{order.totalAmount.toFixed(1)}
                       </span>
                     </div>
                   </div>
@@ -271,9 +271,9 @@ export default function OrderList({ orders, products, onEdit, onDelete, onView }
                         </div>
                         <div className="flex items-center gap-4 text-muted-foreground">
                           <span>Qtà: {item.quantity}</span>
-                          <span>€{item.unitPrice.toFixed(2)}/unità</span>
+                          <span>€{item.unitPrice.toFixed(1)}/unità</span>
                           <span className="font-semibold text-foreground">
-                            €{(item.quantity * item.unitPrice).toFixed(2)}
+                            €{(item.quantity * item.unitPrice).toFixed(1)}
                           </span>
                         </div>
                       </div>

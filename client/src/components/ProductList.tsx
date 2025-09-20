@@ -77,13 +77,13 @@ export default function ProductList({ products, onEdit, onDelete }: ProductListP
                     <div>
                       <span className="text-muted-foreground">Prezzo Grezzo:</span>{" "}
                       <span className="font-medium font-mono">
-                        €{product.pricePerUnit.toFixed(2)}/{product.unit}
+                        €{product.pricePerUnit.toFixed(1)}/{product.unit}
                       </span>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Prezzo Effettivo:</span>{" "}
                       <span className="font-bold font-mono text-primary">
-                        €{product.effectivePricePerUnit?.toFixed(2) || product.pricePerUnit.toFixed(2)}/{product.unit}
+                        €{product.effectivePricePerUnit?.toFixed(1) || product.pricePerUnit.toFixed(1)}/{product.unit}
                       </span>
                       {product.waste > 0 && (
                         <div className="text-xs text-muted-foreground mt-1">
@@ -94,7 +94,7 @@ export default function ProductList({ products, onEdit, onDelete }: ProductListP
                     <div>
                       <span className="text-muted-foreground">Costo Totale:</span>{" "}
                       <span className="font-bold font-mono text-destructive">
-                        €{(product.quantity * (product.effectivePricePerUnit || product.pricePerUnit)).toFixed(2)}
+                        €{(product.quantity * (product.effectivePricePerUnit || product.pricePerUnit)).toFixed(1)}
                       </span>
                     </div>
                   </div>

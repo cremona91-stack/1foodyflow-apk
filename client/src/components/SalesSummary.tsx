@@ -64,7 +64,7 @@ export default function SalesSummary({
                     Costo Totale Materiali
                   </p>
                   <p className="text-xl font-bold text-destructive font-mono">
-                    €{totalCostOfSales.toFixed(2)}
+                    €{totalCostOfSales.toFixed(1)}
                   </p>
                 </div>
               </div>
@@ -78,7 +78,7 @@ export default function SalesSummary({
                     Ricavo Totale
                   </p>
                   <p className="text-sm font-bold text-primary font-mono">
-                    €{totalGrossSales.toFixed(2)} / €{totalNetSales.toFixed(2)}
+                    €{totalGrossSales.toFixed(1)} / €{totalNetSales.toFixed(1)}
                   </p>
                   <p className="text-xs text-muted-foreground">Lordo / Netto</p>
                 </div>
@@ -93,7 +93,7 @@ export default function SalesSummary({
                     Totale Sprechi
                   </p>
                   <p className="text-xl font-bold text-destructive font-mono">
-                    €{totalWasteCost.toFixed(2)}
+                    €{totalWasteCost.toFixed(1)}
                   </p>
                 </div>
               </div>
@@ -107,7 +107,7 @@ export default function SalesSummary({
                     Totale Pasti Personali
                   </p>
                   <p className="text-xl font-bold text-destructive font-mono">
-                    €{totalPersonalMealsCost.toFixed(2)}
+                    €{totalPersonalMealsCost.toFixed(1)}
                   </p>
                 </div>
               </div>
@@ -216,13 +216,13 @@ export default function SalesSummary({
                       <div className="text-sm">
                         <span className="text-muted-foreground">Ricavo: </span>
                         <span className="font-mono font-medium">
-                          €{(dish.netPrice * dish.sold).toFixed(2)}
+                          €{(dish.netPrice * dish.sold).toFixed(1)}
                         </span>
                       </div>
                       <div className="text-sm">
                         <span className="text-muted-foreground">Costo: </span>
                         <span className="font-mono font-medium">
-                          €{(dish.totalCost * dish.sold).toFixed(2)}
+                          €{(dish.totalCost * dish.sold).toFixed(1)}
                         </span>
                       </div>
                     </div>

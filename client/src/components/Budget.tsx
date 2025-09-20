@@ -248,25 +248,54 @@ export default function Budget({}: BudgetProps) {
             </div>
           </div>
           
-          {/* Summary Badges */}
-          <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t">
-            <Badge variant="outline" className="text-sm">
-              Budget 2026: {formatCurrency(totals.totalBudget)}
-            </Badge>
-            <Badge variant="outline" className="text-sm">
-              Consuntivo 2026: {formatCurrency(totals.totalConsuntivo2026)}
-            </Badge>
-            <Badge variant="outline" className="text-sm">
-              Consuntivo 2025: {formatCurrency(totals.totalConsuntivo2025)}
-            </Badge>
-            <Badge 
-              variant="secondary"
-              className={`text-sm font-mono ${getPercentageColor(totals.deltaPercentage)}`}
-              data-testid="summary-delta-badge"
-            >
-              <span className="mr-1">{totals.deltaPercentage > 0 ? '↗' : '↘'}</span>
-              Performance: {totals.deltaPercentage > 0 ? '+' : ''}{totals.deltaPercentage.toFixed(1)}%
-            </Badge>
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4 pt-4 border-t">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Budget {selectedYear}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="header-card-budget-2026">
+                  {formatCurrency(totals.totalBudget)}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Consuntivo {selectedYear}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="header-card-consuntivo-2026">
+                  {formatCurrency(totals.totalConsuntivo2026)}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Consuntivo {selectedYear - 1}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="header-card-consuntivo-2025">
+                  {formatCurrency(totals.totalConsuntivo2025)}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Performance</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold ${getPercentageColor(totals.deltaPercentage)}`} data-testid="header-card-performance">
+                  {totals.deltaPercentage > 0 ? '+' : ''}{totals.deltaPercentage.toFixed(1)}%
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {selectedYear} vs {selectedYear - 1}
+                </p>
+              </CardContent>
+            </Card>
           </div>
         </CardHeader>
       </Card>

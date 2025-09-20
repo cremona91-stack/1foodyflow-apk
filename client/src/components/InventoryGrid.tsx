@@ -384,7 +384,7 @@ export default function InventoryGrid({
               <div>
                 <p className="text-sm text-muted-foreground">Valore Inventario</p>
                 <p className="text-lg font-semibold" data-testid="stat-total-value">
-                  €{getTotalValue().toFixed(2)}
+                  €{getTotalValue().toFixed(1)}
                 </p>
               </div>
             </div>
@@ -398,7 +398,7 @@ export default function InventoryGrid({
               <div>
                 <p className="text-sm text-muted-foreground">Valore Varianza</p>
                 <p className={`text-lg font-semibold ${getTotalVarianceValue() >= 0 ? 'text-red-600' : 'text-green-600'}`} data-testid="stat-variance-value">
-                  €{getTotalVarianceValue() >= 0 ? `-${getTotalVarianceValue().toFixed(2)}` : `+${Math.abs(getTotalVarianceValue()).toFixed(2)}`}
+                  €{getTotalVarianceValue() >= 0 ? `-${getTotalVarianceValue().toFixed(1)}` : `+${Math.abs(getTotalVarianceValue()).toFixed(1)}`}
                 </p>
               </div>
             </div>

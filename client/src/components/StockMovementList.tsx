@@ -220,15 +220,15 @@ export default function StockMovementList({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             <div className="flex items-center gap-2 text-sm">
               <ArrowUp className="h-4 w-4 text-green-600" />
-              <span>Entrate: <span className="font-semibold" data-testid="total-in">{totals.totalIn.toFixed(2)}</span></span>
+              <span>Entrate: <span className="font-semibold" data-testid="total-in">{totals.totalIn.toFixed(1)}</span></span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <ArrowDown className="h-4 w-4 text-red-600" />
-              <span>Uscite: <span className="font-semibold" data-testid="total-out">{totals.totalOut.toFixed(2)}</span></span>
+              <span>Uscite: <span className="font-semibold" data-testid="total-out">{totals.totalOut.toFixed(1)}</span></span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <Euro className="h-4 w-4 text-primary" />
-              <span>Valore: <span className="font-semibold" data-testid="total-value">€{totals.totalValue.toFixed(2)}</span></span>
+              <span>Valore: <span className="font-semibold" data-testid="total-value">€{totals.totalValue.toFixed(1)}</span></span>
             </div>
           </div>
         )}

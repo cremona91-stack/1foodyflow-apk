@@ -135,19 +135,19 @@ export default function DishList({
                       <div>
                         <span className="text-muted-foreground">Costo:</span>{" "}
                         <span className="font-medium font-mono">
-                          €{dish.totalCost.toFixed(2)}
+                          €{dish.totalCost.toFixed(1)}
                         </span>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Prezzo:</span>{" "}
                         <span className="font-medium font-mono">
-                          €{dish.sellingPrice.toFixed(2)}
+                          €{dish.sellingPrice.toFixed(1)}
                         </span>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Netto:</span>{" "}
                         <span className="font-medium font-mono">
-                          €{dish.netPrice.toFixed(2)}
+                          €{dish.netPrice.toFixed(1)}
                         </span>
                       </div>
                       <div>
