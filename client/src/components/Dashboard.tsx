@@ -439,9 +439,24 @@ export function Dashboard({
     };
   }, [ecoParams, budgetEntries, foodCostMetrics]);
 
-  // Mock P&L data (to be implemented)
+  // Calculate real profit margin using actual costs from economic parameters
   const mockRevenue = totalFoodSales || 42000;
-  const mockProfit = mockRevenue - totalFoodCost - 8000; // 8000 = altri costi (labour cost = 0)
+  const otherCosts = ecoParams ? (
+    (ecoParams.acquistiVarConsuntivo || 0) +
+    (ecoParams.locazioniConsuntivo || 0) +
+    (ecoParams.personaleConsuntivo || 0) +
+    (ecoParams.utenzeConsuntivo || 0) +
+    (ecoParams.manutenzioniConsuntivo || 0) +
+    (ecoParams.noleggiConsuntivo || 0) +
+    (ecoParams.prestazioniTerziConsuntivo || 0) +
+    (ecoParams.consulenzeConsuntivo || 0) +
+    (ecoParams.marketingConsuntivo || 0) +
+    (ecoParams.deliveryConsuntivo || 0) +
+    (ecoParams.trasferteConsuntivo || 0) +
+    (ecoParams.assicurazioniConsuntivo || 0) +
+    (ecoParams.speseBancarieConsuntivo || 0)
+  ) : 0;
+  const mockProfit = mockRevenue - totalFoodCost - otherCosts;
   const mockProfitMargin = mockRevenue > 0 ? (mockProfit / mockRevenue) * 100 : 0;
 
   return (
