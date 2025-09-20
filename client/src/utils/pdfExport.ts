@@ -2,13 +2,6 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { Product, StockMovement, Order, Waste, PersonalMeal, Recipe, Dish, EditableInventory, BudgetEntry } from '@shared/schema';
 
-// Extend jsPDF type to include autoTable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-  }
-}
-
 // Universal PDF export interface
 interface PDFExportOptions {
   title: string;
