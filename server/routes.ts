@@ -417,6 +417,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Email order endpoint
+  app.post("/api/orders/:id/send-email", async (req, res) => {
+    try {
+      const { sendOrderEmail } = await import("./email.js");
+      
+      // Get the order
+      const order = await storage.getOrder(req.params.id);
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+
+      // Get all products to find supplier emails
+      const products = await storage.getProducts();
+      const productMap = new Map(products.map(p => [p.id, p]));
+      
+      // Find supplier emails from order items
+      const supplierEmails = new Set<string>();
+      for (const item of order.items) {
+        const product = productMap.get(item.productId);
+        if (product?.supplierEmail && product.supplierEmail.includes('@')) {
+          supplierEmails.add(product.supplierEmail);
+        }
+      }
+
+      if (supplierEmails.size === 0) {
+        return res.status(400).json({ 
+          error: "Nessuna email fornitore trovata",
+          message: "Nessuno dei prodotti in questo ordine ha un'email fornitore valida configurata."
+        });
+      }
+
+      // Send email to each supplier
+      const emailResults = [];
+      for (const supplierEmail of supplierEmails) {
+        const success = await sendOrderEmail(order, supplierEmail);
+        emailResults.push({
+          email: supplierEmail,
+          success,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      const successCount = emailResults.filter(r => r.success).length;
+      const totalCount = emailResults.length;
+
+      if (successCount === totalCount) {
+        res.json({
+          success: true,
+          message: `Email inviata con successo a ${successCount} fornitore${successCount > 1 ? 'i' : ''}`,
+          results: emailResults
+        });
+      } else {
+        res.status(207).json({
+          success: false,
+          message: `${successCount}/${totalCount} email inviate con successo`,
+          results: emailResults
+        });
+      }
+    } catch (error) {
+      console.error("Error sending order email:", error);
+      res.status(500).json({ error: "Failed to send order email" });
+    }
+  });
+
   // Stock Movements API Routes (Magazzino In/Out)
   app.get("/api/stock-movements", async (req, res) => {
     try {
