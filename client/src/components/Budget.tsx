@@ -150,8 +150,11 @@ export default function Budget({}: BudgetProps) {
   };
 
   const formatCurrency = (value: number | null | undefined) => {
-    if (value === null || value === undefined) return "€ 0,00";
-    return `€ ${value.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (value === null || value === undefined) return "€0,0";
+    if (Math.abs(value) >= 1000000) {
+      return `${(value / 1000000).toFixed(1).replace('.', ',')}M€`;
+    }
+    return `€${value.toLocaleString('it-IT', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
   };
 
   const formatPercentage = (value: number | null | undefined) => {

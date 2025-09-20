@@ -117,8 +117,8 @@ export const exportInventoryToPDF = (
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.text(`Prodotti totali: ${products.length}`, 14, yPos);
-  doc.text(`Valore Inventario: €${totalFinalValue.toFixed(2)}`, 14, yPos + 6);
-  doc.text(`Valore Varianza: €${totalVarianceValue.toFixed(2)}`, 14, yPos + 12);
+  doc.text(`Valore Inventario: €${totalFinalValue.toFixed(1)}`, 14, yPos + 6);
+  doc.text(`Valore Varianza: €${totalVarianceValue.toFixed(1)}`, 14, yPos + 12);
   yPos += 25;
 
   // Table data
@@ -129,13 +129,13 @@ export const exportInventoryToPDF = (
   const tableRows = inventoryData.map(item => [
     item.name,
     item.code,
-    `${item.initialQuantity.toFixed(2)} ${item.unit}`,
-    `${item.inQuantity.toFixed(2)} ${item.unit}`,
-    `${item.outQuantity.toFixed(2)} ${item.unit}`,
-    `${item.finalQuantity.toFixed(2)} ${item.unit}`,
-    `${item.variance >= 0 ? '+' : ''}${item.variance.toFixed(2)} ${item.unit}`,
-    `€${item.finalValue.toFixed(2)}`,
-    `€${item.varianceValue.toFixed(2)}`
+    `${item.initialQuantity.toFixed(1)} ${item.unit}`,
+    `${item.inQuantity.toFixed(1)} ${item.unit}`,
+    `${item.outQuantity.toFixed(1)} ${item.unit}`,
+    `${item.finalQuantity.toFixed(1)} ${item.unit}`,
+    `${item.variance >= 0 ? '+' : ''}${item.variance.toFixed(1)} ${item.unit}`,
+    `€${item.finalValue.toFixed(1)}`,
+    `€${item.varianceValue.toFixed(1)}`
   ]);
 
   autoTable(doc, {
@@ -176,15 +176,14 @@ export const exportProductsToPDF = (products: Product[]) => {
   const doc = new jsPDF();
   let yPos = setupPDFHeader(doc, "Lista Prodotti");
 
-  const tableColumns = ['Nome', 'Codice', 'Fornitore', 'Unità', 'Prezzo/Unità', 'Categoria'];
+  const tableColumns = ['Nome', 'Codice', 'Fornitore', 'Unità', 'Prezzo/Unità'];
   
   const tableRows = products.map(product => [
     product.name,
     product.code,
     product.supplier || 'N/A',
     product.unit,
-    `€${product.pricePerUnit.toFixed(2)}`,
-    product.category || 'N/A'
+    `€${product.pricePerUnit.toFixed(1)}`
   ]);
 
   autoTable(doc, {
@@ -220,7 +219,7 @@ export const exportOrdersToPDF = (orders: Order[]) => {
     order.supplier,
     order.status === 'pending' ? 'In Attesa' : 
     order.status === 'confirmed' ? 'Confermato' : 'Annullato',
-    `€${order.totalAmount.toFixed(2)}`,
+    `€${order.totalAmount.toFixed(1)}`,
     order.notes || 'N/A'
   ]);
 
@@ -240,19 +239,6 @@ export const exportOrdersToPDF = (orders: Order[]) => {
     alternateRowStyles: {
       fillColor: [245, 245, 245]
     },
-    columnStyles: {
-      2: { // Status column
-        cellRenderer: (data: any) => {
-          const status = data.cell.text[0];
-          let color = [0, 0, 0]; // default black
-          if (status === 'Confermato') color = [34, 139, 34];
-          else if (status === 'Annullato') color = [220, 38, 27];
-          else if (status === 'In Attesa') color = [255, 140, 0];
-          
-          return { textColor: color };
-        }
-      }
-    }
   });
 
   doc.save(`ordini-${new Date().toISOString().split('T')[0]}.pdf`);
@@ -291,7 +277,7 @@ export const exportRecipesToPDF = (recipes: Recipe[], products: Product[]) => {
   const tableRows = recipeData.map(recipe => [
     recipe.name,
     recipe.ingredientsCount.toString(),
-    `€${recipe.totalCost.toFixed(2)}`
+    `€${recipe.totalCost.toFixed(1)}`
   ]);
 
   autoTable(doc, {
@@ -324,8 +310,8 @@ export const exportDishesToPDF = (dishes: Dish[], products: Product[]) => {
   
   const tableRows = dishes.map(dish => [
     dish.name,
-    `€${dish.sellingPrice.toFixed(2)}`,
-    `€${dish.totalCost.toFixed(2)}`,
+    `€${dish.sellingPrice.toFixed(1)}`,
+    `€${dish.totalCost.toFixed(1)}`,
     `${dish.foodCost.toFixed(1)}%`,
     (dish.sold || 0).toString()
   ]);
@@ -346,19 +332,6 @@ export const exportDishesToPDF = (dishes: Dish[], products: Product[]) => {
     alternateRowStyles: {
       fillColor: [245, 245, 245]
     },
-    columnStyles: {
-      3: { // Food Cost % column
-        cellRenderer: (data: any) => {
-          const foodCost = parseFloat(data.cell.text[0].replace('%', ''));
-          let color = [0, 0, 0]; // default black
-          if (foodCost > 35) color = [220, 38, 27]; // red if > 35%
-          else if (foodCost > 30) color = [255, 140, 0]; // orange if > 30%
-          else color = [34, 139, 34]; // green if <= 30%
-          
-          return { textColor: color };
-        }
-      }
-    }
   });
 
   doc.save(`piatti-${new Date().toISOString().split('T')[0]}.pdf`);
@@ -384,7 +357,7 @@ export const exportWasteToPDF = (waste: Waste[], products: Product[]) => {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.text(`Totale registrazioni: ${waste.length}`, 14, yPos);
-  doc.text(`Valore totale sprechi: €${totalWasteCost.toFixed(2)}`, 14, yPos + 6);
+  doc.text(`Valore totale sprechi: €${totalWasteCost.toFixed(1)}`, 14, yPos + 6);
   yPos += 20;
 
   const tableColumns = ['Data', 'Prodotto', 'Quantità', 'Motivo', 'Costo'];
@@ -394,11 +367,11 @@ export const exportWasteToPDF = (waste: Waste[], products: Product[]) => {
     const cost = w.quantity * (product?.pricePerUnit || 0);
     
     return [
-      new Date(w.wasteDate).toLocaleDateString('it-IT'),
+      new Date(w.date).toLocaleDateString('it-IT'),
       product?.name || 'Prodotto sconosciuto',
-      `${w.quantity.toFixed(2)} ${product?.unit || ''}`,
-      w.reason || 'N/A',
-      `€${cost.toFixed(2)}`
+      `${w.quantity.toFixed(1)} ${product?.unit || ''}`,
+      w.notes || 'N/A',
+      `€${cost.toFixed(1)}`
     ];
   });
 

@@ -121,14 +121,13 @@ export default function PL() {
 
   // Helper functions
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('it-IT', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 2
-    }).format(value).replace('EUR', '€');
+    if (Math.abs(value) >= 1000000) {
+      return `${(value / 1000000).toFixed(1).replace('.', ',')}M€`;
+    }
+    return `€${value.toLocaleString('it-IT', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
   };
 
-  const formatPercent = (value: number) => `${value.toFixed(2).replace('.', ',')}%`;
+  const formatPercent = (value: number) => `${value.toFixed(1).replace('.', ',')}%`;
 
   const getPercentageColor = (percentage: number) => {
     if (percentage > 0) return "text-green-600 dark:text-green-400";

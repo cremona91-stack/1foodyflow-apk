@@ -386,9 +386,9 @@ function FoodCostManager() {
     // Prompt user for actual measured quantity
     const actualQuantityStr = window.prompt(
       `Crea snapshot per: ${product.name}\n\n` +
-      `Quantità teorica: ${theoreticalQuantity.toFixed(2)} ${product.unit}\n` +
+      `Quantità teorica: ${theoreticalQuantity.toFixed(1)} ${product.unit}\n` +
       `Inserisci la quantità reale misurata:`,
-      theoreticalQuantity.toFixed(2)
+      theoreticalQuantity.toFixed(1)
     );
     
     if (actualQuantityStr === null) return; // User cancelled
