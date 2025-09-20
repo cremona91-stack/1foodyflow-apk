@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Plus, Download, TrendingUp, TrendingDown, Save } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { exportTableToPDF } from "@/lib/pdfExport";
+import { exportBudgetToPDF } from "@/utils/pdfExport";
 import type { BudgetEntry, InsertBudgetEntry, UpdateBudgetEntry } from "@shared/schema";
 
 interface BudgetProps {}
@@ -67,54 +67,7 @@ export default function Budget({}: BudgetProps) {
   // Export to PDF function
   const handleExportPDF = () => {
     if (!budgetEntries || budgetEntries.length === 0) return;
-
-    const monthNames = [
-      'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-      'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
-    ];
-
-    const columns = [
-      { header: 'Data', dataKey: 'day', width: 20 },
-      { header: 'C.M. €', dataKey: 'copertoMedio', width: 25 },
-      { header: 'Coperti', dataKey: 'coperti', width: 25 },
-      { header: 'Sala Budget €', dataKey: 'salaBudget', width: 30 },
-      { header: 'Delivery Budget €', dataKey: 'budgetDelivery', width: 35 },
-      { header: 'Sala Incasso 25 €', dataKey: 'actualRevenue', width: 35 },
-      { header: 'Delivery 25 €', dataKey: 'actualDelivery', width: 30 },
-      { header: 'Consuntivo 26', dataKey: 'consuntivo', width: 30 },
-      { header: 'Consuntivo 25', dataKey: 'consuntivo2025', width: 30 },
-      { header: 'Delta %', dataKey: 'deltaPercentage', width: 25 }
-    ];
-
-    const exportData = budgetEntries.map(entry => {
-      const salaBudget = (entry.coperti || 0) * (entry.copertoMedio || 0);
-      const consuntivo2025 = (entry.actualRevenue || 0) + (entry.actualDelivery || 0);
-      const consuntivo2026 = entry.consuntivo || 0;
-      const deltaPercentage = consuntivo2025 > 0 ? ((consuntivo2026 - consuntivo2025) / consuntivo2025) * 100 : 0;
-
-      return {
-        day: entry.day,
-        copertoMedio: entry.copertoMedio || 0,
-        coperti: entry.coperti || 0,
-        salaBudget: salaBudget,
-        budgetDelivery: entry.budgetDelivery || 0,
-        actualRevenue: entry.actualRevenue || 0,
-        actualDelivery: entry.actualDelivery || 0,
-        consuntivo: consuntivo2026,
-        consuntivo2025: consuntivo2025,
-        deltaPercentage: deltaPercentage
-      };
-    });
-
-    exportTableToPDF({
-      title: 'Budget Report',
-      subtitle: `${monthNames[selectedMonth - 1]} ${selectedYear}`,
-      data: exportData,
-      columns: columns,
-      filename: `budget-${monthNames[selectedMonth - 1].toLowerCase()}-${selectedYear}.pdf`,
-      orientation: 'landscape',
-      footerText: 'FoodyFlow - Sistema di Gestione Ristorante'
-    });
+    exportBudgetToPDF(budgetEntries, selectedYear, selectedMonth);
   };
 
   // Generate all days for the month

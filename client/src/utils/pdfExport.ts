@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { Product, StockMovement, Order, Waste, PersonalMeal, Recipe, Dish, EditableInventory } from '@shared/schema';
+import type { Product, StockMovement, Order, Waste, PersonalMeal, Recipe, Dish, EditableInventory, BudgetEntry } from '@shared/schema';
 
 // Extend jsPDF type to include autoTable
 declare module 'jspdf' {
@@ -9,23 +9,324 @@ declare module 'jspdf' {
   }
 }
 
-// Common PDF header setup
-const setupPDFHeader = (doc: jsPDF, title: string) => {
+// Universal PDF export interface
+interface PDFExportOptions {
+  title: string;
+  subtitle?: string;
+  data: any[];
+  columns: { header: string; dataKey: string; width?: number }[];
+  filename: string;
+  orientation?: 'portrait' | 'landscape';
+  showDate?: boolean;
+  footerText?: string;
+}
+
+// Enhanced PDF header setup
+const setupPDFHeader = (doc: jsPDF, title: string, subtitle?: string) => {
   // Header
   doc.setFontSize(20);
   doc.setFont("helvetica", "bold");
-  doc.text("Food Cost Manager", 105, 20, { align: "center" });
+  doc.text("FoodyFlow", 105, 20, { align: "center" });
   
   doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
   doc.text(title, 105, 30, { align: "center" });
+  
+  if (subtitle) {
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.text(subtitle, 105, 40, { align: "center" });
+  }
   
   // Date
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  const date = new Date().toLocaleString('it-IT');
-  doc.text(`Generato il: ${date}`, 105, 40, { align: "center" });
+  const date = new Date().toLocaleDateString('it-IT', {
+    year: 'numeric',
+    month: 'long', 
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  doc.text(`Data generazione: ${date}`, 105, subtitle ? 50 : 40, { align: "center" });
   
-  return 50; // Return Y position for content start
+  // Add line separator
+  const startY = subtitle ? 60 : 50;
+  doc.setLineWidth(0.5);
+  doc.line(20, startY, doc.internal.pageSize.width - 20, startY);
+  
+  return startY + 10;
+};
+
+// Unified footer system for all PDF reports  
+const addUnifiedFooter = (doc: jsPDF, footerText?: string): void => {
+  const totalPages = doc.getNumberOfPages();
+  const pageHeight = doc.internal.pageSize.height;
+  
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    
+    if (footerText) {
+      doc.text(footerText, 105, pageHeight - 15, { align: "center" });
+    }
+    
+    const pageNumber = `Pagina ${i} di ${totalPages}`;
+    doc.text(pageNumber, doc.internal.pageSize.width - 25, pageHeight - 10);
+  }
+};
+
+// Universal table export function
+export const exportTableToPDF = (options: PDFExportOptions): void => {
+  const doc = new jsPDF({
+    orientation: options.orientation || 'portrait',
+    unit: 'mm',
+    format: 'a4'
+  });
+
+  const startY = setupPDFHeader(doc, options.title, options.subtitle);
+
+  // Prepare table data
+  const tableData = options.data.map(row => 
+    options.columns.map(col => {
+      const value = row[col.dataKey];
+      if (value === null || value === undefined) return '';
+      if (typeof value === 'number') {
+        // Format currency and percentages
+        if (col.dataKey.includes('€') || col.dataKey.includes('euro') || col.dataKey.includes('costo') || col.dataKey.includes('prezzo') || col.dataKey.includes('Budget') || col.dataKey.includes('Incasso')) {
+          return `€${value.toFixed(2)}`;
+        }
+        if (col.dataKey.includes('Percentage') || col.dataKey.includes('%')) {
+          return `${value.toFixed(1)}%`;
+        }
+        return value.toFixed(2);
+      }
+      return String(value);
+    })
+  );
+
+  // Generate table using autoTable
+  autoTable(doc, {
+    head: [options.columns.map(col => col.header)],
+    body: tableData,
+    startY: startY,
+    margin: { left: 15, right: 15 },
+    styles: {
+      fontSize: 8,
+      cellPadding: 2,
+    },
+    headStyles: {
+      fillColor: [45, 90, 61], // FoodyFlow green
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 245],
+    },
+    columnStyles: options.columns.reduce((acc, col, index) => {
+      if (col.width) {
+        acc[index] = { cellWidth: col.width };
+      }
+      return acc;
+    }, {} as any),
+  });
+
+  // Use unified footer system
+  addUnifiedFooter(doc, options.footerText);
+
+  // Save the PDF
+  doc.save(options.filename);
+};
+
+// Export Budget report with calculations
+export const exportBudgetToPDF = (budgetEntries: BudgetEntry[], selectedYear: number, selectedMonth: number): void => {
+  const monthNames = [
+    'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+    'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+  ];
+
+  const columns = [
+    { header: 'Giorno', dataKey: 'day', width: 15 },
+    { header: 'C.M. €', dataKey: 'copertoMedio', width: 20 },
+    { header: 'Coperti', dataKey: 'coperti', width: 20 },
+    { header: 'Sala Budget €', dataKey: 'salaBudget', width: 25 },
+    { header: 'Delivery Budget €', dataKey: 'budgetDelivery', width: 30 },
+    { header: 'Sala Incasso 25 €', dataKey: 'actualRevenue', width: 30 },
+    { header: 'Delivery 25 €', dataKey: 'actualDelivery', width: 25 },
+    { header: 'Consuntivo 26', dataKey: 'consuntivo', width: 25 },
+    { header: 'Consuntivo 25', dataKey: 'consuntivo2025', width: 25 },
+    { header: 'Delta %', dataKey: 'deltaPercentage', width: 20 }
+  ];
+
+  const exportData = budgetEntries.map(entry => {
+    const salaBudget = (entry.coperti || 0) * (entry.copertoMedio || 0);
+    const consuntivo2025 = (entry.actualRevenue || 0) + (entry.actualDelivery || 0);
+    const consuntivo2026 = entry.consuntivo || 0;
+    const deltaPercentage = consuntivo2025 > 0 ? ((consuntivo2026 - consuntivo2025) / consuntivo2025) * 100 : 0;
+
+    return {
+      day: entry.day,
+      copertoMedio: entry.copertoMedio || 0,
+      coperti: entry.coperti || 0,
+      salaBudget: salaBudget,
+      budgetDelivery: entry.budgetDelivery || 0,
+      actualRevenue: entry.actualRevenue || 0,
+      actualDelivery: entry.actualDelivery || 0,
+      consuntivo: consuntivo2026,
+      consuntivo2025: consuntivo2025,
+      deltaPercentage: deltaPercentage
+    };
+  });
+
+  exportTableToPDF({
+    title: 'Budget Report',
+    subtitle: `${monthNames[selectedMonth - 1]} ${selectedYear}`,
+    data: exportData,
+    columns: columns,
+    filename: `budget-${monthNames[selectedMonth - 1].toLowerCase()}-${selectedYear}.pdf`,
+    orientation: 'landscape',
+    footerText: 'FoodyFlow - Sistema di Gestione Ristorante'
+  });
+};
+
+// Export Dashboard KPI report
+export const exportDashboardToPDF = (
+  totalRevenue: number,
+  totalFoodCost: number,
+  foodCostPercentage: number,
+  ebitda: number,
+  ebitdaPercentage: number,
+  selectedYear: number,
+  selectedMonth: number
+): void => {
+  const monthNames = [
+    'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+    'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+  ];
+
+  const doc = new jsPDF();
+  const startY = setupPDFHeader(doc, 'Dashboard KPI Report', `${monthNames[selectedMonth - 1]} ${selectedYear}`);
+
+  // KPI Cards
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text('Indicatori Chiave di Performance', 20, startY);
+
+  let currentY = startY + 15;
+
+  // Revenue section
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text('Ricavi Totali', 20, currentY);
+  doc.setFont("helvetica", "normal");
+  doc.text(`€${totalRevenue.toFixed(2)}`, 120, currentY);
+  currentY += 12;
+
+  // Food Cost section
+  doc.setFont("helvetica", "bold");
+  doc.text('Costo del Cibo', 20, currentY);
+  doc.setFont("helvetica", "normal");
+  doc.text(`€${totalFoodCost.toFixed(2)} (${foodCostPercentage.toFixed(1)}%)`, 120, currentY);
+  currentY += 12;
+
+  // EBITDA section
+  doc.setFont("helvetica", "bold");
+  doc.text('EBITDA', 20, currentY);
+  doc.setFont("helvetica", "normal");
+  doc.text(`€${ebitda.toFixed(2)} (${ebitdaPercentage.toFixed(1)}%)`, 120, currentY);
+  currentY += 20;
+
+  // Performance Analysis
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text('Analisi Performance', 20, currentY);
+  currentY += 10;
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  
+  // Food cost analysis
+  if (foodCostPercentage <= 30) {
+    doc.text('• Food Cost ottimale (≤30%)', 25, currentY);
+  } else if (foodCostPercentage <= 35) {
+    doc.text('• Food Cost accettabile (30-35%)', 25, currentY);
+  } else {
+    doc.text('• Food Cost elevato (>35%) - attenzione', 25, currentY);
+  }
+  currentY += 8;
+
+  // EBITDA analysis
+  if (ebitdaPercentage >= 15) {
+    doc.text('• EBITDA eccellente (≥15%)', 25, currentY);
+  } else if (ebitdaPercentage >= 10) {
+    doc.text('• EBITDA buono (10-15%)', 25, currentY);
+  } else {
+    doc.text('• EBITDA basso (<10%) - miglioramenti necessari', 25, currentY);
+  }
+
+  // Use unified footer system after content is complete
+  addUnifiedFooter(doc, 'FoodyFlow - Dashboard Report');
+
+  doc.save(`dashboard-kpi-${monthNames[selectedMonth - 1].toLowerCase()}-${selectedYear}.pdf`);
+};
+
+// Export P&L Analysis report
+export const exportPLToPDF = (
+  economicParams: any,
+  budgetTotals: any,
+  foodCostMetrics: any,
+  selectedYear: number,
+  selectedMonth: number
+): void => {
+  const monthNames = [
+    'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+    'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+  ];
+
+  const doc = new jsPDF();
+  const startY = setupPDFHeader(doc, 'Profit & Loss Analysis', `${monthNames[selectedMonth - 1]} ${selectedYear}`);
+
+  let currentY = startY;
+
+  // Economic Parameters Section
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text('Parametri Economici', 20, currentY);
+  currentY += 12;
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+
+  const economicData = [
+    ['Ricavi Budget', `€${budgetTotals.totalBudget.toFixed(2)}`],
+    ['Ricavi Effettivi', `€${budgetTotals.totalConsuntivo.toFixed(2)}`],
+    ['Food Cost', `€${foodCostMetrics.totalFoodCost.toFixed(2)}`],
+    ['Food Cost %', `${foodCostMetrics.foodCostPercentage.toFixed(1)}%`],
+    ['Costi Personale', `€${economicParams?.costiPersonale || 0}`],
+    ['Costi Gestione', `€${economicParams?.costiGestione || 0}`],
+    ['Affitti', `€${economicParams?.affitti || 0}`],
+    ['Marketing', `€${economicParams?.marketing || 0}`],
+    ['Ammortamenti', `€${economicParams?.ammortamenti || 0}`],
+    ['Altri Costi', `€${economicParams?.altriCosti || 0}`]
+  ];
+
+  autoTable(doc, {
+    body: economicData,
+    startY: currentY,
+    margin: { left: 20, right: 20 },
+    styles: {
+      fontSize: 9,
+      cellPadding: 3,
+    },
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: 80 },
+      1: { halign: 'right', cellWidth: 60 }
+    }
+  });
+
+  // Save the PDF
+  doc.save(`pl-analysis-${monthNames[selectedMonth - 1].toLowerCase()}-${selectedYear}.pdf`);
 };
 
 // Export Inventory/Warehouse as PDF

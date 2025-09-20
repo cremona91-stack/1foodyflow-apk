@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Calendar, Download } from "lucide-react";
-import { exportTableToPDF } from "@/lib/pdfExport";
+import { exportTableToPDF, exportPLToPDF } from "@/utils/pdfExport";
 
 // Types
 import type { UpdateEconomicParameters, BudgetEntry, EconomicParameters } from "@shared/schema";
@@ -387,46 +387,15 @@ export default function PL() {
 
   // Export to PDF function
   const handleExportPDF = () => {
-    if (!costItems || costItems.length === 0) return;
+    if (!ecoParams || !foodCostMetrics) return;
 
-    const columns = [
-      { header: 'Codice', dataKey: 'code', width: 20 },
-      { header: 'Voce di Costo', dataKey: 'name', width: 60 },
-      { header: 'Budget %', dataKey: 'budgetPercent', width: 25 },
-      { header: 'Budget €', dataKey: 'budgetValue', width: 30 },
-      { header: 'Consuntivo %', dataKey: 'consuntivoPercent', width: 30 },
-      { header: 'Consuntivo €', dataKey: 'consuntivoValue', width: 30 }
-    ];
-
-    const exportData = [
-      ...costItems.map(item => ({
-        code: item.code,
-        name: item.name,
-        budgetPercent: (item.percent * 100).toFixed(1) + '%',
-        budgetValue: item.budgetValue || 0,
-        consuntivoPercent: (item.consuntivoPercent * 100).toFixed(1) + '%',
-        consuntivoValue: item.consuntivoValue || 0
-      })),
-      // Add EBITDA row
-      {
-        code: 'EBITDA',
-        name: 'EBITDA',
-        budgetPercent: (ebitdaPercent * 100).toFixed(1) + '%',
-        budgetValue: ebitdaBudgetEuros,
-        consuntivoPercent: (ebitdaPercentConsuntivo * 100).toFixed(1) + '%',
-        consuntivoValue: ebitdaConsuntivoEuros
-      }
-    ];
-
-    exportTableToPDF({
-      title: 'Conto Economico (P&L)',
-      subtitle: `${monthNames[selectedMonth - 1]} ${selectedYear}`,
-      data: exportData,
-      columns: columns,
-      filename: `pl-${monthNames[selectedMonth - 1].toLowerCase()}-${selectedYear}.pdf`,
-      orientation: 'landscape',
-      footerText: 'FoodyFlow - Sistema di Gestione Ristorante'
-    });
+    exportPLToPDF(
+      ecoParams,
+      totals,
+      foodCostMetrics,
+      selectedYear,
+      selectedMonth
+    );
   };
 
   return (

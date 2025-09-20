@@ -13,7 +13,8 @@ import {
   exportProductsToPDF,
   exportOrdersToPDF,
   exportDishesToPDF,
-  exportWasteToPDF
+  exportWasteToPDF,
+  exportDashboardToPDF
 } from "@/utils/pdfExport";
 
 // Components
@@ -354,6 +355,35 @@ function FoodCostManager() {
           
         case "dishes":
           exportDishesToPDF(dishes, products);
+          break;
+        
+        case "dashboard":
+          // Dashboard PDF export with KPI data - use current selection
+          const currentYear = parseInt(localStorage.getItem('foodyflow-selected-year') || new Date().getFullYear().toString());
+          const currentMonth = parseInt(localStorage.getItem('foodyflow-selected-month') || (new Date().getMonth() + 1).toString());
+          
+          const dashboardData = queryClient.getQueryData(['/api/metrics/food-cost', currentYear, currentMonth]) as any;
+          const ecoParams = queryClient.getQueryData(['/api/economic-parameters', currentYear, currentMonth]) as any;
+          const budgetData = queryClient.getQueryData(['/api/budget-entries', currentYear, currentMonth]) as any[] || [];
+          
+          // Calculate totals for dashboard
+          const totalRevenue = budgetData.reduce((sum, entry) => 
+            sum + (entry.actualRevenue || 0) + (entry.actualDelivery || 0), 0);
+          const ebitda = totalRevenue - (dashboardData?.totalFoodCost || 0) - 
+            (ecoParams?.costiPersonale || 0) - (ecoParams?.costiGestione || 0) - 
+            (ecoParams?.affitti || 0) - (ecoParams?.marketing || 0) - 
+            (ecoParams?.ammortamenti || 0) - (ecoParams?.altriCosti || 0);
+          const ebitdaPercentage = totalRevenue > 0 ? (ebitda / totalRevenue) * 100 : 0;
+          
+          exportDashboardToPDF(
+            totalRevenue,
+            dashboardData?.totalFoodCost || 0,
+            dashboardData?.foodCostPercentage || 0,
+            ebitda,
+            ebitdaPercentage,
+            currentYear,
+            currentMonth
+          );
           break;
           
         case "orders":
