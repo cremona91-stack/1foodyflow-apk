@@ -146,7 +146,7 @@ export default function PL() {
       percent: (ecoParams?.materieFirsteBudget || 0) / totalCorrispettivi, 
       budgetValue: ecoParams?.materieFirsteBudget || 0,
       consuntivoValue: foodCostMetrics?.totalFoodCost || 0,
-      consuntivoPercent: (foodCostMetrics?.totalFoodCost || 0) / (totals.totalActualRevenue + totals.totalActualDelivery || 1),
+      consuntivoPercent: (totals.totalActualRevenue + totals.totalActualDelivery) > 0 ? (foodCostMetrics?.totalFoodCost || 0) / (totals.totalActualRevenue + totals.totalActualDelivery) : 0,
       foodCostPercent: foodCostMetrics?.foodCostPercentage || null,
       dataTestId: 'eco-materie', 
       highlight: false,
@@ -164,7 +164,7 @@ export default function PL() {
       percent: (ecoParams?.acquistiVarBudget || 0) / totalCorrispettivi, 
       budgetValue: ecoParams?.acquistiVarBudget || 0,
       consuntivoValue: ecoParams?.acquistiVarConsuntivo || 0,
-      consuntivoPercent: (ecoParams?.acquistiVarConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery || 1),
+      consuntivoPercent: (totals.totalActualRevenue + totals.totalActualDelivery) > 0 ? (ecoParams?.acquistiVarConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery) : 0,
       dataTestId: null, 
       highlight: false,
       editable: true,
@@ -180,7 +180,7 @@ export default function PL() {
       percent: (ecoParams?.locazioniBudget || 0) / totalCorrispettivi, 
       budgetValue: ecoParams?.locazioniBudget || 0,
       consuntivoValue: ecoParams?.locazioniConsuntivo || 0,
-      consuntivoPercent: (ecoParams?.locazioniConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery || 1),
+      consuntivoPercent: (totals.totalActualRevenue + totals.totalActualDelivery) > 0 ? (ecoParams?.locazioniConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery) : 0,
       dataTestId: null, 
       highlight: false,
       editable: true,
@@ -196,7 +196,7 @@ export default function PL() {
       percent: (ecoParams?.personaleBudget || 0) / totalCorrispettivi, 
       budgetValue: ecoParams?.personaleBudget || 0,
       consuntivoValue: ecoParams?.personaleConsuntivo || 0,
-      consuntivoPercent: (ecoParams?.personaleConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery || 1),
+      consuntivoPercent: (totals.totalActualRevenue + totals.totalActualDelivery) > 0 ? (ecoParams?.personaleConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery) : 0,
       dataTestId: 'eco-personale', 
       highlight: true,
       editable: true,
@@ -212,7 +212,7 @@ export default function PL() {
       percent: (ecoParams?.utenzeBudget || 0) / totalCorrispettivi, 
       budgetValue: ecoParams?.utenzeBudget || 0,
       consuntivoValue: ecoParams?.utenzeConsuntivo || 0,
-      consuntivoPercent: (ecoParams?.utenzeConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery || 1),
+      consuntivoPercent: (totals.totalActualRevenue + totals.totalActualDelivery) > 0 ? (ecoParams?.utenzeConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery) : 0,
       dataTestId: null, 
       highlight: false,
       editable: true,
@@ -228,7 +228,7 @@ export default function PL() {
       percent: (ecoParams?.manutenzionibudget || 0) / totalCorrispettivi, 
       budgetValue: ecoParams?.manutenzionibudget || 0,
       consuntivoValue: ecoParams?.manutenzioniConsuntivo || 0,
-      consuntivoPercent: (ecoParams?.manutenzioniConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery || 1),
+      consuntivoPercent: (totals.totalActualRevenue + totals.totalActualDelivery) > 0 ? (ecoParams?.manutenzioniConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery) : 0,
       dataTestId: null, 
       highlight: false,
       editable: true,
@@ -244,7 +244,7 @@ export default function PL() {
       percent: (ecoParams?.noleggibudget || 0) / totalCorrispettivi, 
       budgetValue: ecoParams?.noleggibudget || 0,
       consuntivoValue: ecoParams?.noleggiConsuntivo || 0,
-      consuntivoPercent: (ecoParams?.noleggiConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery || 1),
+      consuntivoPercent: (totals.totalActualRevenue + totals.totalActualDelivery) > 0 ? (ecoParams?.noleggiConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery) : 0,
       dataTestId: null, 
       highlight: false,
       editable: true,
@@ -260,7 +260,7 @@ export default function PL() {
       percent: (ecoParams?.prestazioniTerziBudget || 0) / totalCorrispettivi, 
       budgetValue: ecoParams?.prestazioniTerziBudget || 0,
       consuntivoValue: ecoParams?.prestazioniTerziConsuntivo || 0,
-      consuntivoPercent: (ecoParams?.prestazioniTerziConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery || 1),
+      consuntivoPercent: (totals.totalActualRevenue + totals.totalActualDelivery) > 0 ? (ecoParams?.prestazioniTerziConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery) : 0,
       dataTestId: null, 
       highlight: false,
       editable: true,
@@ -276,7 +276,7 @@ export default function PL() {
       percent: (ecoParams?.consulenzeBudget || 0) / totalCorrispettivi, 
       budgetValue: ecoParams?.consulenzeBudget || 0,
       consuntivoValue: ecoParams?.consulenzeConsuntivo || 0,
-      consuntivoPercent: (ecoParams?.consulenzeConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery || 1),
+      consuntivoPercent: (totals.totalActualRevenue + totals.totalActualDelivery) > 0 ? (ecoParams?.consulenzeConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery) : 0,
       dataTestId: null, 
       highlight: false,
       editable: true,
@@ -292,7 +292,7 @@ export default function PL() {
       percent: (ecoParams?.marketingBudget || 0) / totalCorrispettivi, 
       budgetValue: ecoParams?.marketingBudget || 0,
       consuntivoValue: ecoParams?.marketingConsuntivo || 0,
-      consuntivoPercent: (ecoParams?.marketingConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery || 1),
+      consuntivoPercent: (totals.totalActualRevenue + totals.totalActualDelivery) > 0 ? (ecoParams?.marketingConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery) : 0,
       dataTestId: null, 
       highlight: false,
       editable: true,
@@ -308,7 +308,7 @@ export default function PL() {
       percent: (ecoParams?.deliveryBudget || 0) / totalCorrispettivi, 
       budgetValue: ecoParams?.deliveryBudget || 0,
       consuntivoValue: ecoParams?.deliveryConsuntivo || 0,
-      consuntivoPercent: (ecoParams?.deliveryConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery || 1),
+      consuntivoPercent: (totals.totalActualRevenue + totals.totalActualDelivery) > 0 ? (ecoParams?.deliveryConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery) : 0,
       dataTestId: null, 
       highlight: false,
       editable: true,
@@ -324,7 +324,7 @@ export default function PL() {
       percent: (ecoParams?.trasferteBudget || 0) / totalCorrispettivi, 
       budgetValue: ecoParams?.trasferteBudget || 0,
       consuntivoValue: ecoParams?.trasferteConsuntivo || 0,
-      consuntivoPercent: (ecoParams?.trasferteConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery || 1),
+      consuntivoPercent: (totals.totalActualRevenue + totals.totalActualDelivery) > 0 ? (ecoParams?.trasferteConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery) : 0,
       dataTestId: null, 
       highlight: false,
       editable: true,
@@ -340,7 +340,7 @@ export default function PL() {
       percent: (ecoParams?.assicurazioniBudget || 0) / totalCorrispettivi, 
       budgetValue: ecoParams?.assicurazioniBudget || 0,
       consuntivoValue: ecoParams?.assicurazioniConsuntivo || 0,
-      consuntivoPercent: (ecoParams?.assicurazioniConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery || 1),
+      consuntivoPercent: (totals.totalActualRevenue + totals.totalActualDelivery) > 0 ? (ecoParams?.assicurazioniConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery) : 0,
       dataTestId: null, 
       highlight: false,
       editable: true,
@@ -356,7 +356,7 @@ export default function PL() {
       percent: (ecoParams?.speseBancarieBudget || 0) / totalCorrispettivi, 
       budgetValue: ecoParams?.speseBancarieBudget || 0,
       consuntivoValue: ecoParams?.speseBancarieConsuntivo || 0,
-      consuntivoPercent: (ecoParams?.speseBancarieConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery || 1),
+      consuntivoPercent: (totals.totalActualRevenue + totals.totalActualDelivery) > 0 ? (ecoParams?.speseBancarieConsuntivo || 0) / (totals.totalActualRevenue + totals.totalActualDelivery) : 0,
       dataTestId: null, 
       highlight: false,
       editable: true,
@@ -371,6 +371,10 @@ export default function PL() {
   // Calculate total cost percentage and EBITDA
   const totalCostPercent = costItems.reduce((sum, item) => sum + item.percent, 0);
   const ebitdaPercent = 1 - totalCostPercent;
+  
+  // Calculate consuntivo cost percentage and EBITDA for consuntivo column
+  const totalCostPercentConsuntivo = costItems.reduce((sum, item) => sum + item.consuntivoPercent, 0);
+  const ebitdaPercentConsuntivo = 1 - totalCostPercentConsuntivo;
 
   return (
     <div className="space-y-6">
@@ -582,9 +586,9 @@ export default function PL() {
                   <TableCell className="text-center font-bold">
                     <Badge 
                       variant="secondary"
-                      className={`font-mono text-xs ${getPercentageColor(ebitdaPercent * 100)}`}
+                      className={`font-mono text-xs ${getPercentageColor(ebitdaPercentConsuntivo * 100)}`}
                     >
-                      {formatPercent(ebitdaPercent * 100)}
+                      {formatPercent(ebitdaPercentConsuntivo * 100)}
                     </Badge>
                   </TableCell>
                 </TableRow>

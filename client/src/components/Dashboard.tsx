@@ -328,34 +328,33 @@ export function Dashboard({
       (ecoParams.speseBancarieBudget || 0)
     );
 
-    // Calculate total costs for consuntivo (similar logic applied to consuntivo revenue)
-    const totalCostsConsuntivo = (
-      // Materie prime (calculated from percentage applied to consuntivo)
-      ((ecoParams.materieFirstePercent || 0) / 100 * totalConsuntivoRevenue) +
-      // Acquisti vari (calculated from percentage applied to consuntivo)  
-      ((ecoParams.acquistiVarPercent || 0) / 100 * totalConsuntivoRevenue) +
-      // All other budget costs (assume same as budget for now)
-      (ecoParams.locazioniBudget || 0) +
-      (ecoParams.personaleBudget || 0) +
-      (ecoParams.utenzeBudget || 0) +
-      (ecoParams.manutenzionibudget || 0) +
-      (ecoParams.noleggibudget || 0) +
-      (ecoParams.prestazioniTerziBudget || 0) +
-      (ecoParams.consulenzeBudget || 0) +
-      (ecoParams.marketingBudget || 0) +
-      (ecoParams.deliveryBudget || 0) +
-      (ecoParams.trasferteBudget || 0) +
-      (ecoParams.assicurazioniBudget || 0) +
-      (ecoParams.speseBancarieBudget || 0)
+    // Calculate cost percentages for consuntivo using the same logic as P&L
+    const totalCostPercentConsuntivo = (
+      // Materie prime (calculated from totalFoodCost like P&L)
+      (totalConsuntivoRevenue > 0 ? (totalFoodCost / totalConsuntivoRevenue) * 100 : 0) +
+      // Acquisti vari (calculated from consuntivo value like P&L)  
+      (totalConsuntivoRevenue > 0 ? (ecoParams.acquistiVarConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
+      // All other costs as percentages of consuntivo revenue
+      (totalConsuntivoRevenue > 0 ? (ecoParams.locazioniConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
+      (totalConsuntivoRevenue > 0 ? (ecoParams.personaleConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
+      (totalConsuntivoRevenue > 0 ? (ecoParams.utenzeConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
+      (totalConsuntivoRevenue > 0 ? (ecoParams.manutenzioniConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
+      (totalConsuntivoRevenue > 0 ? (ecoParams.noleggiConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
+      (totalConsuntivoRevenue > 0 ? (ecoParams.prestazioniTerziConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
+      (totalConsuntivoRevenue > 0 ? (ecoParams.consulenzeConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
+      (totalConsuntivoRevenue > 0 ? (ecoParams.marketingConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
+      (totalConsuntivoRevenue > 0 ? (ecoParams.deliveryConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
+      (totalConsuntivoRevenue > 0 ? (ecoParams.trasferteConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
+      (totalConsuntivoRevenue > 0 ? (ecoParams.assicurazioniConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
+      (totalConsuntivoRevenue > 0 ? (ecoParams.speseBancarieConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0)
     );
 
     // EBITDA Budget = Revenue Budget - Total Costs Budget
     const ebitdaBudget = totalBudgetRevenue - totalCostsBudget;
     const ebitdaPercBudget = totalBudgetRevenue > 0 ? (ebitdaBudget / totalBudgetRevenue) * 100 : 0;
 
-    // EBITDA Consuntivo = Revenue Consuntivo - Total Costs Consuntivo  
-    const ebitdaConsuntivo = totalConsuntivoRevenue - totalCostsConsuntivo;
-    const ebitdaPercConsuntivo = totalConsuntivoRevenue > 0 ? (ebitdaConsuntivo / totalConsuntivoRevenue) * 100 : 0;
+    // EBITDA Consuntivo % = 100% - Total Cost % (same logic as P&L)
+    const ebitdaPercConsuntivo = 100 - totalCostPercentConsuntivo;
 
     // Differenza = Consuntivo - Budget
     const difference = ebitdaPercConsuntivo - ebitdaPercBudget;
@@ -367,7 +366,7 @@ export function Dashboard({
       ebitdaDifference: difference,
       totalCorrispettivi: totalBudgetRevenue
     };
-  }, [ecoParams, budgetEntries]);
+  }, [ecoParams, budgetEntries, totalFoodCost]);
 
   // Mock P&L data (to be implemented)
   const mockRevenue = totalFoodSales || 42000;
