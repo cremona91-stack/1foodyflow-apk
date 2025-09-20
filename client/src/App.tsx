@@ -28,10 +28,6 @@ import { Users, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProductForm from "@/components/ProductForm";
 import ProductList from "@/components/ProductList";
-import RecipeForm from "@/components/RecipeForm";
-import RecipeList from "@/components/RecipeList";
-import DishForm from "@/components/DishForm";
-import DishList from "@/components/DishList";
 import WasteForm from "@/components/WasteForm";
 import WasteRegistry from "@/components/WasteRegistry";
 import SalesSummary from "@/components/SalesSummary";
@@ -55,12 +51,7 @@ import {
   useCreateProduct,
   useUpdateProduct,
   useDeleteProduct,
-  useCreateRecipe,
-  useUpdateRecipe,
-  useDeleteRecipe,
-  useCreateDish,
   useUpdateDish,
-  useDeleteDish,
   useCreateWaste,
   useCreatePersonalMeal,
   useCreateOrder,
@@ -75,7 +66,7 @@ import {
 } from "@/hooks/useApi";
 
 // Types
-import type { Product, Recipe, Dish, Order, StockMovement, InventorySnapshot, InsertProduct, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal, InsertOrder, InsertStockMovement, InsertInventorySnapshot } from "@shared/schema";
+import type { Product, Recipe, Dish, Order, StockMovement, InventorySnapshot, InsertProduct, InsertWaste, InsertPersonalMeal, InsertOrder, InsertStockMovement, InsertInventorySnapshot } from "@shared/schema";
 
 function FoodCostManager() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -83,8 +74,6 @@ function FoodCostManager() {
   
   // Edit state - keep as local state
   const [editingProduct, setEditingProduct] = useState<Product | undefined>();
-  const [editingRecipe, setEditingRecipe] = useState<Recipe | undefined>();
-  const [editingDish, setEditingDish] = useState<Dish | undefined>();
   const [editingOrder, setEditingOrder] = useState<Order | undefined>();
   const [editingStockMovement, setEditingStockMovement] = useState<StockMovement | undefined>();
   const [selectedProductForMovements, setSelectedProductForMovements] = useState<string | null>(null);
@@ -108,13 +97,7 @@ function FoodCostManager() {
   const updateProductMutation = useUpdateProduct();
   const deleteProductMutation = useDeleteProduct();
   
-  const createRecipeMutation = useCreateRecipe();
-  const updateRecipeMutation = useUpdateRecipe();
-  const deleteRecipeMutation = useDeleteRecipe();
-  
-  const createDishMutation = useCreateDish();
   const updateDishMutation = useUpdateDish();
-  const deleteDishMutation = useDeleteDish();
   
   const createWasteMutation = useCreateWaste();
   const createPersonalMealMutation = useCreatePersonalMeal();
@@ -166,75 +149,6 @@ function FoodCostManager() {
     console.log("Product deletion submitted:", productId);
   };
 
-  // Recipe handlers
-  const handleAddRecipe = (recipe: InsertRecipe) => {
-    createRecipeMutation.mutate(recipe);
-    console.log("Recipe creation submitted:", recipe);
-  };
-
-  const handleEditRecipe = (recipe: Recipe) => {
-    setEditingRecipe(recipe);
-    console.log("Editing recipe:", recipe);
-  };
-
-  const handleUpdateRecipe = (updatedRecipe: InsertRecipe) => {
-    if (!editingRecipe) return;
-    
-    updateRecipeMutation.mutate(
-      { id: editingRecipe.id, data: updatedRecipe },
-      {
-        onSuccess: () => {
-          setEditingRecipe(undefined);
-        },
-      }
-    );
-    console.log("Recipe update submitted:", updatedRecipe);
-  };
-
-  const handleCancelEditRecipe = () => {
-    setEditingRecipe(undefined);
-    console.log("Recipe edit cancelled");
-  };
-
-  const handleDeleteRecipe = (recipeId: string) => {
-    deleteRecipeMutation.mutate(recipeId);
-    console.log("Recipe deletion submitted:", recipeId);
-  };
-
-  // Dish handlers
-  const handleAddDish = (dish: InsertDish) => {
-    createDishMutation.mutate(dish);
-    console.log("Dish creation submitted:", dish);
-  };
-
-  const handleEditDish = (dish: Dish) => {
-    setEditingDish(dish);
-    console.log("Editing dish:", dish);
-  };
-
-  const handleUpdateDish = (updatedDish: InsertDish) => {
-    if (!editingDish) return;
-    
-    updateDishMutation.mutate(
-      { id: editingDish.id, data: updatedDish },
-      {
-        onSuccess: () => {
-          setEditingDish(undefined);
-        },
-      }
-    );
-    console.log("Dish update submitted:", updatedDish);
-  };
-
-  const handleCancelEditDish = () => {
-    setEditingDish(undefined);
-    console.log("Dish edit cancelled");
-  };
-
-  const handleDeleteDish = (dishId: string) => {
-    deleteDishMutation.mutate(dishId);
-    console.log("Dish deletion submitted:", dishId);
-  };
 
   const handleUpdateSold = (dishId: string, sold: number) => {
     const dish = dishes.find(d => d.id === dishId);
