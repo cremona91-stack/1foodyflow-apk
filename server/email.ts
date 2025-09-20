@@ -161,7 +161,7 @@ export function generateOrderEmailTemplate(order: Order, supplierEmail: string):
 }
 
 // Funzione per inviare email ordine
-export async function sendOrderEmail(order: Order, supplierEmail: string, fromEmail = 'ordini@foodyflow.com'): Promise<boolean> {
+export async function sendOrderEmail(order: Order, supplierEmail: string, fromEmail = 'ordini@foodyflow.it'): Promise<boolean> {
   if (!supplierEmail || !supplierEmail.includes('@')) {
     console.error('Email fornitore non valida:', supplierEmail);
     return false;
