@@ -218,6 +218,11 @@ export function Dashboard({
     retry: false
   });
 
+  // Query for food cost metrics (same as P&L)
+  const { data: foodCostMetrics } = useQuery({
+    queryKey: ['/api/metrics/food-cost', currentYear, currentMonth]
+  });
+
   // Fetch budget entries for corrispettivi calculation
   const { data: budgetEntries = [] } = useQuery({
     queryKey: ['/api/budget-entries', currentYear, currentMonth],
@@ -307,12 +312,12 @@ export function Dashboard({
       return sum + (entry.actualRevenue || 0) + (entry.actualDelivery || 0);
     }, 0);
 
-    // Calculate total costs from economic parameters (for percentage calculation)
+    // Calculate total costs from economic parameters (same as P&L)
     const totalCostsBudget = (
-      // Materie prime (calculated from percentage)
-      ((ecoParams.materieFirstePercent || 0) / 100 * totalBudgetRevenue) +
-      // Acquisti vari (calculated from percentage)  
-      ((ecoParams.acquistiVarPercent || 0) / 100 * totalBudgetRevenue) +
+      // Materie prime (use budget field like P&L)
+      (ecoParams.materieFirsteBudget || 0) +
+      // Acquisti vari (use budget field like P&L)  
+      (ecoParams.acquistiVarBudget || 0) +
       // All other budget costs
       (ecoParams.locazioniBudget || 0) +
       (ecoParams.personaleBudget || 0) +
@@ -328,10 +333,13 @@ export function Dashboard({
       (ecoParams.speseBancarieBudget || 0)
     );
 
+    // Use food cost from API (same as P&L) - check actual property name
+    const foodCostFromAPI = (foodCostMetrics as any)?.totalFoodCost || 0;
+
     // Calculate cost percentages for consuntivo using the same logic as P&L
     const totalCostPercentConsuntivo = (
-      // Materie prime (calculated from totalFoodCost like P&L)
-      (totalConsuntivoRevenue > 0 ? (totalFoodCost / totalConsuntivoRevenue) * 100 : 0) +
+      // Materie prime (calculated from foodCostFromAPI like P&L)
+      (totalConsuntivoRevenue > 0 ? (foodCostFromAPI / totalConsuntivoRevenue) * 100 : 0) +
       // Acquisti vari (calculated from consuntivo value like P&L)  
       (totalConsuntivoRevenue > 0 ? (ecoParams.acquistiVarConsuntivo || 0) / totalConsuntivoRevenue * 100 : 0) +
       // All other costs as percentages of consuntivo revenue
@@ -351,8 +359,8 @@ export function Dashboard({
 
     // Calculate total costs consuntivo in EURO (not percentage) for EBITDA euro calculation
     const totalCostsConsuntivoEuro = (
-      // Materie prime (use totalFoodCost directly)
-      totalFoodCost +
+      // Materie prime (use foodCostFromAPI directly like P&L)
+      foodCostFromAPI +
       // All other costs consuntivo in euro
       (ecoParams.acquistiVarConsuntivo || 0) +
       (ecoParams.locazioniConsuntivo || 0) +
@@ -389,7 +397,7 @@ export function Dashboard({
       ebitdaDifference: differenceEuro,
       totalCorrispettivi: totalBudgetRevenue
     };
-  }, [ecoParams, budgetEntries, totalFoodCost]);
+  }, [ecoParams, budgetEntries, foodCostMetrics]);
 
   // Mock P&L data (to be implemented)
   const mockRevenue = totalFoodSales || 42000;

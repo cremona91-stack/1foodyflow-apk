@@ -23,6 +23,7 @@ import TabNavigation from "@/components/TabNavigation";
 import { Dashboard } from "@/components/Dashboard";
 import Budget from "@/components/Budget";
 import PL from "@/pages/PL";
+import Recipes from "@/pages/Recipes";
 import { Users, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProductForm from "@/components/ProductForm";
@@ -598,24 +599,12 @@ function FoodCostManager() {
                   editProduct={editingProduct}
                   onCancel={editingProduct ? handleCancelEditProduct : undefined}
                 />
-                <RecipeForm 
-                  products={products} 
-                  onSubmit={editingRecipe ? handleUpdateRecipe : handleAddRecipe}
-                  editRecipe={editingRecipe}
-                  onCancel={editingRecipe ? handleCancelEditRecipe : undefined}
-                />
               </div>
               <div className="md:w-1/2 space-y-6">
                 <ProductList 
                   products={products} 
                   onEdit={handleEditProduct}
                   onDelete={handleDeleteProduct}
-                />
-                <RecipeList 
-                  recipes={recipes} 
-                  products={products}
-                  onEdit={handleEditRecipe}
-                  onDelete={handleDeleteRecipe}
                 />
               </div>
             </div>
@@ -633,26 +622,6 @@ function FoodCostManager() {
                 onMaxFoodCostChange={setMaxFoodCost}
                 showSalesDetails={false}
               />
-              <div className="md:flex md:gap-6 space-y-6 md:space-y-0">
-                <div className="md:w-1/2">
-                  <DishForm 
-                    products={products} 
-                    onSubmit={editingDish ? handleUpdateDish : handleAddDish}
-                    editDish={editingDish}
-                    onCancel={editingDish ? handleCancelEditDish : undefined}
-                  />
-                </div>
-                <div className="md:w-1/2">
-                  <DishList 
-                    dishes={dishes} 
-                    products={products}
-                    onEdit={handleEditDish}
-                    onDelete={handleDeleteDish}
-                    onUpdateSold={handleUpdateSold}
-                    onClearSales={handleClearSales}
-                  />
-                </div>
-              </div>
             </div>
           )}
 
@@ -735,6 +704,7 @@ function Router() {
         <>
           <Route path="/" component={FoodCostManager} />
           <Route path="/pl" component={PL} />
+          <Route path="/ricette" component={Recipes} />
         </>
       )}
       <Route component={FoodCostManager} />

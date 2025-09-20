@@ -257,16 +257,16 @@ export default function Budget({}: BudgetProps) {
             <Table>
               <TableHeader>
                 <TableRow className="bg-red-600 text-white hover:bg-red-600">
-                  <TableHead className="text-white font-semibold min-w-[120px]">Data</TableHead>
-                  <TableHead className="text-white font-semibold text-right min-w-[100px]">Coperto Medio €</TableHead>
-                  <TableHead className="text-white font-semibold text-center min-w-[80px]">Coperti</TableHead>
-                  <TableHead className="text-white font-semibold text-right min-w-[120px]">Budget {selectedYear} €</TableHead>
-                  <TableHead className="text-white font-semibold text-right min-w-[120px]">Delivery {selectedYear} €</TableHead>
-                  <TableHead className="text-white font-semibold text-right min-w-[120px] bg-blue-100 dark:bg-blue-900/30">Incasso {selectedYear - 1} €</TableHead>
-                  <TableHead className="text-white font-semibold text-right min-w-[120px] bg-blue-100 dark:bg-blue-900/30">Delivery {selectedYear - 1} €</TableHead>
-                  <TableHead className="text-white font-semibold text-center min-w-[110px]">Consuntivo {selectedYear}</TableHead>
-                  <TableHead className="text-white font-semibold text-center min-w-[110px] bg-blue-100 dark:bg-blue-900/30">Consuntivo {selectedYear - 1}</TableHead>
-                  <TableHead className="text-white font-semibold text-center min-w-[80px]">Delta %</TableHead>
+                  <TableHead className="text-white font-semibold w-[90px]">Data</TableHead>
+                  <TableHead className="text-white font-semibold text-right w-[70px]">C.M. €</TableHead>
+                  <TableHead className="text-white font-semibold text-center w-[60px]">Cop.</TableHead>
+                  <TableHead className="text-white font-semibold text-right w-[80px]">Budget €</TableHead>
+                  <TableHead className="text-white font-semibold text-right w-[80px]">Del. €</TableHead>
+                  <TableHead className="text-white font-semibold text-right w-[80px] bg-blue-100 dark:bg-blue-900/30">Inc. 25 €</TableHead>
+                  <TableHead className="text-white font-semibold text-right w-[80px] bg-blue-100 dark:bg-blue-900/30">Del. 25 €</TableHead>
+                  <TableHead className="text-white font-semibold text-center w-[80px]">Cons. 26</TableHead>
+                  <TableHead className="text-white font-semibold text-center w-[80px] bg-blue-100 dark:bg-blue-900/30">Cons. 25</TableHead>
+                  <TableHead className="text-white font-semibold text-center w-[60px]">Δ%</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -290,15 +290,15 @@ export default function Budget({}: BudgetProps) {
                       key={day}
                       className="hover:bg-muted/50 transition-colors"
                     >
-                      <TableCell className="font-medium">
-                        {`${getDayOfWeek(selectedYear, selectedMonth, day)} ${day.toString().padStart(2, '0')} ${monthNames[selectedMonth - 1].slice(0, 3)} ${selectedYear}`}
+                      <TableCell className="font-medium text-xs">
+                        {`${getDayOfWeek(selectedYear, selectedMonth, day).slice(0, 3)} ${day.toString().padStart(2, '0')}`}
                       </TableCell>
                       <TableCell className="text-right">
                         <Input
                           type="text"
                           value={entry?.copertoMedio ? entry.copertoMedio.toString() : ''}
                           placeholder="0,00"
-                          className="w-20 text-right border-0 p-1 h-8"
+                          className="w-16 text-right border-0 p-1 h-6 bg-yellow-100 dark:bg-yellow-900/30"
                           onChange={(e) => handleCellEdit(day, 'copertoMedio', e.target.value)}
                           data-testid={`input-coperto-medio-${day}`}
                         />
@@ -308,13 +308,13 @@ export default function Budget({}: BudgetProps) {
                           type="text"
                           value={entry?.coperti ? entry.coperti.toString() : ''}
                           placeholder="0"
-                          className="w-16 text-center border-0 p-1 h-8"
+                          className="w-12 text-center border-0 p-1 h-6 bg-yellow-100 dark:bg-yellow-900/30"
                           onChange={(e) => handleCellEdit(day, 'coperti', e.target.value)}
                           data-testid={`input-coperti-${day}`}
                         />
                       </TableCell>
                       <TableCell className="text-right">
-                        <span className="text-sm font-mono" data-testid={`calculated-budget-revenue-${day}`}>
+                        <span className="text-xs font-mono" data-testid={`calculated-budget-revenue-${day}`}>
                           {formatCurrency(calculatedBudgetRevenue)}
                         </span>
                       </TableCell>
@@ -323,7 +323,7 @@ export default function Budget({}: BudgetProps) {
                           type="text"
                           value={entry?.budgetDelivery ? entry.budgetDelivery.toString() : ''}
                           placeholder="0,00"
-                          className="w-24 text-right border-0 p-1 h-8"
+                          className="w-16 text-right border-0 p-1 h-6 bg-yellow-100 dark:bg-yellow-900/30"
                           onChange={(e) => handleCellEdit(day, 'budgetDelivery', e.target.value)}
                           data-testid={`input-budget-delivery-${day}`}
                         />
@@ -333,7 +333,7 @@ export default function Budget({}: BudgetProps) {
                           type="text"
                           value={entry?.actualRevenue ? entry.actualRevenue.toString() : ''}
                           placeholder="0,00"
-                          className="w-24 text-right border-0 p-1 h-8 bg-transparent"
+                          className="w-16 text-right border-0 p-1 h-6 bg-yellow-100 dark:bg-yellow-900/30"
                           onChange={(e) => handleCellEdit(day, 'actualRevenue', e.target.value)}
                           data-testid={`input-actual-revenue-${day}`}
                         />
@@ -343,30 +343,25 @@ export default function Budget({}: BudgetProps) {
                           type="text"
                           value={entry?.actualDelivery ? entry.actualDelivery.toString() : ''}
                           placeholder="0,00"
-                          className="w-24 text-right border-0 p-1 h-8 bg-transparent"
+                          className="w-16 text-right border-0 p-1 h-6 bg-yellow-100 dark:bg-yellow-900/30"
                           onChange={(e) => handleCellEdit(day, 'actualDelivery', e.target.value)}
                           data-testid={`input-actual-delivery-${day}`}
                         />
                       </TableCell>
                       <TableCell className="text-center">
-                        <Input
-                          type="text"
-                          value={entry?.consuntivo ? entry.consuntivo.toString() : ''}
-                          placeholder="0,00"
-                          className="w-24 text-right border-0 p-1 h-8"
-                          onChange={(e) => handleCellEdit(day, 'consuntivo', e.target.value)}
-                          data-testid={`input-consuntivo-${day}`}
-                        />
+                        <span className="text-xs font-mono" data-testid={`consuntivo-2026-${day}`}>
+                          {formatCurrency(consuntivo2026)}
+                        </span>
                       </TableCell>
                       <TableCell className="text-center bg-blue-50 dark:bg-blue-950/20">
-                        <span className="text-sm font-mono" data-testid={`consuntivo-2025-${day}`}>
+                        <span className="text-xs font-mono" data-testid={`consuntivo-2025-${day}`}>
                           {formatCurrency(consuntivo2025)}
                         </span>
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge 
                           variant="secondary"
-                          className={`font-mono text-xs ${getPercentageColor(deltaPercentage)}`}
+                          className={`font-mono text-[10px] px-1 py-0 ${getPercentageColor(deltaPercentage)}`}
                           data-testid={`badge-delta-${day}`}
                         >
                           {deltaPercentage > 0 ? '+' : ''}{deltaPercentage.toFixed(1)}%
