@@ -375,6 +375,12 @@ export default function PL() {
   // Calculate consuntivo cost percentage and EBITDA for consuntivo column
   const totalCostPercentConsuntivo = costItems.reduce((sum, item) => sum + item.consuntivoPercent, 0);
   const ebitdaPercentConsuntivo = 1 - totalCostPercentConsuntivo;
+  
+  // Calculate actual EBITDA values in euros
+  const totalCostsBudgetEuros = costItems.reduce((sum, item) => sum + (item.budgetValue || 0), 0);
+  const totalCostsConsuntivoEuros = costItems.reduce((sum, item) => sum + (item.consuntivoValue || 0), 0);
+  const ebitdaBudgetEuros = totals.totalBudget - totalCostsBudgetEuros;
+  const ebitdaConsuntivoEuros = (totals.totalActualRevenue + totals.totalActualDelivery) - totalCostsConsuntivoEuros;
 
   return (
     <div className="space-y-6">
@@ -578,10 +584,10 @@ export default function PL() {
                   <TableCell className="font-bold">10 - EBITDA</TableCell>
                   <TableCell className="text-center font-bold">{formatPercent(ebitdaPercent * 100)}</TableCell>
                   <TableCell className="text-right font-bold" data-testid="eco-ebitda-budget">
-                    {formatCurrency(totals.totalBudget * ebitdaPercent)}
+                    {formatCurrency(ebitdaBudgetEuros)}
                   </TableCell>
                   <TableCell className="text-right font-bold" data-testid="eco-ebitda-consuntivo">
-                    {formatCurrency((totals.totalActualRevenue + totals.totalActualDelivery) * ebitdaPercent)}
+                    {formatCurrency(ebitdaConsuntivoEuros)}
                   </TableCell>
                   <TableCell className="text-center font-bold">
                     <Badge 
