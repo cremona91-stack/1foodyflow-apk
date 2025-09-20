@@ -321,8 +321,8 @@ export function Dashboard({
     const totalCorrispettivi = totals.totalBudget;
     const totalConsuntivoRevenue = totals.totalActualRevenue + totals.totalActualDelivery;
     
-    // Use food cost from API (same as P&L)
-    const foodCostFromAPI = foodCostMetrics?.totalFoodCost || 0;
+    // Use food cost from API (same as P&L)  
+    const foodCostFromAPI = foodCostMetrics?.totalCost || 0;
     const foodCostPercent = totalConsuntivoRevenue > 0 ? (foodCostFromAPI / totalConsuntivoRevenue) : 0;
 
     // Build cost items exactly like P&L to ensure consistency
