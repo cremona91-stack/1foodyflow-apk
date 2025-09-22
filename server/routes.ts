@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { setupTraditionalAuth } from "./auth";
+import { analyzeRestaurantData, analyzeFoodCostOptimization, generateMenuSuggestions } from "./gemini";
 import { 
   insertProductSchema, 
   insertSupplierSchema,
@@ -1083,6 +1084,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Validation error", details: error.errors });
       }
       res.status(500).json({ error: "Failed to create admin user" });
+    }
+  });
+
+  // AI Assistant Routes usando Gemini
+  app.post("/api/ai/analyze", async (req, res) => {
+    try {
+      const { query } = req.body;
+      
+      if (!query) {
+        return res.status(400).json({ error: "Query is required" });
+      }
+
+      // Raccogli tutti i dati del ristorante
+      const [products, dishes, waste, orders, budgetEntries] = await Promise.all([
+        storage.getProducts(),
+        storage.getDishes(),
+        storage.getWaste(),
+        storage.getOrders(),
+        storage.getBudgetEntries(2026, 1) // Anno e mese correnti
+      ]);
+
+      const restaurantData = {
+        products: products.slice(0, 10), // Limita i dati per non superare i token
+        dishes: dishes.slice(0, 10),
+        waste: waste.slice(0, 5),
+        orders: orders.slice(0, 5),
+        budgetEntries: budgetEntries.slice(0, 5)
+      };
+
+      const analysis = await analyzeRestaurantData(restaurantData, query);
+      
+      res.json({ 
+        success: true, 
+        analysis,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Errore analisi AI:", error);
+      res.status(500).json({ 
+        error: "Errore nell'analisi AI", 
+        message: "Riprova più tardi" 
+      });
+    }
+  });
+
+  app.post("/api/ai/food-cost-optimization", async (req, res) => {
+    try {
+      // Raccogli dati food cost
+      const [products, dishes, waste] = await Promise.all([
+        storage.getProducts(),
+        storage.getDishes(),
+        storage.getWaste()
+      ]);
+
+      const foodCostData = {
+        totalProducts: products.length,
+        totalDishes: dishes.length,
+        totalWaste: waste.length,
+        averageProductPrice: products.reduce((sum, p) => sum + p.averagePrice, 0) / products.length || 0,
+        products: products.slice(0, 5),
+        dishes: dishes.slice(0, 5),
+        waste: waste.slice(0, 3)
+      };
+
+      const optimization = await analyzeFoodCostOptimization(foodCostData);
+      
+      res.json({ 
+        success: true, 
+        optimization,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Errore ottimizzazione food cost:", error);
+      res.status(500).json({ 
+        error: "Errore nell'ottimizzazione food cost", 
+        message: "Riprova più tardi" 
+      });
+    }
+  });
+
+  app.post("/api/ai/menu-suggestions", async (req, res) => {
+    try {
+      const { marketTrends } = req.body;
+      
+      const dishes = await storage.getDishes();
+      const dishData = dishes.slice(0, 10);
+
+      const suggestions = await generateMenuSuggestions(dishData, marketTrends || "");
+      
+      res.json({ 
+        success: true, 
+        suggestions,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Errore suggerimenti menu:", error);
+      res.status(500).json({ 
+        error: "Errore nei suggerimenti menu", 
+        message: "Riprova più tardi" 
+      });
     }
   });
 

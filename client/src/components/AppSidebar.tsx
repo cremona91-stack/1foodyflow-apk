@@ -10,7 +10,8 @@ import {
   ArrowUpDown, 
   Trash2,
   Utensils,
-  TrendingUp
+  TrendingUp,
+  Bot
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { 
@@ -33,6 +34,7 @@ const primaryTabs = [
   { id: "food-cost", label: "Food Cost", icon: Calculator },
   { id: "labour-cost", label: "Labour Cost", icon: Users },
   { id: "sales-detail", label: "Vendite", icon: BarChart3 },
+  { id: "ai-assistant", label: "Assistente IA", icon: Bot },
 ];
 
 // Management section tabs

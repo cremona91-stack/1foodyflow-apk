@@ -39,6 +39,7 @@ import StockMovementForm from "@/components/StockMovementForm";
 import StockMovementList from "@/components/StockMovementList";
 import InventoryGrid from "@/components/InventoryGrid";
 import SalesChart from "@/components/SalesChart";
+import { AIAssistant } from "@/components/AIAssistant";
 
 // API Hooks
 import {
@@ -646,6 +647,11 @@ function FoodCostManager() {
             </div>
           )}
 
+
+          {/* AI Assistant Tab */}
+          {activeTab === "ai-assistant" && (
+            <AIAssistant />
+          )}
 
           {/* Sales Detail Tab */}
           {activeTab === "sales-detail" && (
