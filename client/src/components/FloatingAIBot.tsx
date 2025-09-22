@@ -234,7 +234,8 @@ export function FloatingAIBot() {
                   setQuery(e.target.value);
                 }}
                 onKeyPress={(e) => e.key === 'Enter' && handleAnalyze()}
-                className="text-xs h-8"
+                disabled={false}
+                className="text-xs h-8 bg-background border-input"
                 data-testid="input-ai-bot-query"
               />
               <Button 
