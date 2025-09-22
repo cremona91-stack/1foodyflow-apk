@@ -229,7 +229,10 @@ export function FloatingAIBot() {
               <Input
                 placeholder="Fai una domanda..."
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  console.log("Input change:", e.target.value);
+                  setQuery(e.target.value);
+                }}
                 onKeyPress={(e) => e.key === 'Enter' && handleAnalyze()}
                 className="text-xs h-8"
                 data-testid="input-ai-bot-query"
