@@ -4,6 +4,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeProvider } from "next-themes";
 import { useAuth, AuthProvider } from "@/hooks/use-auth";
 
@@ -19,7 +20,7 @@ import {
 
 // Components
 import AppHeader from "@/components/AppHeader";
-import TabNavigation from "@/components/TabNavigation";
+import { AppSidebar } from "@/components/AppSidebar";
 import { Dashboard } from "@/components/Dashboard";
 import Budget from "@/components/Budget";
 import PL from "@/pages/PL";
@@ -470,14 +471,21 @@ function FoodCostManager() {
     );
   }
 
+  const sidebarStyle = {
+    "--sidebar-width": "20rem",
+    "--sidebar-width-icon": "4rem",
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="w-full max-w-6xl mx-auto bg-card shadow-xl flex flex-col">
-        <AppHeader onExportPDF={handleExportPDF} />
-        
-        <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} />
-        
-        <div className="flex-grow p-4 sm:p-8 overflow-y-auto">
+    <SidebarProvider style={sidebarStyle as React.CSSProperties}>
+      <div className="flex h-screen w-full">
+        <AppSidebar activeTab={activeTab} onTabChange={handleTabChange} />
+        <div className="flex flex-col flex-1">
+          <header className="flex items-center justify-between p-2 border-b">
+            <SidebarTrigger data-testid="button-sidebar-toggle" />
+            <AppHeader onExportPDF={handleExportPDF} />
+          </header>
+          <main className="flex-1 overflow-auto p-4 sm:p-8">
           {/* Dashboard Tab */}
           {activeTab === "dashboard" && (
             <Dashboard
@@ -646,9 +654,10 @@ function FoodCostManager() {
           {activeTab === "sales-detail" && (
             <SalesChart dishes={dishes} />
           )}
+          </main>
         </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
 
