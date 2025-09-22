@@ -225,14 +225,14 @@ export function FloatingAIBot() {
             </div>
 
             {/* Input domanda */}
-            <div className="flex gap-2">
-              <Input
+            <div className="flex gap-2 relative z-10">
+              <input
+                type="text"
                 placeholder="Fai una domanda..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleAnalyze()}
-                disabled={false}
-                className="text-xs h-8 bg-background border-input"
+                className="flex-1 px-3 py-2 text-xs h-8 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 data-testid="input-ai-bot-query"
               />
               <Button 
