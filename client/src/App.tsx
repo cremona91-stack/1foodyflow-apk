@@ -77,15 +77,7 @@ function FoodCostManager() {
   
   // Handle tab changes with navigation for special tabs
   const handleTabChange = (tabId: string) => {
-    if (tabId === "recipes") {
-      navigate("/ricette");
-    } else if (tabId === "suppliers") {
-      navigate("/fornitori");
-    } else if (tabId === "profit-loss") {
-      navigate("/pl");
-    } else {
-      setActiveTab(tabId);
-    }
+    setActiveTab(tabId);
   };
   
   // Edit state - keep as local state
@@ -557,6 +549,11 @@ function FoodCostManager() {
             <Recipes />
           )}
 
+          {/* Suppliers Tab */}
+          {activeTab === "suppliers" && (
+            <Suppliers />
+          )}
+
           {/* Inventory Tab */}
           {activeTab === "inventory" && (
             <div className="md:flex md:gap-6 space-y-6 md:space-y-0">
@@ -669,14 +666,9 @@ function Router() {
       {isLoading || !isAuthenticated ? (
         <Route path="/" component={Landing} />
       ) : (
-        <>
-          <Route path="/" component={FoodCostManager} />
-          <Route path="/pl" component={PL} />
-          <Route path="/ricette" component={Recipes} />
-          <Route path="/fornitori" component={Suppliers} />
-        </>
+        <Route path="/" component={FoodCostManager} />
       )}
-      <Route component={FoodCostManager} />
+      {isAuthenticated && <Route component={FoodCostManager} />}
     </Switch>
   );
 }
