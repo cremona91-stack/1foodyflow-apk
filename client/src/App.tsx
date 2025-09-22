@@ -39,7 +39,7 @@ import StockMovementForm from "@/components/StockMovementForm";
 import StockMovementList from "@/components/StockMovementList";
 import InventoryGrid from "@/components/InventoryGrid";
 import SalesChart from "@/components/SalesChart";
-import { AIAssistant } from "@/components/AIAssistant";
+import { FloatingAIBot } from "@/components/FloatingAIBot";
 
 // API Hooks
 import {
@@ -648,10 +648,6 @@ function FoodCostManager() {
           )}
 
 
-          {/* AI Assistant Tab */}
-          {activeTab === "ai-assistant" && (
-            <AIAssistant />
-          )}
 
           {/* Sales Detail Tab */}
           {activeTab === "sales-detail" && (
@@ -660,6 +656,9 @@ function FoodCostManager() {
           </main>
         </div>
       </div>
+      
+      {/* Bot Assistente IA sempre visibile */}
+      <FloatingAIBot />
     </SidebarProvider>
   );
 }

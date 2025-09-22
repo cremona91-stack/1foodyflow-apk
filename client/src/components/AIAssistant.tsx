@@ -43,7 +43,7 @@ export function AIAssistant() {
 
     setIsLoading(true);
     try {
-      const result = await apiRequest<AIResponse>("/api/ai/analyze", {
+      const result = await apiRequest("/api/ai/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query }),
@@ -71,7 +71,7 @@ export function AIAssistant() {
   const handleFoodCostOptimization = async () => {
     setIsLoading(true);
     try {
-      const result = await apiRequest<AIResponse>("/api/ai/food-cost-optimization", {
+      const result = await apiRequest("/api/ai/food-cost-optimization", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -99,7 +99,7 @@ export function AIAssistant() {
   const handleMenuSuggestions = async () => {
     setIsLoading(true);
     try {
-      const result = await apiRequest<AIResponse>("/api/ai/menu-suggestions", {
+      const result = await apiRequest("/api/ai/menu-suggestions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ marketTrends }),

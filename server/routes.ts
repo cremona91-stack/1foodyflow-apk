@@ -1102,7 +1102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storage.getDishes(),
         storage.getWaste(),
         storage.getOrders(),
-        storage.getBudgetEntries(2026, 1) // Anno e mese correnti
+        storage.getBudgetEntries() // Anno e mese correnti
       ]);
 
       const restaurantData = {
@@ -1142,7 +1142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalProducts: products.length,
         totalDishes: dishes.length,
         totalWaste: waste.length,
-        averageProductPrice: products.reduce((sum, p) => sum + p.averagePrice, 0) / products.length || 0,
+        averageProductPrice: products.reduce((sum, p) => sum + (p.currentPrice || 0), 0) / products.length || 0,
         products: products.slice(0, 5),
         dishes: dishes.slice(0, 5),
         waste: waste.slice(0, 3)
