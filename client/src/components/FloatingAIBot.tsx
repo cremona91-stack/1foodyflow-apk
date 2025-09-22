@@ -114,11 +114,11 @@ export function FloatingAIBot() {
   return (
     <div className="fixed bottom-6 right-6 z-50">
       <Card 
-        className={`w-80 shadow-2xl border-primary/20 transition-all duration-300 ${
+        className={`w-80 shadow-2xl border-primary/20 transition-all duration-300 flex flex-col ${
           isMinimized ? 'h-14' : 'h-96'
         }`}
       >
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-3 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Bot className="h-5 w-5 text-primary" />
@@ -153,7 +153,7 @@ export function FloatingAIBot() {
         </CardHeader>
 
         {!isMinimized && (
-          <CardContent className="flex flex-col h-full">
+          <CardContent className="flex-1 flex flex-col">
             {/* Bottoni rapidi */}
             <div className="flex gap-1 mb-3">
               <Button
@@ -229,10 +229,7 @@ export function FloatingAIBot() {
               <Input
                 placeholder="Fai una domanda..."
                 value={query}
-                onChange={(e) => {
-                  console.log("Input change:", e.target.value);
-                  setQuery(e.target.value);
-                }}
+                onChange={(e) => setQuery(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleAnalyze()}
                 disabled={false}
                 className="text-xs h-8 bg-background border-input"
