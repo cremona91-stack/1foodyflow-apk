@@ -5,6 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, DollarSign, AlertTriangle, Users, Info } from "lucide-react";
+import { useSales } from "@/hooks/useApi";
+import { useMemo } from "react";
 
 interface SalesSummaryProps {
   dishes: Dish[];
@@ -26,10 +28,20 @@ export default function SalesSummary({
   showSalesDetails = true 
 }: SalesSummaryProps) {
   
-  // Calculate totals - Sales are now tracked separately in the Sales section
-  const totalCostOfSales = 0; // TODO: Calculate from sales table
-  const totalGrossSales = 0; // TODO: Calculate from sales table
-  const totalNetSales = 0; // TODO: Calculate from sales table
+  // Fetch sales data
+  const { data: salesData = [] } = useSales();
+  
+  // Calculate totals from sales data
+  const { totalCostOfSales, totalGrossSales, totalNetSales } = useMemo(() => {
+    const totalCost = salesData.reduce((sum, sale) => sum + sale.totalCost, 0);
+    const totalRevenue = salesData.reduce((sum, sale) => sum + sale.totalRevenue, 0);
+    // Gross sales = total revenue, Net sales = total revenue (already net in our system)
+    return {
+      totalCostOfSales: totalCost,
+      totalGrossSales: totalRevenue,
+      totalNetSales: totalRevenue
+    };
+  }, [salesData]);
   
   const totalWasteCost = waste.reduce((sum, w) => sum + w.cost, 0);
   const totalPersonalMealsCost = personalMeals.reduce((sum, pm) => sum + pm.cost, 0);
