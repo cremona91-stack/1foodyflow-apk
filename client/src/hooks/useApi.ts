@@ -760,6 +760,7 @@ export function useCreateSale() {
     mutationFn: api.sales.createSale,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/metrics"] });
       toast({
         title: "Successo",
         description: "Vendita creata con successo",
@@ -784,6 +785,7 @@ export function useUpdateSale() {
       api.sales.updateSale(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/metrics"] });
       toast({
         title: "Successo",
         description: "Vendita aggiornata con successo",
@@ -807,6 +809,7 @@ export function useDeleteSale() {
     mutationFn: api.sales.deleteSale,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/metrics"] });
       toast({
         title: "Successo",
         description: "Vendita eliminata con successo",
