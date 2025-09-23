@@ -26,6 +26,7 @@ import Budget from "@/components/Budget";
 import PL from "@/pages/PL";
 import Recipes from "@/pages/Recipes";
 import Suppliers from "@/pages/Suppliers";
+import Sales from "@/pages/Sales";
 import { Users, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProductForm from "@/components/ProductForm";
@@ -662,7 +663,7 @@ function FoodCostManager() {
 
           {/* Sales Detail Tab */}
           {activeTab === "sales-detail" && (
-            <SalesChart dishes={dishes} />
+            <Sales />
           )}
           </main>
         </div>
