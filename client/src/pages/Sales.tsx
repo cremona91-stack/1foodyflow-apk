@@ -131,7 +131,7 @@ export default function Sales() {
       unitCost: sale.unitCost,
       unitRevenue: sale.unitRevenue,
       saleDate: sale.saleDate,
-      notes: sale.notes || "",
+      notes: sale.notes || undefined,
     });
   };
 
