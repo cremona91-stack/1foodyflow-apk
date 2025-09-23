@@ -51,6 +51,7 @@ import {
   useOrders,
   useStockMovements,
   useInventorySnapshots,
+  useSales,
   useCreateProduct,
   useUpdateProduct,
   useDeleteProduct,
@@ -66,10 +67,12 @@ import {
   useCreateInventorySnapshot,
   useUpdateInventorySnapshot,
   useDeleteInventorySnapshot,
+  useCreateSale,
+  useDeleteSale,
 } from "@/hooks/useApi";
 
 // Types
-import type { Product, Dish, Order, StockMovement, InventorySnapshot, InsertProduct, InsertWaste, InsertPersonalMeal, InsertOrder, InsertStockMovement, InsertInventorySnapshot } from "@shared/schema";
+import type { Product, Dish, Order, StockMovement, InventorySnapshot, InsertProduct, InsertWaste, InsertPersonalMeal, InsertOrder, InsertStockMovement, InsertInventorySnapshot, InsertSales } from "@shared/schema";
 
 function FoodCostManager() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -95,6 +98,7 @@ function FoodCostManager() {
   const { data: orders = [], isLoading: isLoadingOrders } = useOrders();
   const { data: stockMovements = [], isLoading: isLoadingStockMovements } = useStockMovements();
   const { data: inventorySnapshots = [], isLoading: isLoadingInventorySnapshots } = useInventorySnapshots();
+  const { data: salesData = [] } = useSales();
   const { data: editableInventory = [] } = useQuery({
     queryKey: ["/api/editable-inventory"],
     enabled: products.length > 0
@@ -106,6 +110,10 @@ function FoodCostManager() {
   const deleteProductMutation = useDeleteProduct();
   
   const updateDishMutation = useUpdateDish();
+  
+  // Sales mutations
+  const createSaleMutation = useCreateSale();
+  const deleteSaleMutation = useDeleteSale();
   
   const createWasteMutation = useCreateWaste();
   const createPersonalMealMutation = useCreatePersonalMeal();
@@ -160,26 +168,29 @@ function FoodCostManager() {
 
   const handleUpdateSold = (dishId: string, sold: number) => {
     const dish = dishes.find(d => d.id === dishId);
-    if (!dish) return;
+    if (!dish || sold <= 0) return;
     
-    updateDishMutation.mutate({
-      id: dishId,
-      data: { sold }
-    });
-    console.log("Dish sold update submitted:", dishId, sold);
+    // Create a sales record instead of updating dish.sold
+    const saleData: InsertSales = {
+      dishId: dishId,
+      dishName: dish.name,
+      quantitySold: sold,
+      unitCost: dish.totalCost,
+      unitRevenue: dish.netPrice,
+      saleDate: new Date().toISOString().split('T')[0], // Today's date
+      notes: `Vendita registrata tramite dashboard`
+    };
+    
+    createSaleMutation.mutate(saleData);
+    console.log("Sale record created:", saleData);
   };
 
   const handleClearSales = () => {
-    // Update all dishes to have sold = 0
-    dishes.forEach(dish => {
-      if (dish.sold > 0) {
-        updateDishMutation.mutate({
-          id: dish.id,
-          data: { sold: 0 }
-        });
-      }
+    // Delete all sales records from the sales table
+    salesData.forEach(sale => {
+      deleteSaleMutation.mutate(sale.id);
     });
-    console.log("Clear all sales submitted");
+    console.log("All sales records cleared");
   };
 
   // Waste and Personal Meal handlers

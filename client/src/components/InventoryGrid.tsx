@@ -23,6 +23,7 @@ import type {
   UpdateEditableInventory,
   UpsertEditableInventory 
 } from "@shared/schema";
+import { useSales } from "@/hooks/useApi";
 
 interface InventoryGridProps {
   products: Product[];
@@ -58,6 +59,9 @@ export default function InventoryGrid({
   personalMeals,
   onViewMovements
 }: InventoryGridProps) {
+  // Fetch sales data for calculating dish sales out
+  const { data: salesData = [] } = useSales();
+  
   const { toast } = useToast();
   const [editingRows, setEditingRows] = useState<Set<string>>(new Set());
   const [editValues, setEditValues] = useState<Record<string, { initialQuantity: string; finalQuantity: string }>>({});
@@ -114,15 +118,17 @@ export default function InventoryGrid({
       return sum + (ingredient.quantity * meal.quantity);
     }, 0);
 
-    // Calculate dish sales OUT (sold dishes * ingredient quantities)
-    const dishSalesOut = dishes.reduce((sum, dish) => {
-      if (!dish.sold || dish.sold <= 0) return sum;
+    // Calculate dish sales OUT (sold dishes * ingredient quantities) from sales table
+    const dishSalesOut = salesData.reduce((sum, sale) => {
+      // Find the dish for this sale
+      const dish = dishes.find(d => d.id === sale.dishId);
+      if (!dish) return sum;
       
       // Find ingredient quantity of this product in the dish
       const ingredient = dish.ingredients?.find((ing: any) => ing.productId === productId);
       if (!ingredient) return sum;
       
-      return sum + (ingredient.quantity * dish.sold);
+      return sum + (ingredient.quantity * sale.quantitySold);
     }, 0);
 
     return salesOut + wasteOut + personalMealsOut + dishSalesOut;

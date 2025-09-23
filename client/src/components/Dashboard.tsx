@@ -16,7 +16,8 @@ import {
 import { useQuery } from "@tanstack/react-query";
 
 // Types for dashboard data
-import type { Product, Dish, Order, StockMovement, EconomicParameters, BudgetEntry } from "@shared/schema";
+import type { Product, Dish, Order, StockMovement, EconomicParameters, BudgetEntry, Sales } from "@shared/schema";
+import { useSales } from "@/hooks/useApi";
 
 interface DashboardProps {
   products: Product[];
@@ -200,6 +201,9 @@ export function Dashboard({
   personalMeals, 
   onNavigateToSection 
 }: DashboardProps) {
+  // Fetch sales data
+  const { data: salesData = [] } = useSales();
+  
   // Current period for budget data (using current month and year)
   // Sync with P&L and Budget localStorage values
   const currentYear = (() => {
@@ -242,14 +246,30 @@ export function Dashboard({
     new Map(products.map(p => [p.id, p])), 
     [products]
   );
+
+  // Create sales map by dish ID for performance
+  const salesByDish = useMemo(() => {
+    const salesMap = new Map<string, { totalQuantity: number; totalRevenue: number; totalCost: number }>();
+    
+    salesData.forEach(sale => {
+      const existing = salesMap.get(sale.dishId) || { totalQuantity: 0, totalRevenue: 0, totalCost: 0 };
+      salesMap.set(sale.dishId, {
+        totalQuantity: existing.totalQuantity + sale.quantitySold,
+        totalRevenue: existing.totalRevenue + sale.totalRevenue,
+        totalCost: existing.totalCost + sale.totalCost
+      });
+    });
+    
+    return salesMap;
+  }, [salesData]);
   
   // Calculate food cost metrics using the new formula: (totale iniziale + totale IN - totale finale)
   const { totalFoodSales, totalFoodCost, foodCostPercentage, theoreticalFoodCostPercentage, realVsTheoreticalDiff } = useMemo(() => {
-    // Use NET REVENUE (netPrice) instead of gross revenue (sellingPrice) for Food Cost calculation
-    const sales = dishes.reduce((sum, dish) => sum + (dish.netPrice * dish.sold), 0);
+    // Use sales data from the new sales table instead of dish.sold
+    const sales = Array.from(salesByDish.values()).reduce((sum, dishSales) => sum + dishSales.totalRevenue, 0);
     
     // Calculate THEORETICAL food cost (based on recipes)
-    const totalCostOfSales = dishes.reduce((sum, dish) => sum + (dish.totalCost * dish.sold), 0);
+    const totalCostOfSales = Array.from(salesByDish.values()).reduce((sum, dishSales) => sum + dishSales.totalCost, 0);
     const theoreticalPercentage = sales > 0 ? (totalCostOfSales / sales) * 100 : 0;
     
     // Calculate REAL food cost according to formula: (totale iniziale magazzino + totale IN magazzino - totale finale magazzino)
