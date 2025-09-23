@@ -363,7 +363,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/sales", async (req, res) => {
     try {
       const validatedData = insertSalesSchema.parse(req.body);
-      const sale = await storage.createSale(validatedData);
+      
+      // Calculate totalCost and totalRevenue automatically
+      const saleData = {
+        ...validatedData,
+        totalCost: validatedData.unitCost * validatedData.quantitySold,
+        totalRevenue: validatedData.unitRevenue * validatedData.quantitySold,
+      };
+      
+      const sale = await storage.createSale(saleData);
       res.status(201).json(sale);
     } catch (error) {
       console.error("Error creating sale:", error);
@@ -377,7 +385,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/sales/:id", async (req, res) => {
     try {
       const validatedData = updateSalesSchema.parse(req.body);
-      const sale = await storage.updateSale(req.params.id, validatedData);
+      
+      // Calculate totalCost and totalRevenue if needed data is provided
+      const updateData = { ...validatedData };
+      if (validatedData.unitCost !== undefined && validatedData.quantitySold !== undefined) {
+        updateData.totalCost = validatedData.unitCost * validatedData.quantitySold;
+      }
+      if (validatedData.unitRevenue !== undefined && validatedData.quantitySold !== undefined) {
+        updateData.totalRevenue = validatedData.unitRevenue * validatedData.quantitySold;
+      }
+      
+      const sale = await storage.updateSale(req.params.id, updateData);
       if (!sale) {
         return res.status(404).json({ error: "Sale not found" });
       }
