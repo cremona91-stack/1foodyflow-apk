@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { insertProductSchema, type InsertProduct, type Product } from "@shared/schema";
+import { useSuppliers } from "@/hooks/useApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,13 +20,20 @@ interface ProductFormProps {
 
 export default function ProductForm({ onSubmit, editProduct, onCancel }: ProductFormProps) {
   const isEditing = !!editProduct;
+  const { data: suppliers = [], isLoading: suppliersLoading } = useSuppliers();
+
+  // Create modified schema with required supplier by ID
+  const productFormSchema = insertProductSchema.extend({
+    supplierId: z.string().min(1, "Devi selezionare un fornitore")
+  });
 
   const form = useForm<InsertProduct>({
-    resolver: zodResolver(insertProductSchema),
+    resolver: zodResolver(productFormSchema),
     defaultValues: {
       code: "",
       name: "",
       supplier: "",
+      supplierId: "",
       supplierEmail: "",
       waste: 0,
       notes: "",
@@ -41,6 +50,7 @@ export default function ProductForm({ onSubmit, editProduct, onCancel }: Product
         code: editProduct.code,
         name: editProduct.name,
         supplier: editProduct.supplier || "",
+        supplierId: editProduct.supplierId || "",
         supplierEmail: editProduct.supplierEmail || "",
         waste: editProduct.waste,
         notes: editProduct.notes || "",
@@ -53,6 +63,7 @@ export default function ProductForm({ onSubmit, editProduct, onCancel }: Product
         code: "",
         name: "",
         supplier: "",
+        supplierId: "",
         supplierEmail: "",
         waste: 0,
         notes: "",
@@ -128,22 +139,59 @@ export default function ProductForm({ onSubmit, editProduct, onCancel }: Product
 
             <FormField
               control={form.control}
-              name="supplier"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Fornitore</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={field.value || ""}
-                      placeholder="Es. Grano & Co."
-                      className="bg-yellow-100 dark:bg-yellow-900/30"
-                      data-testid="input-supplier"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              name="supplierId"
+              render={({ field }) => {
+                // Find supplier for display purposes
+                const selectedSupplier = suppliers.find(s => s.id === field.value);
+                return (
+                  <FormItem>
+                    <FormLabel>Fornitore *</FormLabel>
+                    <Select 
+                      value={field.value || ""} 
+                      onValueChange={(supplierId) => {
+                        field.onChange(supplierId);
+                        // Auto-populate supplier email and name when supplier is selected
+                        const selectedSupplier = suppliers.find(s => s.id === supplierId);
+                        if (selectedSupplier) {
+                          form.setValue("supplier", selectedSupplier.name);
+                          if (selectedSupplier.email) {
+                            form.setValue("supplierEmail", selectedSupplier.email);
+                          }
+                        }
+                      }}
+                      disabled={suppliersLoading}
+                    >
+                      <FormControl>
+                        <SelectTrigger 
+                          className="bg-yellow-100 dark:bg-yellow-900/30"
+                          data-testid="select-supplier"
+                        >
+                          <SelectValue placeholder={suppliersLoading ? "Caricamento..." : "Seleziona un fornitore"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {suppliers.length === 0 ? (
+                          <SelectItem value="" disabled>
+                            Nessun fornitore disponibile
+                          </SelectItem>
+                        ) : (
+                          suppliers.map((supplier) => (
+                            <SelectItem key={supplier.id} value={supplier.id}>
+                              {supplier.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    {suppliers.length === 0 && (
+                      <p className="text-sm text-orange-600 dark:text-orange-400">
+                        Aggiungi fornitori nella sezione Fornitori prima di creare prodotti.
+                      </p>
+                    )}
+                  </FormItem>
+                );
+              }}
             />
 
             <FormField
