@@ -2,6 +2,7 @@ import {
   type Product, 
   type Recipe, 
   type Dish, 
+  type Sales,
   type Waste, 
   type PersonalMeal,
   type Order,
@@ -15,6 +16,7 @@ import {
   type InsertProduct,
   type InsertRecipe,
   type InsertDish,
+  type InsertSales,
   type InsertWaste,
   type InsertPersonalMeal,
   type InsertOrder,
@@ -29,6 +31,7 @@ import {
   type UpdateSupplier,
   type UpdateRecipe,
   type UpdateDish,
+  type UpdateSales,
   type UpdateOrder,
   type UpdateStockMovement,
   type UpdateInventorySnapshot,
@@ -42,6 +45,7 @@ import {
   suppliers,
   recipes,
   dishes,
+  sales,
   waste,
   personalMeals,
   orders,
@@ -99,6 +103,14 @@ export interface IStorage {
   createDish(dish: InsertDish): Promise<Dish>;
   updateDish(id: string, dish: UpdateDish): Promise<Dish | undefined>;
   deleteDish(id: string): Promise<boolean>;
+
+  // Sales (Vendite)
+  getSales(): Promise<Sales[]>;
+  getSale(id: string): Promise<Sales | undefined>;
+  getSalesByDish(dishId: string): Promise<Sales[]>;
+  createSale(sale: InsertSales): Promise<Sales>;
+  updateSale(id: string, sale: UpdateSales): Promise<Sales | undefined>;
+  deleteSale(id: string): Promise<boolean>;
 
   // Waste
   getWaste(): Promise<Waste[]>;
@@ -326,8 +338,7 @@ export class DatabaseStorage implements IStorage {
 
   async createDish(insertDish: InsertDish): Promise<Dish> {
     const result = await db.insert(dishes).values({
-      ...insertDish,
-      sold: 0
+      ...insertDish
     }).returning();
     return result[0];
   }
@@ -341,7 +352,6 @@ export class DatabaseStorage implements IStorage {
     if (updates.sellingPrice !== undefined) sanitizedUpdates.sellingPrice = updates.sellingPrice;
     if (updates.netPrice !== undefined) sanitizedUpdates.netPrice = updates.netPrice;
     if (updates.foodCost !== undefined) sanitizedUpdates.foodCost = updates.foodCost;
-    if (updates.sold !== undefined) sanitizedUpdates.sold = updates.sold;
     
     // Always update the updatedAt timestamp
     sanitizedUpdates.updatedAt = new Date();
@@ -355,6 +365,66 @@ export class DatabaseStorage implements IStorage {
 
   async deleteDish(id: string): Promise<boolean> {
     const result = await db.delete(dishes).where(eq(dishes.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Sales (Vendite)
+  async getSales(): Promise<Sales[]> {
+    return await db.select().from(sales);
+  }
+
+  async getSale(id: string): Promise<Sales | undefined> {
+    const result = await db.select().from(sales).where(eq(sales.id, id));
+    return result[0];
+  }
+
+  async getSalesByDish(dishId: string): Promise<Sales[]> {
+    return await db.select().from(sales).where(eq(sales.dishId, dishId));
+  }
+
+  async createSale(insertSale: InsertSales): Promise<Sales> {
+    const result = await db.insert(sales).values({
+      ...insertSale,
+      totalCost: insertSale.quantitySold * insertSale.unitCost,
+      totalRevenue: insertSale.quantitySold * insertSale.unitRevenue,
+      notes: insertSale.notes || null,
+    }).returning();
+    return result[0];
+  }
+
+  async updateSale(id: string, updates: UpdateSales): Promise<Sales | undefined> {
+    // Filter out undefined values and ensure only safe fields are updated
+    const sanitizedUpdates: any = {};
+    if (updates.quantitySold !== undefined) sanitizedUpdates.quantitySold = updates.quantitySold;
+    if (updates.unitCost !== undefined) sanitizedUpdates.unitCost = updates.unitCost;
+    if (updates.unitRevenue !== undefined) sanitizedUpdates.unitRevenue = updates.unitRevenue;
+    if (updates.saleDate !== undefined) sanitizedUpdates.saleDate = updates.saleDate;
+    if (updates.notes !== undefined) sanitizedUpdates.notes = updates.notes;
+    
+    // Recalculate totals if quantity or unit prices change
+    if (updates.quantitySold !== undefined || updates.unitCost !== undefined || updates.unitRevenue !== undefined) {
+      const currentSale = await this.getSale(id);
+      if (currentSale) {
+        const quantity = updates.quantitySold ?? currentSale.quantitySold;
+        const unitCost = updates.unitCost ?? currentSale.unitCost;
+        const unitRevenue = updates.unitRevenue ?? currentSale.unitRevenue;
+        sanitizedUpdates.totalCost = quantity * unitCost;
+        sanitizedUpdates.totalRevenue = quantity * unitRevenue;
+      }
+    }
+    
+    // Always update the updatedAt timestamp
+    sanitizedUpdates.updatedAt = new Date();
+    
+    const result = await db.update(sales)
+      .set(sanitizedUpdates)
+      .where(eq(sales.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteSale(id: string): Promise<boolean> {
+    const result = await db.delete(sales).where(eq(sales.id, id));
     return (result.rowCount || 0) > 0;
   }
 
