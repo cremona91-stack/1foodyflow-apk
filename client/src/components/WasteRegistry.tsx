@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CalendarDays, Trash2, Users, Search, Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CalendarDays, Trash2, Users, Search, Filter, X } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { it } from "date-fns/locale";
+import { useDeleteWaste, useDeletePersonalMeal } from "@/hooks/useApi";
 
 interface WasteRegistryProps {
   waste: Waste[];
@@ -21,6 +23,18 @@ export default function WasteRegistry({ waste, personalMeals, products, dishes }
   const [minCost, setMinCost] = useState("");
   const [maxCost, setMaxCost] = useState("");
   const [productFilter, setProductFilter] = useState("");
+  
+  // Delete mutations
+  const deleteWasteMutation = useDeleteWaste();
+  const deletePersonalMealMutation = useDeletePersonalMeal();
+  
+  const handleDeleteItem = (item: any) => {
+    if (item.type === "waste") {
+      deleteWasteMutation.mutate(item.id);
+    } else {
+      deletePersonalMealMutation.mutate(item.id);
+    }
+  };
 
   // Combine waste and personal meals into a single list with type distinction
   const combinedItems = useMemo(() => {
@@ -248,10 +262,21 @@ export default function WasteRegistry({ waste, personalMeals, products, dishes }
                         </div>
                       </div>
                       
-                      <div className="text-right">
-                        <div className="text-lg font-bold font-mono text-destructive">
-                          €{item.cost.toFixed(2)}
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <div className="text-lg font-bold font-mono text-destructive">
+                            €{item.cost.toFixed(2)}
+                          </div>
                         </div>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleDeleteItem(item)}
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          data-testid={`button-delete-${item.type}-${item.id}`}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   </Card>

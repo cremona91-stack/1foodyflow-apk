@@ -32,7 +32,7 @@ export default function AppHeader({ onExportPDF }: AppHeaderProps) {
 
   return (
     <header className="bg-card border-b border-card-border p-3 md:p-6">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center gap-2">
         <Button 
           onClick={handleExportPDF}
           variant="destructive"
@@ -45,11 +45,11 @@ export default function AppHeader({ onExportPDF }: AppHeaderProps) {
           <span className="hidden sm:inline">Esporta PDF</span>
         </Button>
         
-        <div className="flex flex-col items-center text-center min-w-0 flex-1">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground truncate">
+        <div className="flex flex-col items-center text-center flex-1 mx-4 md:mx-8">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
             FoodyFlow
           </h1>
-          <p className="text-xs sm:text-sm italic text-muted-foreground mt-1 hidden sm:block">
+          <p className="text-xs sm:text-sm md:text-base italic text-muted-foreground mt-1 hidden sm:block">
             Evolve Your Eatery
           </p>
         </div>
