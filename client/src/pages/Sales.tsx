@@ -159,23 +159,14 @@ export default function Sales() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header and Summary */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <ShoppingCart className="h-8 w-8 text-primary" />
-            Vendite
-          </h1>
-          <p className="text-muted-foreground">
-            Gestisci le vendite dei piatti e monitora le performance
-          </p>
-        </div>
-        <Button 
-          onClick={() => setShowForm(true)}
-          data-testid="button-add-sale"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Nuova Vendita
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <ShoppingCart className="h-8 w-8 text-primary" />
+          Vendite
+        </h1>
+        <p className="text-muted-foreground">
+          Gestisci le vendite dei piatti e monitora le performance
+        </p>
       </div>
 
       {/* Smart Quick Sales Grid */}
@@ -208,54 +199,70 @@ export default function Sales() {
               Inserimento Rapido Vendite
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Seleziona la quantità venduta per ogni piatto e clicca "Salva" per registrare la vendita
+              Inserisci la quantità venduta per ogni piatto
             </p>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {dishes.map((dish) => (
-                <div key={dish.id} className="p-4 rounded-md bg-muted/50 hover-elevate">
-                  <div className="space-y-3">
-                    <div>
-                      <h3 className="font-semibold text-lg">{dish.name}</h3>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>Costo: €{dish.totalCost.toFixed(2)}</span>
-                        <span>Ricavo: €{dish.netPrice.toFixed(2)}</span>
-                      </div>
+            <div className="space-y-2">
+              {dishes.map((dish) => {
+                const profit = dish.netPrice - dish.totalCost;
+                const margin = dish.netPrice > 0 ? (profit / dish.netPrice * 100) : 0;
+                
+                return (
+                  <div key={dish.id} className="flex items-center gap-3 p-2 rounded-md bg-muted/30 hover-elevate text-sm">
+                    {/* Nome Piatto */}
+                    <div className="flex-1 font-medium truncate min-w-0">
+                      {dish.name}
                     </div>
+                    
+                    {/* Costo */}
+                    <div className="w-16 text-right font-mono text-muted-foreground">
+                      €{dish.totalCost.toFixed(1)}
+                    </div>
+                    
+                    {/* Ricavo */}
+                    <div className="w-16 text-right font-mono">
+                      €{dish.netPrice.toFixed(1)}
+                    </div>
+                    
+                    {/* Profitto */}
+                    <div className={`w-16 text-right font-mono ${
+                      profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'
+                    }`}>
+                      €{profit.toFixed(1)}
+                    </div>
+                    
+                    {/* Margine */}
+                    <div className="w-12 text-right font-mono text-xs">
+                      {margin.toFixed(0)}%
+                    </div>
+                    
+                    {/* Campo Quantità Editabile */}
                     <div className="flex items-center gap-2">
-                      <Label htmlFor={`quantity-${dish.id}`} className="text-sm font-medium">
-                        Qtà:
-                      </Label>
                       <Input
-                        id={`quantity-${dish.id}`}
                         type="number"
-                        min="1"
+                        min="0"
                         max="999"
                         value={quantities[dish.id] || 0}
                         onChange={(e) => handleQuantityChange(dish.id, parseInt(e.target.value) || 0)}
-                        className="w-20"
+                        className="w-16 h-8 text-center"
                         data-testid={`input-quantity-${dish.id}`}
                         placeholder="0"
                         disabled={savingDishId === dish.id}
+                        onBlur={() => {
+                          const qty = quantities[dish.id];
+                          if (qty && qty > 0) {
+                            handleQuickSave(dish, qty);
+                          }
+                        }}
                       />
-                      <Button
-                        onClick={() => handleQuickSave(dish, quantities[dish.id] || 0)}
-                        disabled={!quantities[dish.id] || quantities[dish.id] <= 0 || savingDishId === dish.id}
-                        size="sm"
-                        data-testid={`button-save-${dish.id}`}
-                      >
-                        {savingDishId === dish.id ? (
-                          <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-1"></div>
-                        ) : (
-                          <Save className="h-4 w-4 mr-1" />
-                        )}
-                        {savingDishId === dish.id ? "Salvando..." : "Salva"}
-                      </Button>
+                      {savingDishId === dish.id && (
+                        <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
+                      )}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
