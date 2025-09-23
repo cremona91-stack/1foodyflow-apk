@@ -110,7 +110,13 @@ export default function Sales() {
 
   const handleUpdateSale = (data: InsertSales) => {
     if (editingSale) {
-      updateSaleMutation.mutate({ id: editingSale.id, data });
+      updateSaleMutation.mutate({ 
+        id: editingSale.id, 
+        data: {
+          ...data,
+          notes: data.notes || undefined
+        }
+      });
       setEditingSale(undefined);
       setShowForm(false);
       form.reset();
