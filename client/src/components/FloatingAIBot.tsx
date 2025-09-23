@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,12 @@ export function FloatingAIBot() {
   const [response, setResponse] = useState<string>("");
   const [optimization, setOptimization] = useState<any>(null);
   const { toast } = useToast();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom quando ci sono nuovi messaggi
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [response, optimization, isLoading]);
 
   const handleAnalyze = async () => {
     if (!query.trim()) {
@@ -114,8 +120,8 @@ export function FloatingAIBot() {
   return (
     <div className="fixed bottom-6 right-6 z-50">
       <Card 
-        className={`w-80 shadow-2xl border-primary/20 transition-all duration-300 flex flex-col ${
-          isMinimized ? 'h-14' : 'h-96'
+        className={`w-[22rem] md:w-[28rem] lg:w-[32rem] max-w-[92vw] shadow-2xl border-primary/20 transition-all duration-300 flex flex-col ${
+          isMinimized ? 'h-14' : 'h-[28rem] md:h-[34rem] max-h-[80vh]'
         }`}
       >
         <CardHeader className="pb-3 shrink-0">
@@ -153,7 +159,7 @@ export function FloatingAIBot() {
         </CardHeader>
 
         {!isMinimized && (
-          <CardContent className="flex-1 flex flex-col">
+          <CardContent className="flex-1 flex flex-col min-h-0">
             {/* Bottoni rapidi */}
             <div className="flex gap-1 mb-3">
               <Button
@@ -184,10 +190,21 @@ export function FloatingAIBot() {
             </div>
 
             {/* Area messaggi */}
-            <div className="flex-1 overflow-y-auto mb-3 text-xs">
+            <div className="flex-1 overflow-y-auto overscroll-contain scroll-smooth mb-3 text-xs min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
               {response && (
                 <div className="bg-muted/50 p-2 rounded text-xs mb-2">
                   <div className="whitespace-pre-wrap">{response}</div>
+                </div>
+              )}
+              
+              {isLoading && (
+                <div className="bg-muted/30 p-2 rounded text-xs mb-2 flex items-center gap-2">
+                  <div className="flex gap-1">
+                    <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                  <span className="text-muted-foreground">L'IA sta analizzando...</span>
                 </div>
               )}
               
@@ -222,6 +239,7 @@ export function FloatingAIBot() {
                   </div>
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Input domanda */}
@@ -242,7 +260,11 @@ export function FloatingAIBot() {
                 className="h-8 w-8"
                 data-testid="button-send-ai-bot"
               >
-                {isLoading ? "..." : <Send className="h-3 w-3" />}
+                {isLoading ? (
+                  <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <Send className="h-3 w-3" />
+                )}
               </Button>
             </div>
           </CardContent>
