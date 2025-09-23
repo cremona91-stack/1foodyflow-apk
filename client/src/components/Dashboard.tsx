@@ -16,7 +16,7 @@ import {
   Calendar
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 
 // Types for dashboard data
 import type { Product, Dish, Order, StockMovement, EconomicParameters, BudgetEntry, Sales } from "@shared/schema";
@@ -336,12 +336,13 @@ export function Dashboard({
 
   // Chart data for sales pie chart
   const dishSalesChartData = useMemo(() => {
-    const chartData = [];
+    const chartData: Array<{name: string; revenue: number; quantity: number; fullName: string}> = [];
     salesByDish.forEach((salesInfo, dishId) => {
       const dish = dishes.find(d => d.id === dishId);
       if (dish && salesInfo.totalRevenue > 0) {
         chartData.push({
           name: dish.name.length > 15 ? dish.name.substring(0, 15) + '...' : dish.name,
+          fullName: dish.name,
           revenue: salesInfo.totalRevenue,
           quantity: salesInfo.totalQuantity
         });
@@ -351,49 +352,52 @@ export function Dashboard({
     return chartData.sort((a, b) => b.revenue - a.revenue).slice(0, 8);
   }, [salesByDish, dishes]);
 
-  // Weekly revenue comparison
-  const weeklyRevenueData = useMemo(() => {
+  // Daily revenue comparison data for bar chart
+  const weeklyComparisonData = useMemo(() => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
     // Get current week (Monday to Sunday)
     const currentWeekStart = new Date(today);
     currentWeekStart.setDate(today.getDate() - today.getDay() + 1); // Monday
-    const currentWeekEnd = new Date(currentWeekStart);
-    currentWeekEnd.setDate(currentWeekStart.getDate() + 6); // Sunday
     
-    // Get previous week  
+    // Get previous week start
     const previousWeekStart = new Date(currentWeekStart);
     previousWeekStart.setDate(currentWeekStart.getDate() - 7);
-    const previousWeekEnd = new Date(currentWeekEnd);
-    previousWeekEnd.setDate(currentWeekEnd.getDate() - 7);
     
-    // Calculate revenues for each week
-    let currentWeekRevenue = 0;
-    let previousWeekRevenue = 0;
+    const days = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+    const chartData: Array<{day: string; currentWeek: number; previousWeek: number}> = [];
     
-    salesData.forEach(sale => {
-      const saleDate = new Date(sale.saleDate);
-      if (saleDate >= currentWeekStart && saleDate <= currentWeekEnd) {
-        currentWeekRevenue += sale.totalRevenue;
-      } else if (saleDate >= previousWeekStart && saleDate <= previousWeekEnd) {
-        previousWeekRevenue += sale.totalRevenue;
-      }
-    });
+    // Initialize data for each day
+    for (let i = 0; i < 7; i++) {
+      const currentDay = new Date(currentWeekStart);
+      currentDay.setDate(currentWeekStart.getDate() + i);
+      
+      const previousDay = new Date(previousWeekStart);
+      previousDay.setDate(previousWeekStart.getDate() + i);
+      
+      let currentDayRevenue = 0;
+      let previousDayRevenue = 0;
+      
+      salesData.forEach(sale => {
+        const saleDate = new Date(sale.saleDate);
+        const saleDateString = saleDate.toDateString();
+        
+        if (saleDateString === currentDay.toDateString()) {
+          currentDayRevenue += sale.totalRevenue;
+        } else if (saleDateString === previousDay.toDateString()) {
+          previousDayRevenue += sale.totalRevenue;
+        }
+      });
+      
+      chartData.push({
+        day: days[i],
+        currentWeek: currentDayRevenue,
+        previousWeek: previousDayRevenue
+      });
+    }
     
-    const percentageChange = previousWeekRevenue > 0 
-      ? ((currentWeekRevenue - previousWeekRevenue) / previousWeekRevenue) * 100 
-      : (currentWeekRevenue > 0 ? 100 : 0);
-    
-    const formatDate = (date: Date) => date.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
-    const currentWeekDates = `${formatDate(currentWeekStart)} - ${formatDate(currentWeekEnd)}`;
-    
-    return {
-      currentWeek: currentWeekRevenue,
-      previousWeek: previousWeekRevenue, 
-      percentageChange,
-      currentWeekDates
-    };
+    return chartData;
   }, [salesData]);
 
   // Calcolo EBITDA dal budget E consuntivo (using same logic as P&L)
@@ -631,28 +635,50 @@ export function Dashboard({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
+            <div className="h-80 space-y-4">
               {dishSalesChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={dishSalesChartData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="revenue"
-                      label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {dishSalesChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value: number) => [`€${value.toFixed(1)}`, 'Ricavo']}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+                <>
+                  <div className="h-56">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={dishSalesChartData}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={70}
+                          fill="#8884d8"
+                          dataKey="revenue"
+                        >
+                          {dishSalesChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          formatter={(value: number) => [`€${value.toFixed(1)}`, 'Ricavo']}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  
+                  {/* Legend */}
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    {dishSalesChartData.map((entry, index) => {
+                      const totalRevenue = dishSalesChartData.reduce((sum, item) => sum + item.revenue, 0);
+                      const percentage = ((entry.revenue / totalRevenue) * 100).toFixed(1);
+                      return (
+                        <div key={index} className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded" 
+                            style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
+                          />
+                          <span className="truncate text-muted-foreground">
+                            {entry.fullName} ({percentage}%)
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
                   <p>Nessuna vendita da mostrare</p>
@@ -662,55 +688,70 @@ export function Dashboard({
           </CardContent>
         </Card>
 
-        {/* Weekly Revenue Badge */}
+        {/* Weekly Comparison Bar Chart */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-primary" />
-              Andamento Settimanale
+              Andamento Settimanale (Lun-Dom)
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Settimana Corrente</p>
-                  <p className="text-2xl font-bold font-mono text-primary">
-                    €{weeklyRevenueData.currentWeek.toFixed(1)}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Settimana Precedente</p>
-                  <p className="text-2xl font-bold font-mono text-muted-foreground">
-                    €{weeklyRevenueData.previousWeek.toFixed(1)}
-                  </p>
-                </div>
+            <div className="h-80 space-y-4">
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={weeklyComparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                    <XAxis 
+                      dataKey="day" 
+                      tick={{ fontSize: 12 }}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12 }}
+                      tickFormatter={(value) => `€${value.toFixed(0)}`}
+                    />
+                    <Tooltip 
+                      formatter={(value: number, name: string) => [
+                        `€${value.toFixed(1)}`, 
+                        name === 'currentWeek' ? 'Settimana Corrente' : 'Settimana Precedente'
+                      ]}
+                    />
+                    <Bar 
+                      dataKey="previousWeek" 
+                      fill="#94a3b8" 
+                      name="previousWeek"
+                      radius={[2, 2, 0, 0]}
+                    />
+                    <Bar 
+                      dataKey="currentWeek" 
+                      fill="#3b82f6" 
+                      name="currentWeek"
+                      radius={[2, 2, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
               
-              <div className="text-center p-4 rounded-lg bg-muted">
-                <div className="flex items-center justify-center gap-2">
-                  <TrendingUp className={`h-5 w-5 ${
-                    weeklyRevenueData.percentageChange >= 0 
-                      ? 'text-green-600 dark:text-green-400' 
-                      : 'text-red-600 dark:text-red-400'
-                  }`} />
-                  <span className={`text-xl font-bold ${
-                    weeklyRevenueData.percentageChange >= 0 
-                      ? 'text-green-600 dark:text-green-400' 
-                      : 'text-red-600 dark:text-red-400'
-                  }`}>
-                    {weeklyRevenueData.percentageChange >= 0 ? '+' : ''}{weeklyRevenueData.percentageChange.toFixed(1)}%
-                  </span>
+              {/* Summary */}
+              <div className="grid grid-cols-2 gap-4 text-center text-sm">
+                <div>
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-3 h-3 bg-slate-400 rounded"></div>
+                    <span className="text-muted-foreground">Settimana Precedente</span>
+                  </div>
+                  <p className="font-mono font-bold mt-1">
+                    €{weeklyComparisonData.reduce((sum, day) => sum + day.previousWeek, 0).toFixed(1)}
+                  </p>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {weeklyRevenueData.percentageChange >= 0 ? 'Crescita' : 'Diminuzione'} rispetto alla settimana scorsa
-                </p>
-              </div>
-              
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">
-                  Periodo: {weeklyRevenueData.currentWeekDates}
-                </p>
+                <div>
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                    <span className="text-muted-foreground">Settimana Corrente</span>
+                  </div>
+                  <p className="font-mono font-bold mt-1">
+                    €{weeklyComparisonData.reduce((sum, day) => sum + day.currentWeek, 0).toFixed(1)}
+                  </p>
+                </div>
               </div>
             </div>
           </CardContent>
