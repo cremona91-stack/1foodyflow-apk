@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { TrendingUp, ShoppingCart, Plus, Edit, Trash2, Euro, Package } from "lucide-react";
+import { TrendingUp, ShoppingCart, Plus, Save, Edit, Trash2, Euro, Package, Rocket } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -17,16 +17,20 @@ import {
   useUpdateSale,
   useDeleteSale,
 } from "@/hooks/useApi";
-import type { Sales, InsertSales } from "@shared/schema";
+import type { Sales, Dish, InsertSales } from "@shared/schema";
 import { insertSalesSchema } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Sales() {
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [savingDishId, setSavingDishId] = useState<string | null>(null);
   const [editingSale, setEditingSale] = useState<Sales | undefined>();
   const [showForm, setShowForm] = useState(false);
+  const { toast } = useToast();
 
   // Data fetching
   const { data: sales = [], isLoading: salesLoading } = useSales();
-  const { data: dishes = [] } = useDishes();
+  const { data: dishes = [], isLoading: dishesLoading, isError: dishesError } = useDishes();
 
   // Mutations
   const createSaleMutation = useCreateSale();
@@ -47,7 +51,57 @@ export default function Sales() {
     },
   });
 
-  // Form handlers
+  // Smart quantity handlers
+  const handleQuantityChange = (dishId: string, quantity: number) => {
+    setQuantities(prev => ({
+      ...prev,
+      [dishId]: quantity
+    }));
+  };
+
+  const handleQuickSave = (dish: Dish, quantity: number) => {
+    if (quantity <= 0) {
+      toast({
+        title: "Errore",
+        description: "La quantità deve essere maggiore di 0",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSavingDishId(dish.id);
+
+    const saleData: InsertSales = {
+      dishId: dish.id,
+      dishName: dish.name,
+      quantitySold: quantity,
+      unitCost: dish.totalCost,
+      unitRevenue: dish.netPrice,
+      saleDate: new Date().toISOString().split('T')[0],
+      notes: `Vendita rapida del ${new Date().toLocaleDateString()}`
+    };
+
+    createSaleMutation.mutate(saleData, {
+      onSuccess: () => {
+        setQuantities(prev => ({ ...prev, [dish.id]: 0 }));
+        setSavingDishId(null);
+        toast({
+          title: "Vendita registrata",
+          description: `${quantity} ${dish.name} venduti con successo`
+        });
+      },
+      onError: () => {
+        setSavingDishId(null);
+        toast({
+          title: "Errore",
+          description: "Errore nel salvataggio della vendita",
+          variant: "destructive"
+        });
+      }
+    });
+  };
+
+  // Original form handlers for advanced editing
   const handleCreateSale = (data: InsertSales) => {
     createSaleMutation.mutate(data);
     setShowForm(false);
@@ -123,6 +177,101 @@ export default function Sales() {
           Nuova Vendita
         </Button>
       </div>
+
+      {/* Smart Quick Sales Grid */}
+      {dishesLoading && (
+        <Card>
+          <CardContent className="text-center py-12">
+            <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Caricamento piatti...</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {dishesError && (
+        <Card>
+          <CardContent className="text-center py-12">
+            <Package className="h-12 w-12 mx-auto text-destructive mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Errore nel caricamento</h3>
+            <p className="text-muted-foreground mb-4">
+              Non è stato possibile caricare i piatti. Riprova più tardi.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {!dishesLoading && !dishesError && dishes.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Rocket className="h-5 w-5" />
+              Inserimento Rapido Vendite
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Seleziona la quantità venduta per ogni piatto e clicca "Salva" per registrare la vendita
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {dishes.map((dish) => (
+                <div key={dish.id} className="p-4 rounded-md bg-muted/50 hover-elevate">
+                  <div className="space-y-3">
+                    <div>
+                      <h3 className="font-semibold text-lg">{dish.name}</h3>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span>Costo: €{dish.totalCost.toFixed(2)}</span>
+                        <span>Ricavo: €{dish.netPrice.toFixed(2)}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor={`quantity-${dish.id}`} className="text-sm font-medium">
+                        Qtà:
+                      </Label>
+                      <Input
+                        id={`quantity-${dish.id}`}
+                        type="number"
+                        min="1"
+                        max="999"
+                        value={quantities[dish.id] || 0}
+                        onChange={(e) => handleQuantityChange(dish.id, parseInt(e.target.value) || 0)}
+                        className="w-20"
+                        data-testid={`input-quantity-${dish.id}`}
+                        placeholder="0"
+                        disabled={savingDishId === dish.id}
+                      />
+                      <Button
+                        onClick={() => handleQuickSave(dish, quantities[dish.id] || 0)}
+                        disabled={!quantities[dish.id] || quantities[dish.id] <= 0 || savingDishId === dish.id}
+                        size="sm"
+                        data-testid={`button-save-${dish.id}`}
+                      >
+                        {savingDishId === dish.id ? (
+                          <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-1"></div>
+                        ) : (
+                          <Save className="h-4 w-4 mr-1" />
+                        )}
+                        {savingDishId === dish.id ? "Salvando..." : "Salva"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!dishesLoading && !dishesError && dishes.length === 0 && (
+        <Card>
+          <CardContent className="text-center py-12">
+            <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Nessun piatto disponibile</h3>
+            <p className="text-muted-foreground mb-4">
+              Crea prima dei piatti nella sezione "Ricette" per poter registrare delle vendite.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
