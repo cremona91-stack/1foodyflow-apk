@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { FileText, Utensils, ChefHat, Sun, Moon, LogOut } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/hooks/use-auth";
-import logoImage from "@assets/FoodyFlow_1758637548942.png";
+import Logo from "@/components/Logo";
 
 interface AppHeaderProps {
   onExportPDF?: () => void;
@@ -46,22 +46,8 @@ export default function AppHeader({ onExportPDF }: AppHeaderProps) {
           <span className="hidden sm:inline">Esporta PDF</span>
         </Button>
         
-        <div className="flex flex-col items-center justify-center text-center flex-1 mx-4 md:mx-8">
-          <div className="flex items-center justify-center gap-4">
-            <img 
-              src={logoImage} 
-              alt="FoodyFlow Logo" 
-              className="h-12 sm:h-16 md:h-20 lg:h-24 w-auto"
-            />
-            <div className="flex flex-col items-center">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground leading-none">
-                FoodyFlow
-              </h1>
-              <p className="text-xs sm:text-sm md:text-base italic text-muted-foreground mt-1">
-                Evolve Your Eatery
-              </p>
-            </div>
-          </div>
+        <div className="flex items-center justify-center text-center flex-1 mx-4 md:mx-8">
+          <Logo className="h-16 sm:h-20 md:h-24 lg:h-28 w-auto" />
         </div>
         
         <div className="flex items-center gap-1 md:gap-2 shrink-0">
