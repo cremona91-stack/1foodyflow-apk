@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { FileText, Utensils, ChefHat, Sun, Moon, LogOut } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/hooks/use-auth";
+import logoImage from "@assets/FoodyFlow_1758637548942.png";
 
 interface AppHeaderProps {
   onExportPDF?: () => void;
@@ -48,7 +49,7 @@ export default function AppHeader({ onExportPDF }: AppHeaderProps) {
         <div className="flex flex-col items-center text-center flex-1 mx-4 md:mx-8">
           <div className="flex items-center gap-3">
             <img 
-              src="/attached_assets/FoodyFlow_1758637548942.png" 
+              src={logoImage} 
               alt="FoodyFlow Logo" 
               className="h-8 sm:h-10 md:h-12 lg:h-14 w-auto"
             />
