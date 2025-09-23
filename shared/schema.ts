@@ -10,12 +10,21 @@ export const recipeIngredientSchema = z.object({
   cost: z.number().min(0),
 });
 
-// Dish ingredient schema
-export const dishIngredientSchema = z.object({
-  productId: z.string(),
-  quantity: z.number().min(0),
-  cost: z.number().min(0),
-});
+// Dish ingredient schema - can be either a product or a recipe
+export const dishIngredientSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("product"),
+    productId: z.string(),
+    quantity: z.number().min(0),
+    cost: z.number().min(0),
+  }),
+  z.object({
+    type: z.literal("recipe"),
+    recipeId: z.string(),
+    quantity: z.number().min(0),
+    cost: z.number().min(0),
+  }),
+]);
 
 // Suppliers table
 export const suppliers = pgTable("suppliers", {

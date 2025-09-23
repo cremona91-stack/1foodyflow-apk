@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertDishSchema, type InsertDish, type Dish, type Product } from "@shared/schema";
+import { insertDishSchema, type InsertDish, type Dish, type Product, type Recipe } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,14 +14,17 @@ import { z } from "zod";
 interface DishFormProps {
   onSubmit: (dish: InsertDish) => void;
   products: Product[];
+  recipes: Recipe[];
   editDish?: Dish;
   onCancel?: () => void;
 }
 
-export default function DishForm({ onSubmit, products, editDish, onCancel }: DishFormProps) {
+export default function DishForm({ onSubmit, products, recipes, editDish, onCancel }: DishFormProps) {
   const [isEditing] = useState(!!editDish);
   const [ingredients, setIngredients] = useState(editDish?.ingredients || []);
+  const [ingredientType, setIngredientType] = useState<"product" | "recipe">("product");
   const [selectedProductId, setSelectedProductId] = useState("");
+  const [selectedRecipeId, setSelectedRecipeId] = useState("");
   const [quantity, setQuantity] = useState("");
 
   const form = useForm<{ name: string; sellingPrice: number }>({
@@ -36,30 +39,50 @@ export default function DishForm({ onSubmit, products, editDish, onCancel }: Dis
   });
 
   const selectedProduct = products.find(p => p.id === selectedProductId);
+  const selectedRecipe = recipes.find(r => r.id === selectedRecipeId);
   const totalCost = ingredients.reduce((sum, ing) => sum + ing.cost, 0);
   const sellingPrice = form.watch("sellingPrice") || 0;
   const netPrice = sellingPrice / 1.10; // Remove 10% IVA
   const foodCost = netPrice > 0 ? (totalCost / netPrice) * 100 : 0;
 
   const addIngredient = () => {
-    if (!selectedProductId || !quantity) return;
-
-    const product = products.find(p => p.id === selectedProductId);
-    if (!product) return;
-
+    if (!quantity) return;
+    
     const parsedQuantity = parseFloat(quantity);
     if (parsedQuantity <= 0) return;
 
-    const cost = parsedQuantity * product.effectivePricePerUnit;
-    const ingredient = {
-      productId: selectedProductId,
-      quantity: parsedQuantity,
-      cost,
-    };
+    let ingredient;
+    
+    if (ingredientType === "product") {
+      if (!selectedProductId) return;
+      const product = products.find(p => p.id === selectedProductId);
+      if (!product) return;
+
+      const cost = parsedQuantity * product.effectivePricePerUnit;
+      ingredient = {
+        type: "product" as const,
+        productId: selectedProductId,
+        quantity: parsedQuantity,
+        cost,
+      };
+    } else {
+      if (!selectedRecipeId) return;
+      const recipe = recipes.find(r => r.id === selectedRecipeId);
+      if (!recipe) return;
+
+      const cost = parsedQuantity * recipe.totalCost;
+      ingredient = {
+        type: "recipe" as const,
+        recipeId: selectedRecipeId,
+        quantity: parsedQuantity,
+        cost,
+      };
+    }
 
     console.log("Adding ingredient:", ingredient);
     setIngredients([...ingredients, ingredient]);
     setSelectedProductId("");
+    setSelectedRecipeId("");
     setQuantity("");
   };
 
@@ -130,19 +153,58 @@ export default function DishForm({ onSubmit, products, editDish, onCancel }: Dis
               <h3 className="font-semibold text-foreground mb-4">Ingredienti</h3>
               
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-2">
-                  <Select value={selectedProductId} onValueChange={setSelectedProductId}>
-                    <SelectTrigger data-testid="select-dish-ingredient">
-                      <SelectValue placeholder="Seleziona un ingrediente" />
+                {/* Selettore tipo ingrediente */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Tipo Ingrediente</label>
+                  <Select value={ingredientType} onValueChange={(value: "product" | "recipe") => {
+                    setIngredientType(value);
+                    setSelectedProductId("");
+                    setSelectedRecipeId("");
+                  }}>
+                    <SelectTrigger data-testid="select-ingredient-type">
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {products.map((product) => (
-                        <SelectItem key={product.id} value={product.id}>
-                          {product.name} ({product.unit})
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="product">Prodotto</SelectItem>
+                      <SelectItem value="recipe">Ricetta</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {ingredientType === "product" ? (
+                    <Select value={selectedProductId} onValueChange={setSelectedProductId}>
+                      <SelectTrigger data-testid="select-dish-product">
+                        <SelectValue placeholder="Seleziona un prodotto" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {products.map((product) => (
+                          <SelectItem key={product.id} value={product.id}>
+                            {product.name} ({product.unit})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Select value={selectedRecipeId} onValueChange={setSelectedRecipeId}>
+                      <SelectTrigger data-testid="select-dish-recipe">
+                        <SelectValue placeholder="Seleziona una ricetta" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {recipes.length === 0 ? (
+                          <SelectItem value="no-recipes-available" disabled>
+                            Nessuna ricetta disponibile
+                          </SelectItem>
+                        ) : (
+                          recipes.map((recipe) => (
+                            <SelectItem key={recipe.id} value={recipe.id}>
+                              {recipe.name} (€{recipe.totalCost.toFixed(2)}/porz.)
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  )}
                   
                   <Input
                     type="number"
@@ -156,7 +218,8 @@ export default function DishForm({ onSubmit, products, editDish, onCancel }: Dis
                   />
                 </div>
                 
-                {selectedProduct && (
+                {/* Info ingrediente selezionato */}
+                {ingredientType === "product" && selectedProduct && (
                   <div className="grid grid-cols-2 gap-2">
                     <Input
                       readOnly
@@ -170,11 +233,26 @@ export default function DishForm({ onSubmit, products, editDish, onCancel }: Dis
                     />
                   </div>
                 )}
+
+                {ingredientType === "recipe" && selectedRecipe && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      readOnly
+                      value="porz."
+                      className="bg-muted text-muted-foreground"
+                    />
+                    <Input
+                      readOnly
+                      value={`€${selectedRecipe.totalCost.toFixed(2)}`}
+                      className="bg-muted text-muted-foreground"
+                    />
+                  </div>
+                )}
                 
                 <Button
                   type="button"
                   onClick={addIngredient}
-                  disabled={!selectedProductId || !quantity}
+                  disabled={(ingredientType === "product" ? !selectedProductId : !selectedRecipeId) || !quantity}
                   className="w-full"
                   data-testid="button-add-dish-ingredient"
                 >
@@ -186,14 +264,26 @@ export default function DishForm({ onSubmit, products, editDish, onCancel }: Dis
               {ingredients.length > 0 && (
                 <div className="mt-4 space-y-2">
                   {ingredients.map((ingredient, index) => {
-                    const product = products.find(p => p.id === ingredient.productId);
+                    let itemName = "";
+                    let itemUnit = "";
+                    
+                    if (ingredient.type === "product") {
+                      const product = products.find(p => p.id === ingredient.productId);
+                      itemName = product?.name || "Prodotto non trovato";
+                      itemUnit = product?.unit || "";
+                    } else {
+                      const recipe = recipes.find(r => r.id === ingredient.recipeId);
+                      itemName = recipe?.name || "Ricetta non trovata";
+                      itemUnit = "porz.";
+                    }
+                    
                     return (
                       <Card key={index} className="p-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium">{product?.name}</span>
+                            <span className="font-medium">{itemName}</span>
                             <Badge variant="secondary" className="text-xs">
-                              {ingredient.quantity} {product?.unit}
+                              {ingredient.quantity} {itemUnit}
                             </Badge>
                             <span className="text-sm text-muted-foreground">
                               €{ingredient.cost.toFixed(2)}
