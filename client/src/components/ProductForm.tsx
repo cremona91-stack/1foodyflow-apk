@@ -147,7 +147,7 @@ export default function ProductForm({ onSubmit, editProduct, onCancel }: Product
                   <FormItem>
                     <FormLabel>Fornitore *</FormLabel>
                     <Select 
-                      value={field.value || ""} 
+                      value={field.value || undefined} 
                       onValueChange={(supplierId) => {
                         field.onChange(supplierId);
                         // Auto-populate supplier email and name when supplier is selected
@@ -171,7 +171,7 @@ export default function ProductForm({ onSubmit, editProduct, onCancel }: Product
                       </FormControl>
                       <SelectContent>
                         {suppliers.length === 0 ? (
-                          <SelectItem value="no-suppliers" disabled>
+                          <SelectItem value="no-suppliers-available" disabled>
                             Nessun fornitore disponibile
                           </SelectItem>
                         ) : (
