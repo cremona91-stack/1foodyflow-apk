@@ -1,850 +1,2182 @@
-=== FOODYFLOW - CODICE COMPLETO REACT COMPONENTS ===
-Data: 19 Settembre 2025
-Descrizione: Sistema completo di gestione ristorante con React + TypeScript
+================================================
+FOODYFLOW - CODICE COMPLETO APPLICAZIONE REACT
+================================================
 
-=====================================================
-=== 1. BUDGET COMPONENT ===
-=====================================================
+Questo file contiene il codice completo dell'applicazione FoodyFlow, un sistema completo di gestione ristorante per controllo Food Cost, Inventario, Budget, P&L e molto altro.
 
-// File: client/src/components/Budget.tsx
-import { useState, useMemo, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+L'applicazione è costruita con:
+- Frontend: React 18 + TypeScript con Vite
+- Backend: Node.js + Express + TypeScript  
+- Database: PostgreSQL con Drizzle ORM
+- UI: Tailwind CSS + Radix UI/shadcn
+- Query: TanStack React Query
+- Routing: Wouter
+- Validazione: Zod
+- Ambiente: Replit con Nix
+
+================================================
+PACKAGE.JSON - DIPENDENZE PRINCIPALI
+================================================
+
+{
+  "name": "rest-express",
+  "version": "1.0.0",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "NODE_ENV=development tsx server/index.ts",
+    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "start": "NODE_ENV=production node dist/index.js",
+    "check": "tsc",
+    "db:push": "drizzle-kit push"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/cli": "^7.4.3",
+    "@capacitor/core": "^7.4.3",
+    "@capacitor/ios": "^7.4.3",
+    "@google/genai": "^1.20.0",
+    "@hookform/resolvers": "^3.10.0",
+    "@neondatabase/serverless": "^0.10.4",
+    "@radix-ui/react-accordion": "^1.2.4",
+    "@radix-ui/react-dialog": "^1.1.7",
+    "@radix-ui/react-dropdown-menu": "^2.1.7",
+    "@radix-ui/react-select": "^2.1.7",
+    "@radix-ui/react-tabs": "^1.1.4",
+    "@radix-ui/react-toast": "^1.2.7",
+    "@sendgrid/mail": "^8.1.6",
+    "@tanstack/react-query": "^5.60.5",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "drizzle-orm": "^0.39.1",
+    "drizzle-zod": "^0.7.0",
+    "express": "^4.21.2",
+    "lucide-react": "^0.453.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.55.0",
+    "tailwind-merge": "^2.6.0",
+    "wouter": "^3.3.5",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.2",
+    "drizzle-kit": "^0.30.4",
+    "tailwindcss": "^3.4.17",
+    "typescript": "5.6.3",
+    "vite": "^5.4.19"
+  }
+}
+
+================================================
+SHARED/SCHEMA.TS - SCHEMA DATABASE E VALIDAZIONE
+================================================
+
+import { sql } from "drizzle-orm";
+import { pgTable, text, varchar, real, integer, json, timestamp, boolean, uniqueIndex, index, jsonb } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+
+// Recipe ingredient schema
+export const recipeIngredientSchema = z.object({
+  productId: z.string(),
+  quantity: z.number().min(0),
+  cost: z.number().min(0),
+});
+
+// Dish ingredient schema
+export const dishIngredientSchema = z.object({
+  productId: z.string(),
+  quantity: z.number().min(0),
+  cost: z.number().min(0),
+});
+
+// Suppliers table
+export const suppliers = pgTable("suppliers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  email: text("email"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Product/Ingredient table
+export const products = pgTable("products", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code").notNull().unique(),
+  name: text("name").notNull(),
+  supplierId: varchar("supplier_id").references(() => suppliers.id, { onDelete: "set null" }),
+  supplier: text("supplier"),
+  supplierEmail: text("supplier_email"),
+  waste: real("waste").notNull().default(0),
+  notes: text("notes"),
+  quantity: real("quantity").notNull(),
+  unit: varchar("unit").notNull(),
+  pricePerUnit: real("price_per_unit").notNull(),
+  effectivePricePerUnit: real("effective_price_per_unit").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Recipes table
+export const recipes = pgTable("recipes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  ingredients: json("ingredients").$type<z.infer<typeof recipeIngredientSchema>[]>().notNull(),
+  totalCost: real("total_cost").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Dishes table
+export const dishes = pgTable("dishes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  ingredients: json("ingredients").$type<z.infer<typeof dishIngredientSchema>[]>().notNull(),
+  totalCost: real("total_cost").notNull(),
+  sellingPrice: real("selling_price").notNull(),
+  netPrice: real("net_price").notNull(),
+  foodCost: real("food_cost").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Waste table
+export const waste = pgTable("waste", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  productId: varchar("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  quantity: real("quantity").notNull(),
+  cost: real("cost").notNull(),
+  date: text("date").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Sales table (Vendite)
+export const sales = pgTable("sales", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  dishId: varchar("dish_id").notNull().references(() => dishes.id, { onDelete: "cascade" }),
+  dishName: text("dish_name").notNull(),
+  quantitySold: integer("quantity_sold").notNull(),
+  unitCost: real("unit_cost").notNull(),
+  unitRevenue: real("unit_revenue").notNull(),
+  totalCost: real("total_cost").notNull(),
+  totalRevenue: real("total_revenue").notNull(),
+  saleDate: text("sale_date").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Budget entries table
+export const budgetEntries = pgTable("budget_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  date: text("date").notNull(),
+  year: integer("year").notNull(),
+  month: integer("month").notNull(),
+  day: integer("day").notNull(),
+  copertoMedio: real("coperto_medio"),
+  coperti: integer("coperti"),
+  budgetRevenue: real("budget_revenue"),
+  budgetDelivery: real("budget_delivery"),
+  actualRevenue: real("actual_revenue"),
+  actualDelivery: real("actual_delivery"),
+  consuntivo: real("consuntivo"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Economic parameters table
+export const economicParameters = pgTable("economic_parameters", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  year: integer("year").notNull(),
+  month: integer("month").notNull(),
+  materieFirstePercent: real("materie_prime_percent").default(22.10),
+  acquistiVarPercent: real("acquisti_vari_percent").default(3.00),
+  materieFirsteBudget: real("materie_prime_budget").default(0),
+  acquistiVarBudget: real("acquisti_vari_budget").default(0),
+  locazioniBudget: real("locazioni_budget").default(0),
+  personaleBudget: real("personale_budget").default(0),
+  utenzeBudget: real("utenze_budget").default(0),
+  manutenzionibudget: real("manutenzioni_budget").default(0),
+  noleggibudget: real("noleggi_budget").default(0),
+  prestazioniTerziBudget: real("prestazioni_terzi_budget").default(0),
+  consulenzeBudget: real("consulenze_budget").default(0),
+  marketingBudget: real("marketing_budget").default(0),
+  deliveryBudget: real("delivery_budget").default(0),
+  trasferteBudget: real("trasferte_budget").default(0),
+  assicurazioniBudget: real("assicurazioni_budget").default(0),
+  speseBancarieBudget: real("spese_bancarie_budget").default(0),
+  materieFirsteConsuntivo: real("materie_prime_consuntivo").default(0),
+  acquistiVarConsuntivo: real("acquisti_vari_consuntivo").default(0),
+  locazioniConsuntivo: real("locazioni_consuntivo").default(0),
+  personaleConsuntivo: real("personale_consuntivo").default(0),
+  utenzeConsuntivo: real("utenze_consuntivo").default(0),
+  manutenzioniConsuntivo: real("manutenzioni_consuntivo").default(0),
+  noleggiConsuntivo: real("noleggi_consuntivo").default(0),
+  prestazioniTerziConsuntivo: real("prestazioni_terzi_consuntivo").default(0),
+  consulenzeConsuntivo: real("consulenze_consuntivo").default(0),
+  marketingConsuntivo: real("marketing_consuntivo").default(0),
+  deliveryConsuntivo: real("delivery_consuntivo").default(0),
+  trasferteConsuntivo: real("trasferte_consuntivo").default(0),
+  assicurazioniConsuntivo: real("assicurazioni_consuntivo").default(0),
+  speseBancarieConsuntivo: real("spese_bancarie_consuntivo").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => {
+  return {
+    yearMonthIdx: uniqueIndex("economic_parameters_year_month_idx").on(table.year, table.month),
+  }
+});
+
+// Validation schemas
+export const insertSupplierSchema = createInsertSchema(suppliers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  name: z.string().min(1, "Nome fornitore richiesto"),
+  email: z.string().email().optional().or(z.literal("")),
+  notes: z.string().optional(),
+});
+
+export const insertProductSchema = createInsertSchema(products).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  effectivePricePerUnit: true,
+}).extend({
+  waste: z.number().min(0).max(100).default(0),
+  quantity: z.number().min(0),
+  pricePerUnit: z.number().min(0),
+  unit: z.enum(["kg", "l", "pezzo"]),
+  supplierId: z.string().optional().or(z.literal("")),
+  supplierEmail: z.string().email().optional().or(z.literal("")),
+});
+
+export const insertBudgetEntrySchema = createInsertSchema(budgetEntries, {
+  date: z.string().min(1),
+  year: z.number().min(2020).max(2050),
+  month: z.number().min(1).max(12),
+  day: z.number().min(1).max(31),
+  copertoMedio: z.number().min(0).optional(),
+  coperti: z.number().min(0).optional(),
+  budgetRevenue: z.number().min(0).optional(),
+  budgetDelivery: z.number().min(0).optional(),
+  actualRevenue: z.number().min(0).optional(),
+  actualDelivery: z.number().min(0).optional(),
+  consuntivo: z.number().min(0).optional(),
+  notes: z.string().optional(),
+}).omit({ id: true, createdAt: true, updatedAt: true });
+
+// Types
+export type Supplier = typeof suppliers.$inferSelect;
+export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
+export type Product = typeof products.$inferSelect;
+export type InsertProduct = z.infer<typeof insertProductSchema>;
+export type Recipe = typeof recipes.$inferSelect;
+export type Dish = typeof dishes.$inferSelect;
+export type Sales = typeof sales.$inferSelect;
+export type BudgetEntry = typeof budgetEntries.$inferSelect;
+export type InsertBudgetEntry = z.infer<typeof insertBudgetEntrySchema>;
+export type EconomicParameters = typeof economicParameters.$inferSelect;
+
+================================================
+SERVER/STORAGE.TS - LAYER ACCESSO DATABASE
+================================================
+
+import { 
+  type Product, 
+  type Recipe, 
+  type Dish, 
+  type Sales,
+  type Waste, 
+  type Supplier,
+  type BudgetEntry,
+  type EconomicParameters,
+  type InsertProduct,
+  type InsertSupplier,
+  type InsertBudgetEntry,
+  type InsertEconomicParameters,
+  type UpdateProduct,
+  type UpdateSupplier,
+  type UpdateBudgetEntry,
+  type UpdateEconomicParameters,
+  products,
+  suppliers,
+  recipes,
+  dishes,
+  sales,
+  waste,
+  budgetEntries,
+  economicParameters
+} from "@shared/schema";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import { eq, and } from "drizzle-orm";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
+
+// Configure WebSocket for Node.js environment
+if (typeof WebSocket === 'undefined') {
+  neonConfig.webSocketConstructor = ws;
+}
+
+// Database connection
+const pool = new Pool({ 
+  connectionString: process.env.DATABASE_URL!
+});
+const db = drizzle(pool);
+
+// Storage interface
+export interface IStorage {
+  // Suppliers
+  getSuppliers(): Promise<Supplier[]>;
+  getSupplier(id: string): Promise<Supplier | undefined>;
+  createSupplier(supplier: InsertSupplier): Promise<Supplier>;
+  updateSupplier(id: string, supplier: UpdateSupplier): Promise<Supplier | undefined>;
+  deleteSupplier(id: string): Promise<boolean>;
+  
+  // Products
+  getProducts(): Promise<Product[]>;
+  getProduct(id: string): Promise<Product | undefined>;
+  createProduct(product: InsertProduct): Promise<Product>;
+  updateProduct(id: string, product: UpdateProduct): Promise<Product | undefined>;
+  deleteProduct(id: string): Promise<boolean>;
+
+  // Budget Entries
+  getBudgetEntries(): Promise<BudgetEntry[]>;
+  getBudgetEntry(id: string): Promise<BudgetEntry | undefined>;
+  getBudgetEntriesByMonth(year: number, month: number): Promise<BudgetEntry[]>;
+  createBudgetEntry(budgetEntry: InsertBudgetEntry): Promise<BudgetEntry>;
+  updateBudgetEntry(id: string, budgetEntry: UpdateBudgetEntry): Promise<BudgetEntry | undefined>;
+  deleteBudgetEntry(id: string): Promise<boolean>;
+
+  // Economic Parameters
+  getEconomicParameters(): Promise<EconomicParameters[]>;
+  getEconomicParameter(id: string): Promise<EconomicParameters | undefined>;
+  getEconomicParametersByMonth(year: number, month: number): Promise<EconomicParameters | undefined>;
+  createEconomicParameters(parameters: InsertEconomicParameters): Promise<EconomicParameters>;
+  updateEconomicParameters(id: string, parameters: UpdateEconomicParameters): Promise<EconomicParameters | undefined>;
+  upsertEconomicParametersByMonth(year: number, month: number, parameters: UpdateEconomicParameters): Promise<EconomicParameters>;
+  deleteEconomicParameters(id: string): Promise<boolean>;
+}
+
+export class DatabaseStorage implements IStorage {
+  // Suppliers implementation
+  async getSuppliers(): Promise<Supplier[]> {
+    return await db.select().from(suppliers);
+  }
+
+  async getSupplier(id: string): Promise<Supplier | undefined> {
+    const result = await db.select().from(suppliers).where(eq(suppliers.id, id));
+    return result[0];
+  }
+
+  async createSupplier(insertSupplier: InsertSupplier): Promise<Supplier> {
+    const result = await db.insert(suppliers).values({
+      ...insertSupplier,
+      email: insertSupplier.email || null,
+      notes: insertSupplier.notes || null,
+    }).returning();
+    return result[0];
+  }
+
+  async updateSupplier(id: string, updates: UpdateSupplier): Promise<Supplier | undefined> {
+    const sanitizedUpdates: any = {};
+    if (updates.name !== undefined) sanitizedUpdates.name = updates.name;
+    if (updates.email !== undefined) sanitizedUpdates.email = updates.email || null;
+    if (updates.notes !== undefined) sanitizedUpdates.notes = updates.notes || null;
+    
+    sanitizedUpdates.updatedAt = new Date();
+    
+    const result = await db.update(suppliers)
+      .set(sanitizedUpdates)
+      .where(eq(suppliers.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteSupplier(id: string): Promise<boolean> {
+    const result = await db.delete(suppliers).where(eq(suppliers.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Products implementation
+  async getProducts(): Promise<Product[]> {
+    return await db.select().from(products);
+  }
+
+  async getProduct(id: string): Promise<Product | undefined> {
+    const result = await db.select().from(products).where(eq(products.id, id));
+    return result[0];
+  }
+
+  async createProduct(insertProduct: InsertProduct): Promise<Product> {
+    const wastePercentage = insertProduct.waste || 0;
+    const effectivePricePerUnit = insertProduct.pricePerUnit / (1 - wastePercentage / 100);
+    
+    const result = await db.insert(products).values({
+      ...insertProduct,
+      supplier: insertProduct.supplier || null,
+      notes: insertProduct.notes || null,
+      effectivePricePerUnit: effectivePricePerUnit,
+    }).returning();
+    return result[0];
+  }
+
+  async updateProduct(id: string, updates: UpdateProduct): Promise<Product | undefined> {
+    const sanitizedUpdates: any = {};
+    if (updates.code !== undefined) sanitizedUpdates.code = updates.code;
+    if (updates.name !== undefined) sanitizedUpdates.name = updates.name;
+    if (updates.supplier !== undefined) sanitizedUpdates.supplier = updates.supplier;
+    if (updates.supplierEmail !== undefined) sanitizedUpdates.supplierEmail = updates.supplierEmail;
+    if (updates.waste !== undefined) sanitizedUpdates.waste = updates.waste;
+    if (updates.notes !== undefined) sanitizedUpdates.notes = updates.notes;
+    if (updates.quantity !== undefined) sanitizedUpdates.quantity = updates.quantity;
+    if (updates.unit !== undefined) sanitizedUpdates.unit = updates.unit;
+    if (updates.pricePerUnit !== undefined) sanitizedUpdates.pricePerUnit = updates.pricePerUnit;
+    
+    if (updates.pricePerUnit !== undefined || updates.waste !== undefined) {
+      const currentProduct = await this.getProduct(id);
+      if (currentProduct) {
+        const newPricePerUnit = updates.pricePerUnit ?? currentProduct.pricePerUnit;
+        const newWaste = updates.waste ?? currentProduct.waste;
+        sanitizedUpdates.effectivePricePerUnit = newPricePerUnit / (1 - newWaste / 100);
+      }
+    }
+    
+    sanitizedUpdates.updatedAt = new Date();
+    
+    const result = await db.update(products)
+      .set(sanitizedUpdates)
+      .where(eq(products.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteProduct(id: string): Promise<boolean> {
+    const result = await db.delete(products).where(eq(products.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Budget Entries implementation
+  async getBudgetEntries(): Promise<BudgetEntry[]> {
+    return await db.select().from(budgetEntries);
+  }
+
+  async getBudgetEntry(id: string): Promise<BudgetEntry | undefined> {
+    const result = await db.select().from(budgetEntries).where(eq(budgetEntries.id, id));
+    return result[0];
+  }
+
+  async getBudgetEntriesByMonth(year: number, month: number): Promise<BudgetEntry[]> {
+    return await db.select().from(budgetEntries)
+      .where(and(eq(budgetEntries.year, year), eq(budgetEntries.month, month)));
+  }
+
+  async createBudgetEntry(insertBudgetEntry: InsertBudgetEntry): Promise<BudgetEntry> {
+    const result = await db.insert(budgetEntries).values({
+      ...insertBudgetEntry,
+      notes: insertBudgetEntry.notes || null,
+    }).returning();
+    return result[0];
+  }
+
+  async updateBudgetEntry(id: string, updates: UpdateBudgetEntry): Promise<BudgetEntry | undefined> {
+    const sanitizedUpdates: any = {};
+    if (updates.copertoMedio !== undefined) sanitizedUpdates.copertoMedio = updates.copertoMedio;
+    if (updates.coperti !== undefined) sanitizedUpdates.coperti = updates.coperti;
+    if (updates.budgetRevenue !== undefined) sanitizedUpdates.budgetRevenue = updates.budgetRevenue;
+    if (updates.budgetDelivery !== undefined) sanitizedUpdates.budgetDelivery = updates.budgetDelivery;
+    if (updates.actualRevenue !== undefined) sanitizedUpdates.actualRevenue = updates.actualRevenue;
+    if (updates.actualDelivery !== undefined) sanitizedUpdates.actualDelivery = updates.actualDelivery;
+    if (updates.consuntivo !== undefined) sanitizedUpdates.consuntivo = updates.consuntivo;
+    if (updates.notes !== undefined) sanitizedUpdates.notes = updates.notes;
+    
+    sanitizedUpdates.updatedAt = new Date();
+    
+    const result = await db.update(budgetEntries)
+      .set(sanitizedUpdates)
+      .where(eq(budgetEntries.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteBudgetEntry(id: string): Promise<boolean> {
+    const result = await db.delete(budgetEntries).where(eq(budgetEntries.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Economic Parameters implementation
+  async getEconomicParameters(): Promise<EconomicParameters[]> {
+    return await db.select().from(economicParameters);
+  }
+
+  async getEconomicParameter(id: string): Promise<EconomicParameters | undefined> {
+    const result = await db.select().from(economicParameters).where(eq(economicParameters.id, id));
+    return result[0];
+  }
+
+  async getEconomicParametersByMonth(year: number, month: number): Promise<EconomicParameters | undefined> {
+    const result = await db.select().from(economicParameters)
+      .where(and(eq(economicParameters.year, year), eq(economicParameters.month, month)));
+    return result[0];
+  }
+
+  async createEconomicParameters(insertParameters: InsertEconomicParameters): Promise<EconomicParameters> {
+    const result = await db.insert(economicParameters).values(insertParameters).returning();
+    return result[0];
+  }
+
+  async updateEconomicParameters(id: string, updates: UpdateEconomicParameters): Promise<EconomicParameters | undefined> {
+    const result = await db.update(economicParameters)
+      .set(updates)
+      .where(eq(economicParameters.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async upsertEconomicParametersByMonth(year: number, month: number, parameters: UpdateEconomicParameters): Promise<EconomicParameters> {
+    const existing = await this.getEconomicParametersByMonth(year, month);
+    
+    if (existing) {
+      return await this.updateEconomicParameters(existing.id, parameters) || existing;
+    } else {
+      return await this.createEconomicParameters({
+        year,
+        month,
+        ...parameters
+      } as InsertEconomicParameters);
+    }
+  }
+
+  async deleteEconomicParameters(id: string): Promise<boolean> {
+    const result = await db.delete(economicParameters).where(eq(economicParameters.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+}
+
+export const storage = new DatabaseStorage();
+
+================================================
+SERVER/ROUTES.TS - API ENDPOINTS
+================================================
+
+import type { Express } from "express";
+import { createServer, type Server } from "http";
+import { storage } from "./storage";
+import { 
+  insertProductSchema, 
+  insertSupplierSchema,
+  updateSupplierSchema,
+  insertBudgetEntrySchema,
+  insertEconomicParametersSchema,
+  updateProductSchema,
+  updateBudgetEntrySchema,
+  updateEconomicParametersSchema
+} from "@shared/schema";
+import { z } from "zod";
+
+export async function registerRoutes(app: Express): Promise<Server> {
+
+  // Products API Routes
+  app.get("/api/products", async (req, res) => {
+    try {
+      const products = await storage.getProducts();
+      res.json(products);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      res.status(500).json({ error: "Failed to fetch products" });
+    }
+  });
+
+  app.get("/api/products/:id", async (req, res) => {
+    try {
+      const product = await storage.getProduct(req.params.id);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      res.json(product);
+    } catch (error) {
+      console.error("Error fetching product:", error);
+      res.status(500).json({ error: "Failed to fetch product" });
+    }
+  });
+
+  app.post("/api/products", async (req, res) => {
+    try {
+      const validatedData = insertProductSchema.parse(req.body);
+      const product = await storage.createProduct(validatedData);
+      res.status(201).json(product);
+    } catch (error) {
+      console.error("Error creating product:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create product" });
+    }
+  });
+
+  app.put("/api/products/:id", async (req, res) => {
+    try {
+      const validatedData = updateProductSchema.parse(req.body);
+      const product = await storage.updateProduct(req.params.id, validatedData);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      res.json(product);
+    } catch (error) {
+      console.error("Error updating product:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update product" });
+    }
+  });
+
+  app.delete("/api/products/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteProduct(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      res.status(500).json({ error: "Failed to delete product" });
+    }
+  });
+
+  // Suppliers API Routes
+  app.get("/api/suppliers", async (req, res) => {
+    try {
+      const suppliers = await storage.getSuppliers();
+      res.json(suppliers);
+    } catch (error) {
+      console.error("Error fetching suppliers:", error);
+      res.status(500).json({ error: "Failed to fetch suppliers" });
+    }
+  });
+
+  app.post("/api/suppliers", async (req, res) => {
+    try {
+      const validatedData = insertSupplierSchema.parse(req.body);
+      const supplier = await storage.createSupplier(validatedData);
+      res.status(201).json(supplier);
+    } catch (error) {
+      console.error("Error creating supplier:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create supplier" });
+    }
+  });
+
+  app.put("/api/suppliers/:id", async (req, res) => {
+    try {
+      const validatedData = updateSupplierSchema.parse(req.body);
+      const supplier = await storage.updateSupplier(req.params.id, validatedData);
+      if (!supplier) {
+        return res.status(404).json({ error: "Supplier not found" });
+      }
+      res.json(supplier);
+    } catch (error) {
+      console.error("Error updating supplier:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update supplier" });
+    }
+  });
+
+  app.delete("/api/suppliers/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteSupplier(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Supplier not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting supplier:", error);
+      res.status(500).json({ error: "Failed to delete supplier" });
+    }
+  });
+
+  // Budget Entries API Routes
+  app.get("/api/budget-entries", async (req, res) => {
+    try {
+      const entries = await storage.getBudgetEntries();
+      res.json(entries);
+    } catch (error) {
+      console.error("Error fetching budget entries:", error);
+      res.status(500).json({ error: "Failed to fetch budget entries" });
+    }
+  });
+
+  app.get("/api/budget-entries/:year/:month", async (req, res) => {
+    try {
+      const year = parseInt(req.params.year);
+      const month = parseInt(req.params.month);
+      const entries = await storage.getBudgetEntriesByMonth(year, month);
+      res.json(entries);
+    } catch (error) {
+      console.error("Error fetching budget entries by month:", error);
+      res.status(500).json({ error: "Failed to fetch budget entries" });
+    }
+  });
+
+  app.post("/api/budget-entries", async (req, res) => {
+    try {
+      const validatedData = insertBudgetEntrySchema.parse(req.body);
+      const entry = await storage.createBudgetEntry(validatedData);
+      res.status(201).json(entry);
+    } catch (error) {
+      console.error("Error creating budget entry:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create budget entry" });
+    }
+  });
+
+  app.put("/api/budget-entries/:id", async (req, res) => {
+    try {
+      const validatedData = updateBudgetEntrySchema.parse(req.body);
+      const entry = await storage.updateBudgetEntry(req.params.id, validatedData);
+      if (!entry) {
+        return res.status(404).json({ error: "Budget entry not found" });
+      }
+      res.json(entry);
+    } catch (error) {
+      console.error("Error updating budget entry:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update budget entry" });
+    }
+  });
+
+  // Economic Parameters API Routes
+  app.get("/api/economic-parameters/:year/:month", async (req, res) => {
+    try {
+      const year = parseInt(req.params.year);
+      const month = parseInt(req.params.month);
+      const parameters = await storage.getEconomicParametersByMonth(year, month);
+      if (!parameters) {
+        return res.status(404).json({ error: "Economic parameters not found" });
+      }
+      res.json(parameters);
+    } catch (error) {
+      console.error("Error fetching economic parameters:", error);
+      res.status(500).json({ error: "Failed to fetch economic parameters" });
+    }
+  });
+
+  app.put("/api/economic-parameters/:year/:month", async (req, res) => {
+    try {
+      const year = parseInt(req.params.year);
+      const month = parseInt(req.params.month);
+      const validatedData = updateEconomicParametersSchema.parse(req.body);
+      
+      const parameters = await storage.upsertEconomicParametersByMonth(year, month, validatedData);
+      res.json(parameters);
+    } catch (error) {
+      console.error("Error updating economic parameters:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update economic parameters" });
+    }
+  });
+
+  // Create HTTP server
+  const httpServer = createServer(app);
+  
+  return httpServer;
+}
+
+================================================
+CLIENT/SRC/MAIN.TSX - ENTRY POINT
+================================================
+
+import { createRoot } from "react-dom/client";
+import App from "./App";
+import "./index.css";
+
+createRoot(document.getElementById("root")!).render(<App />);
+
+================================================
+CLIENT/SRC/APP.TSX - MAIN APP COMPONENT
+================================================
+
+import { useState } from "react";
+import { Switch, Route, useLocation } from "wouter";
+import { queryClient } from "./lib/queryClient";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { ThemeProvider } from "next-themes";
+
+// Components
+import AppHeader from "@/components/AppHeader";
+import { AppSidebar } from "@/components/AppSidebar";
+import { Dashboard } from "@/components/Dashboard";
+import Budget from "@/components/Budget";
+import PL from "@/pages/PL";
+import Recipes from "@/pages/Recipes";
+import Suppliers from "@/pages/Suppliers";
+import Sales from "@/pages/Sales";
+import ProductForm from "@/components/ProductForm";
+import ProductList from "@/components/ProductList";
+
+// API Hooks
+import {
+  useProducts,
+  useSuppliers,
+  useDishes,
+  useWaste,
+  usePersonalMeals,
+  useOrders,
+  useStockMovements,
+  useInventorySnapshots,
+  useSales,
+  useCreateProduct,
+  useUpdateProduct,
+  useDeleteProduct,
+} from "@/hooks/useApi";
+
+// Types
+import type { Product, InsertProduct } from "@shared/schema";
+
+function FoodCostManager() {
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [maxFoodCost, setMaxFoodCost] = useState(30);
+  const [, navigate] = useLocation();
+  
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+  };
+  
+  // Edit state
+  const [editingProduct, setEditingProduct] = useState<Product | undefined>();
+  
+  // React Query hooks for data fetching
+  const { data: products = [], isLoading: isLoadingProducts } = useProducts();
+  const { data: dishes = [], isLoading: isLoadingDishes } = useDishes();
+  const { data: waste = [], isLoading: isLoadingWaste } = useWaste();
+  const { data: personalMeals = [], isLoading: isLoadingPersonalMeals } = usePersonalMeals();
+  const { data: orders = [], isLoading: isLoadingOrders } = useOrders();
+  const { data: stockMovements = [], isLoading: isLoadingStockMovements } = useStockMovements();
+  const { data: inventorySnapshots = [], isLoading: isLoadingInventorySnapshots } = useInventorySnapshots();
+  const { data: salesData = [] } = useSales();
+  const { data: editableInventory = [] } = useQuery({
+    queryKey: ["/api/editable-inventory"],
+    enabled: products.length > 0
+  });
+
+  // React Query mutations
+  const createProductMutation = useCreateProduct();
+  const updateProductMutation = useUpdateProduct();
+  const deleteProductMutation = useDeleteProduct();
+
+  // Product handlers
+  const handleAddProduct = (product: InsertProduct) => {
+    createProductMutation.mutate(product);
+    console.log("Product creation submitted:", product);
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct(product);
+    console.log("Editing product:", product);
+  };
+
+  const handleUpdateProduct = (updatedProduct: InsertProduct) => {
+    if (!editingProduct) return;
+    
+    updateProductMutation.mutate(
+      { id: editingProduct.id, data: updatedProduct },
+      {
+        onSuccess: () => {
+          setEditingProduct(undefined);
+        },
+      }
+    );
+    console.log("Product update submitted:", updatedProduct);
+  };
+
+  const handleCancelEditProduct = () => {
+    setEditingProduct(undefined);
+    console.log("Product edit cancelled");
+  };
+
+  const handleDeleteProduct = (productId: string) => {
+    deleteProductMutation.mutate(productId);
+    console.log("Product deletion submitted:", productId);
+  };
+
+  // Show loading state while data is being fetched
+  const isLoading = isLoadingProducts || isLoadingDishes || isLoadingWaste || isLoadingPersonalMeals || isLoadingOrders || isLoadingStockMovements || isLoadingInventorySnapshots;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-lg font-medium">Caricamento dati...</div>
+          <div className="text-sm text-muted-foreground mt-2">
+            Connessione al database in corso
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const sidebarStyle = {
+    "--sidebar-width": "20rem",
+    "--sidebar-width-icon": "4rem",
+  };
+
+  return (
+    <SidebarProvider style={sidebarStyle as React.CSSProperties}>
+      <div className="flex h-screen w-full">
+        <AppSidebar activeTab={activeTab} onTabChange={handleTabChange} />
+        <div className="flex flex-col flex-1">
+          <header className="flex items-center justify-between p-2 border-b">
+            <SidebarTrigger data-testid="button-sidebar-toggle" />
+            <AppHeader />
+          </header>
+          <main className="flex-1 overflow-auto p-4 sm:p-8">
+          {/* Dashboard Tab */}
+          {activeTab === "dashboard" && (
+            <Dashboard
+              products={products}
+              dishes={dishes}
+              orders={orders}
+              stockMovements={stockMovements}
+              inventorySnapshots={inventorySnapshots}
+              editableInventory={editableInventory as any[]}
+              waste={waste}
+              personalMeals={personalMeals}
+              onNavigateToSection={setActiveTab}
+            />
+          )}
+
+          {/* Budget Tab */}
+          {activeTab === "budget" && (
+            <Budget />
+          )}
+
+          {/* Profit & Loss Tab */}
+          {activeTab === "profit-loss" && (
+            <PL />
+          )}
+
+          {/* Recipes Tab */}
+          {activeTab === "recipes" && (
+            <Recipes />
+          )}
+
+          {/* Suppliers Tab */}
+          {activeTab === "suppliers" && (
+            <Suppliers />
+          )}
+
+          {/* Inventory Tab */}
+          {activeTab === "inventory" && (
+            <div className="md:flex md:gap-6 space-y-6 md:space-y-0">
+              <div className="md:w-1/2 space-y-6">
+                <ProductForm 
+                  onSubmit={editingProduct ? handleUpdateProduct : handleAddProduct}
+                  editProduct={editingProduct}
+                  onCancel={editingProduct ? handleCancelEditProduct : undefined}
+                />
+              </div>
+              <div className="md:w-1/2 space-y-6">
+                <ProductList 
+                  products={products} 
+                  onEdit={handleEditProduct}
+                  onDelete={handleDeleteProduct}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Sales Detail Tab */}
+          {activeTab === "sales-detail" && (
+            <Sales />
+          )}
+
+          </main>
+        </div>
+      </div>
+    </SidebarProvider>
+  );
+}
+
+function Router() {
+  return (
+    <Switch>
+      <Route path="/" component={FoodCostManager} />
+      <Route path="/dashboard" component={FoodCostManager} />
+      <Route>404 Page Not Found</Route>
+    </Switch>
+  );
+}
+
+export default function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+        <TooltipProvider>
+          <Router />
+          <Toaster />
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+}
+
+================================================
+CLIENT/SRC/COMPONENTS/PRODUCTFORM.TSX - FORM PRODOTTI
+================================================
+
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { insertProductSchema, type InsertProduct, type Product } from "@shared/schema";
+import { useSuppliers } from "@/hooks/useApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Package } from "lucide-react";
+
+interface ProductFormProps {
+  onSubmit: (product: InsertProduct) => void;
+  editProduct?: Product;
+  onCancel?: () => void;
+}
+
+export default function ProductForm({ onSubmit, editProduct, onCancel }: ProductFormProps) {
+  const isEditing = !!editProduct;
+  const { data: suppliers = [], isLoading: suppliersLoading } = useSuppliers();
+
+  // Create modified schema with required supplier by ID
+  const productFormSchema = insertProductSchema.extend({
+    supplierId: z.string().min(1, "Devi selezionare un fornitore")
+  });
+
+  const form = useForm<InsertProduct>({
+    resolver: zodResolver(productFormSchema),
+    defaultValues: {
+      code: "",
+      name: "",
+      supplier: "",
+      supplierId: "",
+      supplierEmail: "",
+      waste: 0,
+      notes: "",
+      quantity: 0,
+      unit: "kg",
+      pricePerUnit: 0,
+    },
+  });
+
+  // Update form values when editProduct changes
+  useEffect(() => {
+    if (editProduct) {
+      form.reset({
+        code: editProduct.code,
+        name: editProduct.name,
+        supplier: editProduct.supplier || "",
+        supplierId: editProduct.supplierId || "",
+        supplierEmail: editProduct.supplierEmail || "",
+        waste: editProduct.waste,
+        notes: editProduct.notes || "",
+        quantity: editProduct.quantity,
+        unit: editProduct.unit as "kg" | "l" | "pezzo",
+        pricePerUnit: editProduct.pricePerUnit,
+      });
+    } else {
+      form.reset({
+        code: "",
+        name: "",
+        supplier: "",
+        supplierId: "",
+        supplierEmail: "",
+        waste: 0,
+        notes: "",
+        quantity: 0,
+        unit: "kg",
+        pricePerUnit: 0,
+      });
+    }
+  }, [editProduct, form]);
+
+  const handleSubmit = (data: InsertProduct) => {
+    console.log("Product form submitted:", data);
+    onSubmit(data);
+    if (!isEditing) {
+      form.reset();
+    }
+  };
+
+  const handleCancel = () => {
+    console.log("Product form cancelled");
+    form.reset();
+    onCancel?.();
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Package className="h-5 w-5 text-primary" />
+          {isEditing ? "Modifica Prodotto" : "Crea Prodotto"}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="code"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Codice Prodotto</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="Es. FAR-001"
+                      className="bg-yellow-100 dark:bg-yellow-900/30"
+                      data-testid="input-product-code"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nome Prodotto</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="Es. Farina Tipo 00"
+                      className="bg-yellow-100 dark:bg-yellow-900/30"
+                      data-testid="input-product-name"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="supplierId"
+              render={({ field }) => {
+                // Find supplier for display purposes
+                const selectedSupplier = suppliers.find(s => s.id === field.value);
+                return (
+                  <FormItem>
+                    <FormLabel>Fornitore *</FormLabel>
+                    <Select 
+                      value={field.value || ""} 
+                      onValueChange={(supplierId) => {
+                        field.onChange(supplierId);
+                        // Auto-populate supplier email and name when supplier is selected
+                        const selectedSupplier = suppliers.find(s => s.id === supplierId);
+                        if (selectedSupplier) {
+                          form.setValue("supplier", selectedSupplier.name);
+                          if (selectedSupplier.email) {
+                            form.setValue("supplierEmail", selectedSupplier.email);
+                          }
+                        }
+                      }}
+                      disabled={suppliersLoading}
+                    >
+                      <FormControl>
+                        <SelectTrigger 
+                          className="bg-yellow-100 dark:bg-yellow-900/30"
+                          data-testid="select-supplier"
+                        >
+                          <SelectValue placeholder={suppliersLoading ? "Caricamento..." : "Seleziona un fornitore"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {suppliers.length === 0 ? (
+                          <SelectItem value="" disabled>
+                            Nessun fornitore disponibile
+                          </SelectItem>
+                        ) : (
+                          suppliers.map((supplier) => (
+                            <SelectItem key={supplier.id} value={supplier.id}>
+                              {supplier.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    {suppliers.length === 0 && (
+                      <p className="text-sm text-orange-600 dark:text-orange-400">
+                        Aggiungi fornitori nella sezione Fornitori prima di creare prodotti.
+                      </p>
+                    )}
+                  </FormItem>
+                );
+              }}
+            />
+
+            <FormField
+              control={form.control}
+              name="supplierEmail"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email Fornitore</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      value={field.value || ""}
+                      type="email"
+                      placeholder="Es. info@granoeco.it"
+                      className="bg-yellow-100 dark:bg-yellow-900/30"
+                      data-testid="input-supplier-email"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="waste"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Sfrido (%)</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Input
+                        {...field}
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={field.value}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        className="pr-8 bg-yellow-100 dark:bg-yellow-900/30"
+                        data-testid="input-waste"
+                      />
+                      <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground font-medium">
+                        %
+                      </span>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="quantity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Quantità</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={field.value}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        className="bg-yellow-100 dark:bg-yellow-900/30"
+                        placeholder="0.00"
+                        data-testid="input-quantity"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="unit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Unità</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-unit">
+                          <SelectValue placeholder="Seleziona unità" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="kg">kg</SelectItem>
+                        <SelectItem value="l">l</SelectItem>
+                        <SelectItem value="pezzo">pezzo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="pricePerUnit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Costo/Unità (€)</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={field.value}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        className="bg-yellow-100 dark:bg-yellow-900/30"
+                        placeholder="0.00"
+                        data-testid="input-price"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              <Button
+                type="submit"
+                className="flex-1"
+                data-testid="button-submit-product"
+              >
+                {isEditing ? "Aggiorna Prodotto" : "Aggiungi Prodotto"}
+              </Button>
+              {isEditing && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleCancel}
+                  className="flex-1"
+                  data-testid="button-cancel-product"
+                >
+                  Annulla
+                </Button>
+              )}
+            </div>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
+  );
+}
+
+================================================
+CLIENT/SRC/COMPONENTS/DASHBOARD.TSX - DASHBOARD PRINCIPALE
+================================================
+
+import { useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Plus, Download, TrendingUp, TrendingDown, Save } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import type { BudgetEntry, InsertBudgetEntry, UpdateBudgetEntry, EconomicParameters, UpdateEconomicParameters } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { 
+  ChefHat, 
+  Users, 
+  TrendingUp, 
+  TrendingDown, 
+  DollarSign, 
+  Clock,
+  Calculator
+} from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
-interface BudgetProps {}
+// Types for dashboard data
+import type { Product, Dish, Order, StockMovement, EconomicParameters, BudgetEntry, Sales } from "@shared/schema";
+import { useSales } from "@/hooks/useApi";
 
-export default function Budget({}: BudgetProps) {
-  const queryClient = useQueryClient();
-  const [selectedYear, setSelectedYear] = useState<number>(2026);
-  const [selectedMonth, setSelectedMonth] = useState<number>(1);
-  const [editingEntry, setEditingEntry] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<Partial<UpdateBudgetEntry>>({});
-  const [ecoEditingField, setEcoEditingField] = useState<keyof UpdateEconomicParameters | null>(null);
-  const [ecoTempValue, setEcoTempValue] = useState<string>("");
+interface DashboardProps {
+  products: Product[];
+  dishes: Dish[];
+  orders: Order[];
+  stockMovements: StockMovement[];
+  inventorySnapshots: any[];
+  editableInventory: any[];
+  waste: any[];
+  personalMeals: any[];
+  onNavigateToSection: (section: string) => void;
+}
 
-  // Fetch budget entries for selected month/year
-  const { data: budgetEntries = [], isLoading } = useQuery({
-    queryKey: ['/api/budget-entries', selectedYear, selectedMonth],
-    queryFn: () => 
-      fetch(`/api/budget-entries/${selectedYear}/${selectedMonth}`)
-        .then(res => res.json()) as Promise<BudgetEntry[]>
-  });
+interface KPICardProps {
+  title: string;
+  value: string;
+  change?: number;
+  changeLabel?: string | React.ReactNode;
+  icon: React.ReactNode;
+  trend?: "up" | "down" | "stable";
+  status?: "good" | "warning" | "danger";
+  onClick?: () => void;
+}
 
-  // Create economic parameters mutation (for defaults)
-  const createEcoParamsMutation = useMutation({
-    mutationFn: async (params: UpdateEconomicParameters & { year: number; month: number }) => {
-      const response = await apiRequest('POST', '/api/economic-parameters', params);
-      return response as unknown as EconomicParameters;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/economic-parameters', selectedYear, selectedMonth] });
-    },
-  });
+function KPICard({ title, value, change, changeLabel, icon, trend, status = "good", onClick }: KPICardProps) {
+  const getBadgeVariant = () => {
+    if (change !== undefined) {
+      return "outline";
+    }
+    switch (status) {
+      case "good": return "default";
+      case "warning": return "secondary";
+      case "danger": return "destructive";
+      default: return "default";
+    }
+  };
 
-  // Fetch economic parameters for selected month/year (no side-effects)
-  const { data: ecoParams, error: ecoParamsError } = useQuery({
-    queryKey: ['/api/economic-parameters', selectedYear, selectedMonth],
+  const getChangeClasses = () => {
+    if (change === undefined) return "";
+    return change < 0 
+      ? "!bg-green-100 dark:!bg-green-900 !text-green-800 dark:!text-green-200 !border-green-200 dark:!border-green-700"
+      : "!bg-red-100 dark:!bg-red-900 !text-red-800 dark:!text-red-200 !border-red-200 dark:!border-red-700";
+  };
+
+  const getTrendIcon = () => {
+    if (change === undefined) return null;
+    return trend === "up" ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />;
+  };
+
+  return (
+    <Card 
+      className={`hover-elevate ${onClick ? 'cursor-pointer' : ''}`} 
+      onClick={onClick}
+      data-testid={`kpi-card-${title.toLowerCase().replace(/\s+/g, '-')}`}
+    >
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+          {icon}
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="text-2xl font-bold">{value}</div>
+          {change !== undefined && (
+            <Badge variant={getBadgeVariant()} className={`flex items-center gap-1 ${getChangeClasses()}`}>
+              {getTrendIcon()}
+              <span className="text-xs">
+                {changeLabel ? changeLabel : `${change > 0 ? '+' : ''}${change.toFixed(1)}%`}
+              </span>
+            </Badge>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface PillarOverviewProps {
+  title: string;
+  description: string;
+  currentValue: string;
+  targetValue: string;
+  progress: number;
+  status: "good" | "warning" | "danger";
+  icon: React.ReactNode;
+  onExplore: () => void;
+  isComingSoon?: boolean;
+}
+
+function PillarOverview({ 
+  title, 
+  description, 
+  currentValue, 
+  targetValue, 
+  progress, 
+  status, 
+  icon, 
+  onExplore,
+  isComingSoon = false
+}: PillarOverviewProps) {
+  const getStatusColor = () => {
+    switch (status) {
+      case "good": return "text-green-600 dark:text-green-400";
+      case "warning": return "text-yellow-600 dark:text-yellow-400";
+      case "danger": return "text-red-600 dark:text-red-400";
+    }
+  };
+
+  const getProgressColor = () => {
+    switch (status) {
+      case "good": return "bg-green-500";
+      case "warning": return "bg-yellow-500";
+      case "danger": return "bg-red-500";
+    }
+  };
+
+  return (
+    <Card className="hover-elevate">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg bg-muted ${getStatusColor()}`}>
+            {icon}
+          </div>
+          <div>
+            <CardTitle className="text-lg">{title}</CardTitle>
+            <p className="text-sm text-muted-foreground">{description}</p>
+          </div>
+        </div>
+        {isComingSoon && (
+          <Badge variant="secondary" className="ml-2">
+            <Clock className="h-3 w-3 mr-1" />
+            In Sviluppo
+          </Badge>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-2xl font-bold">{currentValue}</div>
+            <div className="text-sm text-muted-foreground">Target: {targetValue}</div>
+          </div>
+          <div className="text-right">
+            <div className={`text-sm font-medium ${getStatusColor()}`}>
+              {progress}% del target
+            </div>
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <Progress value={progress} className="h-2" />
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>Attuale</span>
+            <span>Target</span>
+          </div>
+        </div>
+
+        <Button 
+          onClick={onExplore} 
+          className="w-full" 
+          variant={isComingSoon ? "outline" : "default"}
+          disabled={isComingSoon}
+          data-testid={`button-explore-${title.toLowerCase().replace(/\s+/g, '-')}`}
+        >
+          {isComingSoon ? "Disponibile Presto" : `Esplora ${title}`}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function Dashboard({ 
+  products, 
+  dishes, 
+  orders, 
+  stockMovements, 
+  inventorySnapshots,
+  editableInventory,
+  waste, 
+  personalMeals, 
+  onNavigateToSection 
+}: DashboardProps) {
+  // Fetch sales data
+  const { data: salesData = [] } = useSales();
+  
+  // Current period for budget data
+  const currentYear = (() => {
+    const saved = localStorage.getItem('foodyflow-selected-year');
+    return saved ? parseInt(saved) : new Date().getFullYear();
+  })();
+  const currentMonth = (() => {
+    const saved = localStorage.getItem('foodyflow-selected-month');
+    return saved ? parseInt(saved) : new Date().getMonth() + 1;
+  })();
+
+  // Fetch economic parameters for EBITDA calculation
+  const { data: ecoParams } = useQuery({
+    queryKey: ['/api/economic-parameters', currentYear, currentMonth],
     queryFn: async () => {
-      const response = await fetch(`/api/economic-parameters/${selectedYear}/${selectedMonth}`);
+      const response = await fetch(`/api/economic-parameters/${currentYear}/${currentMonth}`);
       if (!response.ok) {
-        const error = new Error(`Failed to fetch: ${response.status}`);
-        (error as any).status = response.status;
-        throw error;
+        return null;
       }
       return response.json() as Promise<EconomicParameters>;
     },
-    retry: false, // Don't retry on 404
+    retry: false
   });
 
-  // Handle 404 errors by creating default parameters (side-effect free)
-  const [defaultsCreated, setDefaultsCreated] = useState(false);
+  // Query for food cost metrics
+  const currentDate = new Date();
+  const actualYear = currentDate.getFullYear();
+  const actualMonth = currentDate.getMonth() + 1;
   
-  // Reset defaultsCreated when period changes
-  useEffect(() => {
-    setDefaultsCreated(false);
-  }, [selectedYear, selectedMonth]);
-
-  useEffect(() => {
-    if ((ecoParamsError as any)?.status === 404 && !defaultsCreated) {
-      const defaultParams: UpdateEconomicParameters = {
-        materieFirstePercent: 22.10,
-        acquistiVarPercent: 3.00,
-        locazioniBudget: 0,
-        personaleBudget: 0,
-        utenzeBudget: 0,
-        manutenzionibudget: 0,
-        noleggibudget: 0,
-        prestazioniTerziBudget: 0,
-        consulenzeBudget: 0,
-        marketingBudget: 0,
-        deliveryBudget: 0,
-        trasferteBudget: 0,
-        assicurazioniBudget: 0,
-        speseBancarieBudget: 0,
-      };
-      createEcoParamsMutation.mutate({ ...defaultParams, year: selectedYear, month: selectedMonth });
-      setDefaultsCreated(true);
-    }
-  }, [ecoParamsError, selectedYear, selectedMonth, defaultsCreated, createEcoParamsMutation]);
-
-  // Create/update mutations
-  const createMutation = useMutation({
-    mutationFn: (data: InsertBudgetEntry) => apiRequest('POST', '/api/budget-entries', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/budget-entries', selectedYear, selectedMonth] });
-    },
+  const { data: foodCostMetrics } = useQuery({
+    queryKey: ['/api/metrics/food-cost', actualYear, actualMonth]
   });
 
-  // Economic parameters update mutation
-  const updateEcoParamsMutation = useMutation({
-    mutationFn: (data: UpdateEconomicParameters) => 
-      apiRequest('PUT', `/api/economic-parameters/${selectedYear}/${selectedMonth}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/economic-parameters', selectedYear, selectedMonth] });
-    },
+  // Fetch budget entries
+  const { data: budgetEntries = [] } = useQuery({
+    queryKey: ['/api/budget-entries', currentYear, currentMonth],
+    queryFn: () => 
+      fetch(`/api/budget-entries/${currentYear}/${currentMonth}`)
+        .then(res => res.json()) as Promise<BudgetEntry[]>
   });
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateBudgetEntry }) => 
-      apiRequest('PUT', `/api/budget-entries/${id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/budget-entries', selectedYear, selectedMonth] });
-      setEditingEntry(null);
-      setEditForm({});
-    },
-  });
+  // Create product lookup map for performance
+  const productMap = useMemo(() => 
+    new Map(products.map(p => [p.id, p])), 
+    [products]
+  );
 
-  // Handle editing economic parameters - distinguish between percentage and budget fields
-  const handleEcoEdit = (field: keyof UpdateEconomicParameters, currentValue: number, isPercentageField: boolean = false) => {
-    setEcoEditingField(field);
-    if (isPercentageField) {
-      // For percentage fields (materie prime, acquisti vari), edit as percentage
-      setEcoTempValue(currentValue.toString().replace('.', ','));
-    } else {
-      // For budget fields, edit as absolute euro value
-      setEcoTempValue(currentValue.toString().replace('.', ','));
-    }
-  };
-
-  const handleEcoSave = (field: keyof UpdateEconomicParameters) => {
-    if (!ecoParams) return;
+  // Create sales map by dish ID for performance
+  const salesByDish = useMemo(() => {
+    const salesMap = new Map<string, { totalQuantity: number; totalRevenue: number; totalCost: number }>();
     
-    const numValue = parseFloat(ecoTempValue.replace(',', '.'));
-    if (isNaN(numValue)) return;
-    
-    const updateData: Partial<UpdateEconomicParameters> = {
-      [field]: numValue,
-    };
-    
-    updateEcoParamsMutation.mutate(updateData);
-    setEcoEditingField(null);
-    setEcoTempValue("");
-  };
-
-  const handleEcoCancel = () => {
-    setEcoEditingField(null);
-    setEcoTempValue("");
-  };
-
-  // Generate all days for the month
-  const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
-  const monthDays = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-
-  // Convert budget entries to map for easier lookup
-  const budgetMap = useMemo(() => {
-    const map = new Map<number, BudgetEntry>();
-    if (budgetEntries && Array.isArray(budgetEntries)) {
-      budgetEntries.forEach(entry => {
-        map.set(entry.day, entry);
+    salesData.forEach(sale => {
+      const existing = salesMap.get(sale.dishId) || { totalQuantity: 0, totalRevenue: 0, totalCost: 0 };
+      salesMap.set(sale.dishId, {
+        totalQuantity: existing.totalQuantity + sale.quantitySold,
+        totalRevenue: existing.totalRevenue + sale.totalRevenue,
+        totalCost: existing.totalCost + sale.totalCost
       });
-    }
-    return map;
-  }, [budgetEntries]);
-
-  // Calculate totals
-  const totals = useMemo(() => {
-    let totalCopertoMedio = 0;
-    let totalCoperti = 0;
-    let totalBudgetRevenue = 0;
-    let totalBudgetDelivery = 0;
-    let totalActualRevenue = 0;
-    let totalActualDelivery = 0;
-    let validEntries = 0;
-
-    if (budgetEntries && Array.isArray(budgetEntries)) {
-      budgetEntries.forEach(entry => {
-        totalCoperti += entry.coperti || 0;
-        totalBudgetDelivery += entry.budgetDelivery || 0;
-        totalActualRevenue += entry.actualRevenue || 0;
-        totalActualDelivery += entry.actualDelivery || 0;
-        
-        if (entry.copertoMedio && entry.copertoMedio > 0) {
-          totalCopertoMedio += entry.copertoMedio;
-          validEntries++;
-        }
-        
-        // Budget Revenue calcolato = Coperti * Coperto Medio
-        const calculatedRevenue = (entry.coperti || 0) * (entry.copertoMedio || 0);
-        totalBudgetRevenue += calculatedRevenue;
-      });
-    }
-
-    // Media coperto medio
-    const avgCopertoMedio = validEntries > 0 ? totalCopertoMedio / validEntries : 0;
+    });
     
-    // Consuntivo 2026 = Budget Revenue + Budget Delivery
-    const totalConsuntivo2026 = totalBudgetRevenue + totalBudgetDelivery;
+    return salesMap;
+  }, [salesData]);
+  
+  // Calculate food cost metrics
+  const { totalFoodSales, totalFoodCost, foodCostPercentage, theoreticalFoodCostPercentage, realVsTheoreticalDiff } = useMemo(() => {
+    const sales = Array.from(salesByDish.values()).reduce((sum, dishSales) => sum + dishSales.totalRevenue, 0);
     
-    // Consuntivo 2025 = Incasso 2025 + Delivery 2025
-    const totalConsuntivo2025 = totalActualRevenue + totalActualDelivery;
+    // Calculate THEORETICAL food cost
+    const totalCostOfSales = Array.from(salesByDish.values()).reduce((sum, dishSales) => sum + dishSales.totalCost, 0);
+    const theoreticalPercentage = sales > 0 ? (totalCostOfSales / sales) * 100 : 0;
     
-    // Delta % tra Consuntivo 2026 e 2025
-    const deltaPercentage = totalConsuntivo2025 > 0 ? 
-      (((totalConsuntivo2026 - totalConsuntivo2025) / totalConsuntivo2025) * 100) : 0;
-
+    // Calculate REAL food cost
+    const totaleInizialeM = editableInventory.reduce((sum, inventory) => {
+      const product = productMap.get(inventory.productId);
+      return sum + (product ? inventory.initialQuantity * product.pricePerUnit : 0);
+    }, 0);
+    
+    const totaleInM = stockMovements
+      .filter(movement => movement.movementType === 'in')
+      .reduce((sum, movement) => sum + (movement.totalCost || 0), 0);
+    
+    const totaleFinaleM = editableInventory.reduce((sum, inventory) => {
+      const product = productMap.get(inventory.productId);
+      return sum + (product ? inventory.finalQuantity * product.pricePerUnit : 0);
+    }, 0);
+    
+    const foodCostValue = totaleInizialeM + totaleInM - totaleFinaleM;
+    const realPercentage = sales > 0 ? (foodCostValue / sales) * 100 : 0;
+    
+    const differential = realPercentage - theoreticalPercentage;
+    
     return {
-      avgCopertoMedio,
-      totalCoperti,
-      totalBudgetRevenue,
-      totalBudgetDelivery,
-      totalBudget: totalBudgetRevenue + totalBudgetDelivery,
-      totalActualRevenue,
-      totalActualDelivery,
-      totalActual: totalActualRevenue + totalActualDelivery,
-      totalConsuntivo2026,
-      totalConsuntivo2025,
-      deltaPercentage
+      totalFoodSales: sales,
+      totalFoodCost: foodCostValue,
+      foodCostPercentage: realPercentage,
+      theoreticalFoodCostPercentage: theoreticalPercentage,
+      realVsTheoreticalDiff: differential
     };
-  }, [budgetEntries]);
+  }, [dishes, productMap, editableInventory, stockMovements]);
+  
+  const wasteValue = useMemo(() => 
+    waste.reduce((sum, w) => sum + (w.totalCost || 0), 0), 
+    [waste]
+  );
+  
+  const personalMealsCost = useMemo(() => 
+    personalMeals.reduce((sum, p) => sum + (p.totalCost || 0), 0), 
+    [personalMeals]
+  );
 
-  const monthNames = [
-    "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
-    "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
-  ];
-
-  const dayNames = [
-    "Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"
-  ];
-
-  const getDayOfWeek = (year: number, month: number, day: number) => {
-    const date = new Date(year, month - 1, day);
-    return dayNames[date.getDay()];
-  };
-
-  const formatCurrency = (value: number | null | undefined) => {
-    if (value === null || value === undefined) return "€ 0,00";
-    return `€ ${value.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
-
-  const formatPercentage = (value: number | null | undefined) => {
-    if (value === null || value === undefined) return "0%";
-    return `${value.toFixed(1)}%`;
-  };
-
-  const getPercentageColor = (value: number | null | undefined) => {
-    if (!value) return "";
-    if (value > 0) return "text-green-600"; // Positivo = verde
-    if (value < 0) return "text-red-600"; // Negativo = rosso  
-    return "text-gray-600";
-  };
-
-  const handleCellEdit = (day: number, field: keyof UpdateBudgetEntry, value: string) => {
-    const entry = budgetMap.get(day);
-    
-    // Handle empty values and convert italian decimal format (comma to dot)
-    let numericValue: number;
-    if (value === '' || value === null || value === undefined) {
-      numericValue = 0;
-    } else {
-      // Support both comma and dot as decimal separator
-      const cleanValue = value.replace(',', '.');
-      numericValue = parseFloat(cleanValue);
-      if (isNaN(numericValue)) {
-        numericValue = 0;
-      }
-      
-      // Special handling for integer fields (coperti should be integer)
-      if (field === 'coperti') {
-        numericValue = Math.round(numericValue); // Convert decimals to integers for coperti
-      }
-    }
-
-    if (entry) {
-      // Update existing entry
-      updateMutation.mutate({
-        id: entry.id,
-        data: { [field]: numericValue }
-      });
-    } else {
-      // Create new entry
-      const dateStr = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-      createMutation.mutate({
-        date: dateStr,
-        year: selectedYear,
-        month: selectedMonth,
-        day: day,
-        [field]: numericValue
-      });
-    }
-  };
-
-  if (isLoading) {
-    return <div className="flex justify-center p-8">Caricamento...</div>;
-  }
+  // Labour cost impostato a 0
+  const labourCostPercentage = 0;
 
   return (
-    <div className="space-y-6" data-testid="budget-main">
+    <div className="space-y-6" data-testid="dashboard-main">
       {/* Header */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" />
-              <CardTitle>Budget {monthNames[selectedMonth - 1]} {selectedYear}</CardTitle>
-            </div>
-            <div className="flex items-center gap-3">
-              <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
-                <SelectTrigger className="w-24" data-testid="select-year">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="2024">2024</SelectItem>
-                  <SelectItem value="2025">2025</SelectItem>
-                  <SelectItem value="2026">2026</SelectItem>
-                  <SelectItem value="2027">2027</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}>
-                <SelectTrigger className="w-32" data-testid="select-month">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {monthNames.map((name, index) => (
-                    <SelectItem key={index} value={(index + 1).toString()}>{name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-
-      {/* Budget Table */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-red-600 text-white hover:bg-red-600">
-                  <TableHead className="text-white font-semibold min-w-[120px]">Data</TableHead>
-                  <TableHead className="text-white font-semibold text-right min-w-[100px]">Coperto Medio €</TableHead>
-                  <TableHead className="text-white font-semibold text-center min-w-[80px]">Coperti</TableHead>
-                  <TableHead className="text-white font-semibold text-right min-w-[120px]">Budget {selectedYear} €</TableHead>
-                  <TableHead className="text-white font-semibold text-right min-w-[120px]">Delivery {selectedYear} €</TableHead>
-                  <TableHead className="text-white font-semibold text-right min-w-[120px]">Incasso {selectedYear - 1} €</TableHead>
-                  <TableHead className="text-white font-semibold text-right min-w-[120px]">Delivery {selectedYear - 1} €</TableHead>
-                  <TableHead className="text-white font-semibold text-center min-w-[110px]">Consuntivo {selectedYear}</TableHead>
-                  <TableHead className="text-white font-semibold text-center min-w-[110px]">Consuntivo {selectedYear - 1}</TableHead>
-                  <TableHead className="text-white font-semibold text-center min-w-[80px]">Delta %</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {monthDays.map(day => {
-                  const entry = budgetMap.get(day);
-                  
-                  // Calcolo automatico Budget 2026 = Coperti * Coperto Medio
-                  const calculatedBudgetRevenue = (entry?.coperti || 0) * (entry?.copertoMedio || 0);
-                  
-                  // Consuntivo 2026 = Budget 2026 + Delivery 2026
-                  const consuntivo2026 = calculatedBudgetRevenue + (entry?.budgetDelivery || 0);
-                  
-                  // Consuntivo 2025 = Incasso 2025 + Delivery 2025
-                  const consuntivo2025 = (entry?.actualRevenue || 0) + (entry?.actualDelivery || 0);
-                  
-                  // Delta % tra Consuntivo 2026 e Consuntivo 2025
-                  const deltaPercentage = consuntivo2025 > 0 ? (((consuntivo2026 - consuntivo2025) / consuntivo2025) * 100) : 0;
-
-                  return (
-                    <TableRow 
-                      key={day}
-                      className="hover:bg-muted/50 transition-colors"
-                    >
-                      <TableCell className="font-medium">
-                        {`${getDayOfWeek(selectedYear, selectedMonth, day)} ${day.toString().padStart(2, '0')} ${monthNames[selectedMonth - 1].slice(0, 3)} ${selectedYear}`}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Input
-                          type="text"
-                          value={entry?.copertoMedio ? entry.copertoMedio.toString() : ''}
-                          placeholder="0,00"
-                          className="w-20 text-right border-0 p-1 h-8"
-                          onChange={(e) => handleCellEdit(day, 'copertoMedio', e.target.value)}
-                          data-testid={`input-coperto-medio-${day}`}
-                        />
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Input
-                          type="text"
-                          value={entry?.coperti ? entry.coperti.toString() : ''}
-                          placeholder="0"
-                          className="w-16 text-center border-0 p-1 h-8"
-                          onChange={(e) => handleCellEdit(day, 'coperti', e.target.value)}
-                          data-testid={`input-coperti-${day}`}
-                        />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <span className="text-sm font-mono" data-testid={`calculated-budget-revenue-${day}`}>
-                          {formatCurrency(calculatedBudgetRevenue)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Input
-                          type="text"
-                          value={entry?.budgetDelivery ? entry.budgetDelivery.toString() : ''}
-                          placeholder="0,00"
-                          className="w-24 text-right border-0 p-1 h-8"
-                          onChange={(e) => handleCellEdit(day, 'budgetDelivery', e.target.value)}
-                          data-testid={`input-budget-delivery-${day}`}
-                        />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Input
-                          type="text"
-                          value={entry?.actualRevenue ? entry.actualRevenue.toString() : ''}
-                          placeholder="0,00"
-                          className="w-24 text-right border-0 p-1 h-8"
-                          onChange={(e) => handleCellEdit(day, 'actualRevenue', e.target.value)}
-                          data-testid={`input-actual-revenue-${day}`}
-                        />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Input
-                          type="text"
-                          value={entry?.actualDelivery ? entry.actualDelivery.toString() : ''}
-                          placeholder="0,00"
-                          className="w-24 text-right border-0 p-1 h-8"
-                          onChange={(e) => handleCellEdit(day, 'actualDelivery', e.target.value)}
-                          data-testid={`input-actual-delivery-${day}`}
-                        />
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <span className="text-sm font-mono" data-testid={`consuntivo-2026-${day}`}>
-                          {formatCurrency(consuntivo2026)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <span className="text-sm font-mono" data-testid={`consuntivo-2025-${day}`}>
-                          {formatCurrency(consuntivo2025)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge 
-                          variant="secondary"
-                          className={`font-mono text-xs ${getPercentageColor(deltaPercentage)}`}
-                          data-testid={`badge-delta-${day}`}
-                        >
-                          {deltaPercentage > 0 ? '+' : ''}{deltaPercentage.toFixed(1)}%
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-
-                {/* Totals Row */}
-                <TableRow className="bg-gray-100 dark:bg-gray-800 font-semibold border-t-2">
-                  <TableCell className="font-bold">Totale {monthNames[selectedMonth - 1]}</TableCell>
-                  <TableCell className="text-right font-bold" data-testid="total-coperto-medio">{formatCurrency(totals.avgCopertoMedio)}</TableCell>
-                  <TableCell className="text-center font-bold" data-testid="total-coperti">{totals.totalCoperti}</TableCell>
-                  <TableCell className="text-right font-bold" data-testid="total-budget-revenue">{formatCurrency(totals.totalBudgetRevenue)}</TableCell>
-                  <TableCell className="text-right font-bold" data-testid="total-budget-delivery">{formatCurrency(totals.totalBudgetDelivery)}</TableCell>
-                  <TableCell className="text-right font-bold" data-testid="total-actual-revenue">{formatCurrency(totals.totalActualRevenue)}</TableCell>
-                  <TableCell className="text-right font-bold" data-testid="total-actual-delivery">{formatCurrency(totals.totalActualDelivery)}</TableCell>
-                  <TableCell className="text-center font-bold" data-testid="total-consuntivo-2026">{formatCurrency(totals.totalConsuntivo2026)}</TableCell>
-                  <TableCell className="text-center font-bold" data-testid="total-consuntivo-2025">{formatCurrency(totals.totalConsuntivo2025)}</TableCell>
-                  <TableCell className="text-center font-bold">
-                    <Badge 
-                      variant="secondary"
-                      className={`font-mono ${getPercentageColor(totals.deltaPercentage)}`}
-                      data-testid="total-delta-percentage"
-                    >
-                      {totals.deltaPercentage > 0 ? '+' : ''}{totals.deltaPercentage.toFixed(1)}%
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Consuntivo {selectedYear}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="summary-card-consuntivo-2026">
-              {formatCurrency(totals.totalConsuntivo2026)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Sala: {formatCurrency(totals.totalBudgetRevenue)} | Delivery: {formatCurrency(totals.totalBudgetDelivery)}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Consuntivo {selectedYear - 1}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="summary-card-consuntivo-2025">
-              {formatCurrency(totals.totalConsuntivo2025)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Sala: {formatCurrency(totals.totalActualRevenue)} | Delivery: {formatCurrency(totals.totalActualDelivery)}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Performance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${getPercentageColor(totals.deltaPercentage)}`} data-testid="summary-card-performance">
-              {totals.deltaPercentage > 0 ? '+' : ''}{totals.deltaPercentage.toFixed(1)}%
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {selectedYear} vs {selectedYear - 1}
-            </p>
-          </CardContent>
-        </Card>
+      <div className="text-center space-y-2">
+        <h1 className="text-3xl font-bold">Dashboard Gestione Ristorante</h1>
+        <p className="text-muted-foreground">
+          Controllo completo di Food Cost, Labour Cost e Performance Finanziaria
+        </p>
       </div>
 
-      {/* Conto Economico Section */}
-      {ecoParams && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              Conto Economico {monthNames[selectedMonth - 1]} {selectedYear}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
-                {/* Sezione Ricavi */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-foreground border-b pb-2">Ricavi</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center bg-muted/50 p-3 rounded-md">
-                      <span className="font-medium">Ricavi Sala:</span>
-                      <span className="font-mono font-bold text-chart-2">{formatCurrency(totals.totalBudgetRevenue)}</span>
-                    </div>
-                    <div className="flex justify-between items-center bg-muted/50 p-3 rounded-md">
-                      <span className="font-medium">Ricavi Delivery:</span>
-                      <span className="font-mono font-bold text-chart-2">{formatCurrency(totals.totalBudgetDelivery)}</span>
-                    </div>
-                    <div className="flex justify-between items-center bg-primary/10 p-3 rounded-md border-2 border-primary/20">
-                      <span className="font-bold text-lg">RICAVI TOTALI:</span>
-                      <span className="font-mono font-bold text-xl text-primary">{formatCurrency(totals.totalConsuntivo2026)}</span>
-                    </div>
-                  </div>
-                </div>
+      {/* KPI Overview Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <KPICard
+          title="Food Cost %"
+          value={`${foodCostPercentage.toFixed(1)}%`}
+          change={realVsTheoreticalDiff}
+          trend={realVsTheoreticalDiff > 0 ? "up" : "down"}
+          status={foodCostPercentage > 30 ? "danger" : foodCostPercentage > 25 ? "warning" : "good"}
+          icon={<ChefHat className="h-4 w-4" />}
+          onClick={() => onNavigateToSection("food-cost")}
+        />
+        
+        <KPICard
+          title="Labour Cost %"
+          value={`${labourCostPercentage.toFixed(1)}%`}
+          change={1.2}
+          trend="up"
+          status={labourCostPercentage > 35 ? "danger" : labourCostPercentage > 30 ? "warning" : "good"}
+          icon={<Users className="h-4 w-4" />}
+          onClick={() => onNavigateToSection("labour-cost")}
+        />
+        
+        <KPICard
+          title="EBITDA"
+          value="18.5%"
+          change={2.3}
+          trend="up"
+          status="good"
+          icon={<TrendingUp className="h-4 w-4" />}
+          onClick={() => onNavigateToSection("profit-loss")}
+        />
+        
+        <KPICard
+          title="Fatturato Oggi"
+          value="€42,000"
+          change={5.3}
+          trend="up"
+          status="good"
+          icon={<DollarSign className="h-4 w-4" />}
+          onClick={() => onNavigateToSection("sales-detail")}
+        />
+      </div>
 
-                {/* Sezione Costi */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-foreground border-b pb-2">Costi</h3>
-                  <div className="space-y-3">
-                    {/* Materie Prime */}
-                    <div className="flex justify-between items-center bg-muted/50 p-3 rounded-md">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">Materie Prime:</span>
-                        <div className="flex items-center gap-1">
-                          {ecoEditingField === 'materieFirstePercent' ? (
-                            <div className="flex items-center gap-1">
-                              <Input
-                                type="text"
-                                value={ecoTempValue}
-                                onChange={(e) => setEcoTempValue(e.target.value)}
-                                className="w-16 h-6 text-xs text-center bg-yellow-100 dark:bg-yellow-900/30"
-                                placeholder="22,10"
-                              />
-                              <span className="text-xs">%</span>
-                              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => handleEcoSave('materieFirstePercent')}>
-                                <Save className="h-3 w-3" />
-                              </Button>
-                              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={handleEcoCancel}>
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 px-2 text-xs bg-yellow-100 dark:bg-yellow-900/30 hover:bg-yellow-200 dark:hover:bg-yellow-900/50"
-                              onClick={() => handleEcoEdit('materieFirstePercent', ecoParams.materieFirstePercent, true)}
-                            >
-                              {ecoParams.materieFirstePercent.toFixed(2).replace('.', ',')}%
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                      <span className="font-mono font-medium text-destructive">
-                        -{formatCurrency((totals.totalConsuntivo2026 * ecoParams.materieFirstePercent) / 100)}
-                      </span>
-                    </div>
+      {/* Three Pillars Overview */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Food Cost Pillar */}
+        <PillarOverview
+          title="Food Cost"
+          description="Controllo costi ingredienti, ricette e sprechi"
+          currentValue={`€${totalFoodCost.toFixed(1)}`}
+          targetValue="€10,500"
+          progress={Math.min(100, (10500 / totalFoodCost) * 100) || 75}
+          status={foodCostPercentage > 30 ? "danger" : foodCostPercentage > 25 ? "warning" : "good"}
+          icon={<ChefHat className="h-6 w-6" />}
+          onExplore={() => onNavigateToSection("food-cost")}
+        />
 
-                    {/* Acquisti Vari */}
-                    <div className="flex justify-between items-center bg-muted/50 p-3 rounded-md">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">Acquisti Vari:</span>
-                        <div className="flex items-center gap-1">
-                          {ecoEditingField === 'acquistiVarPercent' ? (
-                            <div className="flex items-center gap-1">
-                              <Input
-                                type="text"
-                                value={ecoTempValue}
-                                onChange={(e) => setEcoTempValue(e.target.value)}
-                                className="w-16 h-6 text-xs text-center bg-yellow-100 dark:bg-yellow-900/30"
-                                placeholder="3,00"
-                              />
-                              <span className="text-xs">%</span>
-                              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => handleEcoSave('acquistiVarPercent')}>
-                                <Save className="h-3 w-3" />
-                              </Button>
-                              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={handleEcoCancel}>
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 px-2 text-xs bg-yellow-100 dark:bg-yellow-900/30 hover:bg-yellow-200 dark:hover:bg-yellow-900/50"
-                              onClick={() => handleEcoEdit('acquistiVarPercent', ecoParams.acquistiVarPercent, true)}
-                            >
-                              {ecoParams.acquistiVarPercent.toFixed(2).replace('.', ',')}%
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                      <span className="font-mono font-medium text-destructive">
-                        -{formatCurrency((totals.totalConsuntivo2026 * ecoParams.acquistiVarPercent) / 100)}
-                      </span>
-                    </div>
+        {/* Labour Cost Pillar */}
+        <PillarOverview
+          title="Labour Cost"
+          description="Gestione personale, turni e produttività"
+          currentValue="€0"
+          targetValue="€15,000"
+          progress={0}
+          status="good"
+          icon={<Users className="h-6 w-6" />}
+          onExplore={() => onNavigateToSection("labour-cost")}
+          isComingSoon={true}
+        />
 
-                    {/* Costi Fissi */}
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-semibold text-muted-foreground mt-4">Costi Fissi</h4>
-                      
-                      {/* Locazioni */}
-                      <div className="flex justify-between items-center bg-muted/30 p-2 rounded-sm">
-                        <span className="text-sm">Locazioni:</span>
-                        <div className="flex items-center gap-2">
-                          {ecoEditingField === 'locazioniBudget' ? (
-                            <div className="flex items-center gap-1">
-                              <Input
-                                type="text"
-                                value={ecoTempValue}
-                                onChange={(e) => setEcoTempValue(e.target.value)}
-                                className="w-20 h-6 text-xs text-right bg-yellow-100 dark:bg-yellow-900/30"
-                                placeholder="0,00"
-                              />
-                              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => handleEcoSave('locazioniBudget')}>
-                                <Save className="h-3 w-3" />
-                              </Button>
-                              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={handleEcoCancel}>
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 px-2 text-xs bg-yellow-100 dark:bg-yellow-900/30 hover:bg-yellow-200 dark:hover:bg-yellow-900/50"
-                              onClick={() => handleEcoEdit('locazioniBudget', ecoParams.locazioniBudget)}
-                            >
-                              {formatCurrency(ecoParams.locazioniBudget)}
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Personale */}
-                      <div className="flex justify-between items-center bg-muted/30 p-2 rounded-sm">
-                        <span className="text-sm">Personale:</span>
-                        <div className="flex items-center gap-2">
-                          {ecoEditingField === 'personaleBudget' ? (
-                            <div className="flex items-center gap-1">
-                              <Input
-                                type="text"
-                                value={ecoTempValue}
-                                onChange={(e) => setEcoTempValue(e.target.value)}
-                                className="w-20 h-6 text-xs text-right bg-yellow-100 dark:bg-yellow-900/30"
-                                placeholder="0,00"
-                              />
-                              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => handleEcoSave('personaleBudget')}>
-                                <Save className="h-3 w-3" />
-                              </Button>
-                              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={handleEcoCancel}>
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 px-2 text-xs bg-yellow-100 dark:bg-yellow-900/30 hover:bg-yellow-200 dark:hover:bg-yellow-900/50"
-                              onClick={() => handleEcoEdit('personaleBudget', ecoParams.personaleBudget)}
-                            >
-                              {formatCurrency(ecoParams.personaleBudget)}
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Altri Costi Fissi */}
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        {[
-                          { field: 'utenzeBudget' as const, label: 'Utenze' },
-                          { field: 'manutenzionibudget' as const, label: 'Manutenzioni' },
-                          { field: 'noleggibudget' as const, label: 'Noleggi' },
-                          { field: 'prestazioniTerziBudget' as const, label: 'Prestazioni Terzi' },
-                          { field: 'consulenzeBudget' as const, label: 'Consulenze' },
-                          { field: 'marketingBudget' as const, label: 'Marketing' },
-                          { field: 'deliveryBudget' as const, label: 'Delivery' },
-                          { field: 'trasferteBudget' as const, label: 'Trasferte' },
-                          { field: 'assicurazioniBudget' as const, label: 'Assicurazioni' },
-                          { field: 'speseBancarieBudget' as const, label: 'Spese Bancarie' },
-                        ].map(({ field, label }) => (
-                          <div key={field} className="flex justify-between items-center bg-muted/20 p-1 rounded-sm">
-                            <span className="text-xs">{label}:</span>
-                            <div className="flex items-center gap-1">
-                              {ecoEditingField === field ? (
-                                <div className="flex items-center gap-1">
-                                  <Input
-                                    type="text"
-                                    value={ecoTempValue}
-                                    onChange={(e) => setEcoTempValue(e.target.value)}
-                                    className="w-16 h-5 text-xs text-right bg-yellow-100 dark:bg-yellow-900/30"
-                                    placeholder="0,00"
-                                  />
-                                  <Button size="sm" variant="ghost" className="h-5 w-5 p-0" onClick={() => handleEcoSave(field)}>
-                                    <Save className="h-2 w-2" />
-                                  </Button>
-                                  <Button size="sm" variant="ghost" className="h-5 w-5 p-0" onClick={handleEcoCancel}>
-                                    <X className="h-2 w-2" />
-                                  </Button>
-                                </div>
-                              ) : (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-5 px-1 text-xs bg-yellow-100 dark:bg-yellow-900/30 hover:bg-yellow-200 dark:hover:bg-yellow-900/50"
-                                  onClick={() => handleEcoEdit(field, ecoParams[field])}
-                                >
-                                  {formatCurrency(ecoParams[field])}
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Calcoli Finali */}
-              <div className="mt-6 space-y-4 border-t pt-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-chart-2/10 p-4 rounded-md">
-                    <h4 className="font-semibold text-chart-2 mb-2">Ricavi Totali</h4>
-                    <div className="text-2xl font-bold text-chart-2">{formatCurrency(totals.totalConsuntivo2026)}</div>
-                  </div>
-                  
-                  <div className="bg-destructive/10 p-4 rounded-md">
-                    <h4 className="font-semibold text-destructive mb-2">Costi Totali</h4>
-                    <div className="text-2xl font-bold text-destructive">
-                      {formatCurrency(
-                        (totals.totalConsuntivo2026 * (ecoParams.materieFirstePercent + ecoParams.acquistiVarPercent)) / 100 +
-                        ecoParams.locazioniBudget + ecoParams.personaleBudget + ecoParams.utenzeBudget +
-                        ecoParams.manutenzionibudget + ecoParams.noleggibudget + ecoParams.prestazioniTerziBudget +
-                        ecoParams.consulenzeBudget + ecoParams.marketingBudget + ecoParams.deliveryBudget +
-                        ecoParams.trasferteBudget + ecoParams.assicurazioniBudget + ecoParams.speseBancarieBudget
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="bg-primary/10 p-4 rounded-md border-2 border-primary/20">
-                    <h4 className="font-semibold text-primary mb-2">Risultato Operativo</h4>
-                    <div className={`text-2xl font-bold ${
-                      (totals.totalConsuntivo2026 - 
-                       (totals.totalConsuntivo2026 * (ecoParams.materieFirstePercent + ecoParams.acquistiVarPercent)) / 100 -
-                       ecoParams.locazioniBudget - ecoParams.personaleBudget - ecoParams.utenzeBudget -
-                       ecoParams.manutenzionibudget - ecoParams.noleggibudget - ecoParams.prestazioniTerziBudget -
-                       ecoParams.consulenzeBudget - ecoParams.marketingBudget - ecoParams.deliveryBudget -
-                       ecoParams.trasferteBudget - ecoParams.assicurazioniBudget - ecoParams.speseBancarieBudget) >= 0 
-                       ? 'text-chart-2' : 'text-destructive'
-                    }`}>
-                      {formatCurrency(
-                        totals.totalConsuntivo2026 - 
-                        (totals.totalConsuntivo2026 * (ecoParams.materieFirstePercent + ecoParams.acquistiVarPercent)) / 100 -
-                        ecoParams.locazioniBudget - ecoParams.personaleBudget - ecoParams.utenzeBudget -
-                        ecoParams.manutenzionibudget - ecoParams.noleggibudget - ecoParams.prestazioniTerziBudget -
-                        ecoParams.consulenzeBudget - ecoParams.marketingBudget - ecoParams.deliveryBudget -
-                        ecoParams.trasferteBudget - ecoParams.assicurazioniBudget - ecoParams.speseBancarieBudget
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        {/* Financial Performance Pillar */}
+        <PillarOverview
+          title="Performance Finanziaria"
+          description="EBITDA, marginalità e crescita"
+          currentValue="€7,750"
+          targetValue="€8,000"
+          progress={97}
+          status="good"
+          icon={<Calculator className="h-6 w-6" />}
+          onExplore={() => onNavigateToSection("profit-loss")}
+        />
+      </div>
     </div>
   );
 }
 
-=====================================================
-=== 2. RECIPE FORM COMPONENT ===
-=====================================================
+================================================
+CLIENT/SRC/COMPONENTS/APPSIDEBAR.TSX - SIDEBAR NAVIGAZIONE
+================================================
 
-// File: client/src/components/RecipeForm.tsx
-${JSON.stringify(require('./client/src/components/RecipeForm.tsx'), null, 2)}
+import { 
+  LayoutDashboard, 
+  Calendar, 
+  Calculator, 
+  Users, 
+  BarChart3, 
+  Warehouse, 
+  ChefHat, 
+  Truck, 
+  ArrowUpDown, 
+  Trash2,
+  Utensils,
+  TrendingUp
+} from "lucide-react";
+import { useLocation } from "wouter";
+import { 
+  Sidebar, 
+  SidebarContent, 
+  SidebarGroup, 
+  SidebarGroupContent, 
+  SidebarGroupLabel, 
+  SidebarMenu, 
+  SidebarMenuButton, 
+  SidebarMenuItem,
+  SidebarHeader
+} from "@/components/ui/sidebar";
 
-=====================================================
-=== 3. SALES CHART COMPONENT ===
-=====================================================
+// Primary operational tabs
+const primaryTabs = [
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "budget", label: "Budget", icon: Calendar },
+  { id: "profit-loss", label: "P&L", icon: TrendingUp },
+  { id: "food-cost", label: "Food Cost", icon: Calculator },
+  { id: "labour-cost", label: "Labour Cost", icon: Users },
+  { id: "sales-detail", label: "Vendite", icon: BarChart3 },
+];
 
-// File: client/src/components/SalesChart.tsx
-${JSON.stringify(require('./client/src/components/SalesChart.tsx'), null, 2)}
+// Management section tabs
+const managementTabs = [
+  { id: "inventory", label: "Inventario", icon: Warehouse },
+  { id: "recipes", label: "Ricette", icon: ChefHat },
+  { id: "suppliers", label: "Fornitori", icon: Users },
+  { id: "orders", label: "Ordini", icon: Truck },
+  { id: "warehouse", label: "Magazzino", icon: ArrowUpDown },
+  { id: "waste", label: "Sprechi/Staff Food", icon: Trash2 },
+];
 
-=====================================================
-=== 4. WASTE FORM COMPONENT ===
-=====================================================
+interface AppSidebarProps {
+  activeTab: string;
+  onTabChange: (tab: string) => void;
+}
 
-// File: client/src/components/WasteForm.tsx
-${JSON.stringify(require('./client/src/components/WasteForm.tsx'), null, 2)}
+export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
+  const [location, navigate] = useLocation();
+  
+  const handleNavigation = (item: any) => {
+    navigate("/");
+    onTabChange(item.id);
+  };
 
-=====================================================
-=== 5. QUERY CLIENT UTILITY ===
-=====================================================
+  const isActive = (item: any) => {
+    return activeTab === item.id;
+  };
 
-// File: client/src/lib/queryClient.ts
+  return (
+    <Sidebar>
+      <SidebarHeader className="border-b border-border">
+        <div className="flex items-center gap-2 px-4 py-3">
+          <Utensils className="h-6 w-6 text-primary" />
+          <div className="flex flex-col">
+            <h1 className="text-lg font-bold text-foreground">FoodyFlow</h1>
+            <p className="text-xs text-muted-foreground italic">Evolve Your Eatery</p>
+          </div>
+        </div>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Operazioni</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {primaryTabs.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton 
+                      onClick={() => handleNavigation(item)}
+                      isActive={isActive(item)}
+                      data-testid={`sidebar-${item.id}`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        
+        <SidebarGroup>
+          <SidebarGroupLabel>Gestione</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {managementTabs.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton 
+                      onClick={() => handleNavigation(item)}
+                      isActive={isActive(item)}
+                      data-testid={`sidebar-${item.id}`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+    </Sidebar>
+  );
+}
+
+================================================
+CLIENT/SRC/HOOKS/USEAPI.TS - HOOKS REACT QUERY
+================================================
+
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+import type { 
+  Product, Supplier, Recipe, Dish, Waste, PersonalMeal, Order, StockMovement, InventorySnapshot, Sales,
+  InsertProduct, InsertSupplier, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal, InsertOrder, InsertStockMovement, InsertInventorySnapshot, InsertSales,
+  UpdateProduct, UpdateSupplier, UpdateRecipe, UpdateDish, UpdateOrder, UpdateStockMovement, UpdateInventorySnapshot, UpdateSales
+} from "@shared/schema";
+
+// Products hooks
+export function useProducts() {
+  return useQuery({
+    queryKey: ["/api/products"],
+    queryFn: api.products.getProducts,
+  });
+}
+
+export function useProduct(id: string) {
+  return useQuery({
+    queryKey: ["/api/products", id],
+    queryFn: () => api.products.getProduct(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreateProduct() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: api.products.createProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({
+        title: "Successo",
+        description: "Prodotto creato con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante la creazione del prodotto",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useUpdateProduct() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateProduct }) =>
+      api.products.updateProduct(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({
+        title: "Successo",
+        description: "Prodotto aggiornato con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante l'aggiornamento del prodotto",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useDeleteProduct() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: api.products.deleteProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({
+        title: "Successo",
+        description: "Prodotto eliminato con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante l'eliminazione del prodotto",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+// Suppliers hooks
+export function useSuppliers() {
+  return useQuery({
+    queryKey: ["/api/suppliers"],
+    queryFn: api.suppliers.getSuppliers,
+  });
+}
+
+export function useSupplier(id: string) {
+  return useQuery({
+    queryKey: ["/api/suppliers", id],
+    queryFn: () => api.suppliers.getSupplier(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreateSupplier() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: api.suppliers.createSupplier,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+      toast({
+        title: "Successo",
+        description: "Fornitore creato con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante la creazione del fornitore",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useUpdateSupplier() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateSupplier }) =>
+      api.suppliers.updateSupplier(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+      toast({
+        title: "Successo",
+        description: "Fornitore aggiornato con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante l'aggiornamento del fornitore",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useDeleteSupplier() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: api.suppliers.deleteSupplier,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+      toast({
+        title: "Successo",
+        description: "Fornitore eliminato con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante l'eliminazione del fornitore",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+// Sales hooks
+export function useSales() {
+  return useQuery({
+    queryKey: ["/api/sales"],
+    queryFn: api.sales.getSales,
+  });
+}
+
+export function useCreateSale() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: api.sales.createSale,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/metrics/food-cost"] });
+      toast({
+        title: "Successo",
+        description: "Vendita creata con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante la creazione della vendita",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useDeleteSale() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: api.sales.deleteSale,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/metrics/food-cost"] });
+      toast({
+        title: "Successo",
+        description: "Vendita eliminata con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante l'eliminazione della vendita",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+================================================
+CLIENT/SRC/LIB/QUERYCLIENT.TS - CONFIGURAZIONE REACT QUERY
+================================================
+
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { Capacitor } from "@capacitor/core";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -853,12 +2185,25 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Get the appropriate base URL for API requests
+const getApiBaseUrl = (): string => {
+  if (Capacitor.isNativePlatform()) {
+    // In mobile app, use external API URL
+    return import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+  }
+  // In web browser, use relative URLs (same origin)
+  return '';
+};
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  const baseUrl = getApiBaseUrl();
+  const fullUrl = baseUrl + url;
+  
+  const res = await fetch(fullUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
@@ -875,7 +2220,10 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    const baseUrl = getApiBaseUrl();
+    const fullUrl = baseUrl + queryKey.join("/");
+    
+    const res = await fetch(fullUrl, {
       credentials: "include",
     });
 
@@ -902,14 +2250,317 @@ export const queryClient = new QueryClient({
   },
 });
 
-=====================================================
-=== FINE FILE COMPLETO ===
-=====================================================
+================================================
+CLIENT/SRC/INDEX.CSS - STYLING PRINCIPALE
+================================================
 
-Versione: React 18 + TypeScript
-Stack: Vite + Express.js + PostgreSQL + Drizzle ORM
-UI: Tailwind CSS + shadcn/ui + Radix UI
-Data Fetching: TanStack Query (React Query v5)
-Validazione: Zod + React Hook Form
-Caratteristiche: Evidenziazione campi editabili con bg-yellow-100
-Data: 19 Settembre 2025
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Restaurant-themed background with logo */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    url('/attached_assets/FoodyFlow_1757981655801.png'),
+    url('/attached_assets/generated_images/Herbs_and_spices_overlay_c4636be9.png'),
+    url('/attached_assets/generated_images/Restaurant_kitchen_background_pattern_a88a5456.png');
+  background-position: 
+    center center,
+    top left,
+    bottom right;
+  background-repeat: 
+    no-repeat,
+    repeat,
+    no-repeat;
+  background-size: 
+    150px 150px,
+    100px 100px,
+    cover;
+  opacity: 0.04;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Mobile responsive background adjustments */
+@media (min-width: 768px) {
+  body::before {
+    background-size: 
+      350px 350px,
+      200px 200px,
+      cover;
+  }
+}
+
+/* Mobile-optimized scrolling for tables */
+.mobile-table-scroll {
+  @apply overflow-x-auto max-w-full;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Better touch targets for mobile */
+@media (max-width: 767px) {
+  .mobile-touch-target {
+    @apply min-h-11 min-w-11;
+  }
+  
+  .mobile-hide {
+    @apply hidden;
+  }
+  
+  .mobile-stack {
+    @apply flex-col gap-2;
+  }
+  
+  .mobile-text-large {
+    @apply text-base;
+  }
+}
+
+/* LIGHT MODE */
+:root {
+  --background: 45 15% 96%;
+  --foreground: 220 15% 25%;
+  --card: 45 20% 98%;
+  --card-foreground: 220 15% 25%;
+  --popover: 45 20% 98%;
+  --popover-foreground: 220 15% 25%;
+  --primary: 25 45% 35%;
+  --primary-foreground: 45 25% 95%;
+  --secondary: 15 55% 45%;
+  --secondary-foreground: 45 25% 95%;
+  --muted: 45 15% 90%;
+  --muted-foreground: 25 10% 45%;
+  --accent: 35 45% 55%;
+  --accent-foreground: 220 15% 25%;
+  --destructive: 12 70% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 25 25% 75%;
+  --input: 25 20% 85%;
+  --ring: 25 45% 35%;
+  --radius: 0.875rem;
+}
+
+.dark {
+  --background: 25 20% 12%;
+  --foreground: 45 25% 85%;
+  --card: 25 25% 15%;
+  --card-foreground: 45 25% 85%;
+  --popover: 25 20% 12%;
+  --popover-foreground: 45 25% 85%;
+  --primary: 25 35% 25%;
+  --primary-foreground: 45 25% 95%;
+  --secondary: 15 40% 30%;
+  --secondary-foreground: 45 25% 95%;
+  --muted: 25 15% 18%;
+  --muted-foreground: 25 10% 55%;
+  --accent: 35 40% 45%;
+  --accent-foreground: 45 25% 95%;
+  --destructive: 12 60% 45%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 25 15% 20%;
+  --input: 25 20% 22%;
+  --ring: 25 35% 25%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+================================================
+VITE.CONFIG.TS - CONFIGURAZIONE BUILD
+================================================
+
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import path from "path";
+import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+
+export default defineConfig({
+  plugins: [
+    react(),
+    runtimeErrorOverlay(),
+    ...(process.env.NODE_ENV !== "production" &&
+    process.env.REPL_ID !== undefined
+      ? [
+          await import("@replit/vite-plugin-cartographer").then((m) =>
+            m.cartographer(),
+          ),
+        ]
+      : []),
+  ],
+  resolve: {
+    alias: {
+      "@": path.resolve(import.meta.dirname, "client", "src"),
+      "@shared": path.resolve(import.meta.dirname, "shared"),
+      "@assets": path.resolve(import.meta.dirname, "attached_assets"),
+    },
+  },
+  root: path.resolve(import.meta.dirname, "client"),
+  build: {
+    outDir: path.resolve(import.meta.dirname, "dist/public"),
+    emptyOutDir: true,
+  },
+  server: {
+    fs: {
+      strict: true,
+      deny: ["**/.*"],
+    },
+  },
+});
+
+================================================
+TAILWIND.CONFIG.TS - CONFIGURAZIONE STYLING
+================================================
+
+import type { Config } from "tailwindcss";
+
+export default {
+  darkMode: ["class"],
+  content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
+  theme: {
+    extend: {
+      borderRadius: {
+        lg: ".5625rem",
+        md: ".375rem",
+        sm: ".1875rem",
+      },
+      colors: {
+        background: "hsl(var(--background) / <alpha-value>)",
+        foreground: "hsl(var(--foreground) / <alpha-value>)",
+        card: {
+          DEFAULT: "hsl(var(--card) / <alpha-value>)",
+          foreground: "hsl(var(--card-foreground) / <alpha-value>)",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover) / <alpha-value>)",
+          foreground: "hsl(var(--popover-foreground) / <alpha-value>)",
+        },
+        primary: {
+          DEFAULT: "hsl(var(--primary) / <alpha-value>)",
+          foreground: "hsl(var(--primary-foreground) / <alpha-value>)",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary) / <alpha-value>)",
+          foreground: "hsl(var(--secondary-foreground) / <alpha-value>)",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted) / <alpha-value>)",
+          foreground: "hsl(var(--muted-foreground) / <alpha-value>)",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent) / <alpha-value>)",
+          foreground: "hsl(var(--accent-foreground) / <alpha-value>)",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive) / <alpha-value>)",
+          foreground: "hsl(var(--destructive-foreground) / <alpha-value>)",
+        },
+        border: "hsl(var(--border) / <alpha-value>)",
+        input: "hsl(var(--input) / <alpha-value>)",
+        ring: "hsl(var(--ring) / <alpha-value>)",
+      },
+    },
+  },
+  plugins: [require("tailwindcss-animate")],
+} satisfies Config;
+
+================================================
+COME AVVIARE L'APPLICAZIONE
+================================================
+
+1. INSTALLAZIONE DIPENDENZE:
+   npm install
+
+2. CONFIGURAZIONE DATABASE:
+   - Assicurati di avere DATABASE_URL configurato
+   - Esegui: npm run db:push
+
+3. AVVIO SVILUPPO:
+   npm run dev
+
+4. BUILD PRODUZIONE:
+   npm run build
+   npm start
+
+================================================
+FUNZIONALITA PRINCIPALI
+================================================
+
+### 🎯 Dashboard Controllo
+- KPI Food Cost, Labour Cost, EBITDA in tempo reale
+- 3 Pilastri: Food Cost, Labour Cost, Performance Finanziaria
+- Metriche comparative con alert intelligenti
+
+### 📊 Budget & P&L
+- Pianificazione budget mensile con coperto medio
+- Analisi P&L completa con parametri economici editabili
+- Confronti year-over-year automatici
+
+### 🥘 Gestione Prodotti & Fornitori
+- **Integrazione Fornitori Obbligatoria**: Impossibile creare prodotti senza fornitore
+- **Validazione Sicura**: Usa supplier.id per evitare conflitti
+- **Auto-popolazione**: Email fornitore compilata automaticamente
+- Calcolo food cost con sfridi e prezzi effettivi
+
+### 📈 Sales & Analytics
+- Tracking vendite real-time con calcoli food cost
+- Grafici performance e trend analysis
+- Export PDF completo di tutti i dati
+
+### 🔧 Sistema Tecnico
+- React 18 + TypeScript + Vite per performance
+- PostgreSQL + Drizzle ORM per data integrity
+- TanStack Query per cache intelligente
+- Tailwind + Radix UI per UX professionale
+
+================================================
+ARCHITETTURA SICUREZZA
+================================================
+
+### Validazione Fornitori
+- Schema Zod con validazione obbligatoria supplierId
+- Prevenzione prodotti "orfani" senza fornitore
+- Uso ID invece di nomi per evitare duplicati
+
+### Data Integrity
+- Transazioni atomiche database
+- Cache invalidation automatica
+- Validazione server-side completa
+
+### Best Practices
+- TypeScript strict mode
+- Error boundaries React
+- Gestione stati loading/error
+- Test IDs per automated testing
+
+================================================
+NOTE TECNICHE
+================================================
+
+- Ambiente: Replit con Nix (no Docker/virtualenv)
+- Database: Neon PostgreSQL serverless
+- Mobile: Capacitor per app native (iOS/Android)
+- Deploy: npm run build + replit publishing
+- Migrations: npm run db:push (no manual SQL)
+
+================================================
+FINE CODICE COMPLETO FOODYFLOW
+================================================
+
+Questa è l'applicazione FoodyFlow completa per la gestione ristorante.
+Tutte le funzionalità di Food Cost, Budget, P&L, Inventario e
+molto altro sono incluse in questo codice.
+
+Per domande o modifiche, consulta la documentazione in replit.md
