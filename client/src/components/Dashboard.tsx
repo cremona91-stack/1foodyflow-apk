@@ -310,7 +310,7 @@ export function Dashboard({
       theoreticalFoodCostPercentage: theoreticalPercentage,
       realVsTheoreticalDiff: differential
     };
-  }, [dishes, productMap, editableInventory, stockMovements]);
+  }, [salesByDish, productMap, editableInventory, stockMovements]);
   
   const wasteValue = useMemo(() => 
     waste.reduce((sum, w) => sum + (w.totalCost || 0), 0), 
