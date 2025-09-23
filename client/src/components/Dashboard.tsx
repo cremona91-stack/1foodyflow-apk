@@ -228,9 +228,13 @@ export function Dashboard({
     retry: false
   });
 
-  // Query for food cost metrics (same as P&L)
+  // Query for food cost metrics (use current date for real-time data)
+  const currentDate = new Date();
+  const actualYear = currentDate.getFullYear();
+  const actualMonth = currentDate.getMonth() + 1;
+  
   const { data: foodCostMetrics } = useQuery({
-    queryKey: ['/api/metrics/food-cost', currentYear, currentMonth]
+    queryKey: ['/api/metrics/food-cost', actualYear, actualMonth]
   });
 
   // Fetch budget entries for corrispettivi calculation
