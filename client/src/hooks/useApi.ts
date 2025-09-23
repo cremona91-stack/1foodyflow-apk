@@ -2,9 +2,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import type { 
-  Product, Supplier, Recipe, Dish, Waste, PersonalMeal, Order, StockMovement, InventorySnapshot,
-  InsertProduct, InsertSupplier, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal, InsertOrder, InsertStockMovement, InsertInventorySnapshot,
-  UpdateProduct, UpdateSupplier, UpdateRecipe, UpdateDish, UpdateOrder, UpdateStockMovement, UpdateInventorySnapshot
+  Product, Supplier, Recipe, Dish, Waste, PersonalMeal, Order, StockMovement, InventorySnapshot, Sales,
+  InsertProduct, InsertSupplier, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal, InsertOrder, InsertStockMovement, InsertInventorySnapshot, InsertSales,
+  UpdateProduct, UpdateSupplier, UpdateRecipe, UpdateDish, UpdateOrder, UpdateStockMovement, UpdateInventorySnapshot, UpdateSales
 } from "@shared/schema";
 
 // Products hooks
@@ -730,6 +730,92 @@ export function useDeleteInventorySnapshot() {
       toast({
         title: "Errore",
         description: error.message || "Errore durante l'eliminazione dello snapshot",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+// Sales hooks
+export function useSales() {
+  return useQuery({
+    queryKey: ["/api/sales"],
+    queryFn: api.sales.getSales,
+  });
+}
+
+export function useSale(id: string) {
+  return useQuery({
+    queryKey: ["/api/sales", id],
+    queryFn: () => api.sales.getSale(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreateSale() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: api.sales.createSale,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
+      toast({
+        title: "Successo",
+        description: "Vendita creata con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante la creazione della vendita",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useUpdateSale() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateSales }) =>
+      api.sales.updateSale(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
+      toast({
+        title: "Successo",
+        description: "Vendita aggiornata con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante l'aggiornamento della vendita",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useDeleteSale() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: api.sales.deleteSale,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
+      toast({
+        title: "Successo",
+        description: "Vendita eliminata con successo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante l'eliminazione della vendita",
         variant: "destructive",
       });
     },

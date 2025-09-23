@@ -1,8 +1,8 @@
 import { apiRequest } from "./queryClient";
 import type { 
-  Product, Supplier, Recipe, Dish, Waste, PersonalMeal, Order, StockMovement, InventorySnapshot,
-  InsertProduct, InsertSupplier, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal, InsertOrder, InsertStockMovement, InsertInventorySnapshot,
-  UpdateProduct, UpdateSupplier, UpdateRecipe, UpdateDish, UpdateOrder, UpdateStockMovement, UpdateInventorySnapshot
+  Product, Supplier, Recipe, Dish, Waste, PersonalMeal, Order, StockMovement, InventorySnapshot, Sales,
+  InsertProduct, InsertSupplier, InsertRecipe, InsertDish, InsertWaste, InsertPersonalMeal, InsertOrder, InsertStockMovement, InsertInventorySnapshot, InsertSales,
+  UpdateProduct, UpdateSupplier, UpdateRecipe, UpdateDish, UpdateOrder, UpdateStockMovement, UpdateInventorySnapshot, UpdateSales
 } from "@shared/schema";
 
 // Products API
@@ -293,6 +293,39 @@ export const inventorySnapshotsApi = {
   },
 };
 
+// Sales API
+export const salesApi = {
+  async getSales(): Promise<Sales[]> {
+    const response = await fetch("/api/sales", { credentials: "include" });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch sales: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async getSale(id: string): Promise<Sales> {
+    const response = await fetch(`/api/sales/${id}`, { credentials: "include" });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch sale: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async createSale(data: InsertSales): Promise<Sales> {
+    const response = await apiRequest("POST", "/api/sales", data);
+    return response.json();
+  },
+
+  async updateSale(id: string, data: UpdateSales): Promise<Sales> {
+    const response = await apiRequest("PATCH", `/api/sales/${id}`, data);
+    return response.json();
+  },
+
+  async deleteSale(id: string): Promise<void> {
+    await apiRequest("DELETE", `/api/sales/${id}`);
+  },
+};
+
 export const api = {
   products: productsApi,
   suppliers: suppliersApi,
@@ -303,4 +336,5 @@ export const api = {
   orders: ordersApi,
   stockMovements: stockMovementsApi,
   inventorySnapshots: inventorySnapshotsApi,
+  sales: salesApi,
 };
