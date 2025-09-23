@@ -34,12 +34,13 @@ export default function SalesSummary({
   // Calculate totals from sales data
   const { totalCostOfSales, totalGrossSales, totalNetSales } = useMemo(() => {
     const totalCost = salesData.reduce((sum, sale) => sum + sale.totalCost, 0);
-    const totalRevenue = salesData.reduce((sum, sale) => sum + sale.totalRevenue, 0);
-    // Gross sales = total revenue, Net sales = total revenue (already net in our system)
+    const totalNetRevenue = salesData.reduce((sum, sale) => sum + sale.totalRevenue, 0);
+    // Gross sales = net revenue + 10% (IVA)
+    const totalGrossRevenue = totalNetRevenue * 1.10;
     return {
       totalCostOfSales: totalCost,
-      totalGrossSales: totalRevenue,
-      totalNetSales: totalRevenue
+      totalGrossSales: totalGrossRevenue,
+      totalNetSales: totalNetRevenue
     };
   }, [salesData]);
   

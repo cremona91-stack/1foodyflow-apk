@@ -500,21 +500,13 @@ export function Dashboard({
       </div>
 
       {/* KPI Overview Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <KPICard
           title="Ricavo Totale"
           value={`€${totalFoodSales.toFixed(2)}`}
           icon={<DollarSign className="h-4 w-4" />}
           status="good"
           data-testid="kpi-ricavo-totale"
-        />
-        
-        <KPICard
-          title="Costo Totale Materiali"
-          value={`€${Array.from(salesByDish.values()).reduce((sum, dishSales) => sum + dishSales.totalCost, 0).toFixed(2)}`}
-          icon={<ChefHat className="h-4 w-4" />}
-          status="good" 
-          data-testid="kpi-costo-totale-materiali"
         />
         
         <KPICard
@@ -536,6 +528,16 @@ export function Dashboard({
         />
         
         <KPICard
+          title="Labour Cost %"
+          value={`${labourCostPercentage.toFixed(1)}%`}
+          change={1.2}
+          trend="up"
+          status={labourCostPercentage > 35 ? "danger" : labourCostPercentage > 30 ? "warning" : "good"}
+          icon={<Users className="h-4 w-4" />}
+          onClick={() => onNavigateToSection("labour-cost")}
+        />
+        
+        <KPICard
           title="EBITDA"
           value={`${ebitdaPercentageConsuntivo.toFixed(1)}%`}
           change={ebitdaDifference}
@@ -544,55 +546,6 @@ export function Dashboard({
           status={ebitdaPercentageConsuntivo > 20 ? "good" : ebitdaPercentageConsuntivo > 10 ? "warning" : "danger"}
           icon={<TrendingUp className="h-4 w-4" />}
           onClick={() => onNavigateToSection("profit-loss")}
-        />
-        
-        <KPICard
-          title="FCT Ponderato %"
-          value={`${theoreticalFoodCostPercentage.toFixed(1)}%`}
-          icon={<Calculator className="h-4 w-4" />}
-          status={theoreticalFoodCostPercentage > 30 ? "danger" : theoreticalFoodCostPercentage > 25 ? "warning" : "good"}
-          data-testid="kpi-fct-ponderato"
-        />
-      </div>
-
-      {/* Three Pillars Overview */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Food Cost Pillar */}
-        <PillarOverview
-          title="Food Cost"
-          description="Controllo costi ingredienti, ricette e sprechi"
-          currentValue={`€${totalFoodCost.toFixed(1)}`}
-          targetValue="€10,500"
-          progress={Math.min(100, (10500 / totalFoodCost) * 100) || 75}
-          status={foodCostPercentage > 30 ? "danger" : foodCostPercentage > 25 ? "warning" : "good"}
-          icon={<ChefHat className="h-6 w-6" />}
-          onExplore={() => onNavigateToSection("food-cost")}
-        />
-
-        {/* Labour Cost Pillar */}
-        <PillarOverview
-          title="Labour Cost"
-          description="Gestione personale, turni e produttività"
-          currentValue="€0"
-          targetValue="€0"
-          progress={100}
-          status={labourCostPercentage > 35 ? "danger" : labourCostPercentage > 30 ? "warning" : "good"}
-          icon={<Users className="h-6 w-6" />}
-          onExplore={() => onNavigateToSection("labour-cost")}
-          isComingSoon={true}
-        />
-
-        {/* Profit & Loss Pillar */}
-        <PillarOverview
-          title="Conto Economico"
-          description="P&L, margini e performance finanziaria"
-          currentValue={`€${mockProfit.toFixed(1)}`}
-          targetValue="€8,000"
-          progress={Math.min(100, (mockProfit / 8000) * 100) || 92}
-          status={mockProfitMargin < 10 ? "danger" : mockProfitMargin < 15 ? "warning" : "good"}
-          icon={<Calculator className="h-6 w-6" />}
-          onExplore={() => onNavigateToSection("profit-loss")}
-          isComingSoon={true}
         />
       </div>
 
