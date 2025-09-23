@@ -15,17 +15,25 @@ interface EmailParams {
   subject: string;
   text?: string;
   html?: string;
+  replyTo?: string;
 }
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
   try {
-    await sgMail.send({
+    const emailData: any = {
       to: params.to,
       from: params.from,
       subject: params.subject,
       text: params.text || '',
       html: params.html || '',
-    });
+    };
+
+    // Aggiungi reply-to se specificato
+    if (params.replyTo) {
+      emailData.replyTo = params.replyTo;
+    }
+
+    await sgMail.send(emailData);
     console.log(`Email inviata con successo a ${params.to}`);
     return true;
   } catch (error) {
@@ -162,7 +170,7 @@ export function generateOrderEmailTemplate(order: Order, supplierEmail: string):
 }
 
 // Funzione per inviare email ordine
-export async function sendOrderEmail(order: Order, supplierEmail: string, fromEmail = 'ordini@foodyflow.it'): Promise<boolean> {
+export async function sendOrderEmail(order: Order, supplierEmail: string, fromEmail = 'ordini@foodyflow.it', replyToEmail = 'ordini@foodyflow.it'): Promise<boolean> {
   if (!supplierEmail || !supplierEmail.includes('@')) {
     console.error('Email fornitore non valida:', supplierEmail);
     return false;
@@ -187,11 +195,15 @@ ${order.notes ? `Note: ${order.notes}` : ''}
 
 Grazie per la collaborazione!
 FoodyFlow Team
+
+---
+Per rispondere a questo ordine, rispondi a: ${replyToEmail}
   `;
 
   return await sendEmail({
     to: supplierEmail,
     from: fromEmail,
+    replyTo: replyToEmail,
     subject,
     text,
     html
