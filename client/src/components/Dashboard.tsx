@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import elephantImage from "@assets/generated_images/cute_baby_elephant_cartoon_1861c978.png";
 import { 
   ChefHat, 
   Users, 
@@ -567,8 +568,22 @@ export function Dashboard({
   return (
     <div className="space-y-6" data-testid="dashboard-main">
       {/* Header */}
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold">Dashboard Gestione Ristorante</h1>
+      <div className="text-center space-y-4">
+        <div className="flex items-center justify-center gap-4">
+          <img 
+            src={elephantImage} 
+            alt="Elefantino carino" 
+            className="w-16 h-16 rounded-full shadow-lg hover:scale-110 transition-transform duration-300"
+            data-testid="cute-elephant"
+          />
+          <h1 className="text-3xl font-bold">Dashboard Gestione Ristorante</h1>
+          <img 
+            src={elephantImage} 
+            alt="Elefantino carino" 
+            className="w-16 h-16 rounded-full shadow-lg hover:scale-110 transition-transform duration-300"
+            data-testid="cute-elephant-2"
+          />
+        </div>
         <p className="text-muted-foreground">
           Controllo completo di Food Cost, Labour Cost e Performance Finanziaria
         </p>
