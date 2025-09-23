@@ -1,5 +1,5 @@
 import DishForm from '../DishForm';
-import { Product } from '@shared/schema';
+import { Product, Recipe } from '@shared/schema';
 
 export default function DishFormExample() {
   // TODO: remove mock data functionality
@@ -35,9 +35,33 @@ export default function DishFormExample() {
     },
   ];
 
+  const mockRecipes: Recipe[] = [
+    {
+      id: '1',
+      name: 'Salsa di Base',
+      ingredients: [
+        { productId: '3', quantity: 2, cost: 6.40 }
+      ],
+      totalCost: 6.40,
+      createdAt: null,
+      updatedAt: null,
+    },
+    {
+      id: '2', 
+      name: 'Mix Spezie',
+      ingredients: [
+        { productId: '1', quantity: 0.1, cost: 0.12 }
+      ],
+      totalCost: 0.12,
+      createdAt: null,
+      updatedAt: null,
+    },
+  ];
+
   return (
     <DishForm 
       products={mockProducts}
+      recipes={mockRecipes}
       onSubmit={(dish) => console.log('Dish submitted:', dish)}
     />
   );

@@ -68,26 +68,6 @@ export default function Recipes() {
     deleteDishMutation.mutate(id);
   };
 
-  const handleUpdateSold = (dishId: string, sold: number) => {
-    const dish = dishes.find(d => d.id === dishId);
-    if (dish) {
-      updateDishMutation.mutate({
-        id: dishId,
-        data: { ...dish, sold }
-      });
-    }
-  };
-
-  const handleClearSales = () => {
-    dishes.forEach(dish => {
-      if (dish.sold > 0) {
-        updateDishMutation.mutate({
-          id: dish.id,
-          data: { ...dish, sold: 0 }
-        });
-      }
-    });
-  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -166,6 +146,7 @@ export default function Recipes() {
               <CardContent>
                 <DishForm
                   products={products}
+                  recipes={recipes}
                   editDish={editingDish}
                   onSubmit={editingDish
                     ? (data) => handleUpdateDish(editingDish.id, data)
@@ -184,8 +165,6 @@ export default function Recipes() {
                 products={products}
                 onEdit={setEditingDish}
                 onDelete={handleDeleteDish}
-                onUpdateSold={handleUpdateSold}
-                onClearSales={handleClearSales}
                 data-testid="dish-list"
               />
             </div>
