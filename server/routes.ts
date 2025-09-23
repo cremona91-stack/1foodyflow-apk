@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth } from "./replitAuth";
 import { setupTraditionalAuth } from "./auth";
 import { analyzeRestaurantData, analyzeFoodCostOptimization, generateMenuSuggestions } from "./gemini";
 import { 
@@ -34,6 +34,14 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 
+// Simple authentication middleware for Traditional Auth
+const requireAuth = (req: any, res: any, next: any) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  next();
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
 
   // Replit Auth setup - registers /api/login, /api/logout, /api/callback  
@@ -41,18 +49,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Traditional Auth setup - registers /api/login, /api/register, /api/logout, /api/user
   setupTraditionalAuth(app);
-
-  // Auth routes for Replit Auth
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
 
   // Products API Routes
   app.get("/api/products", async (req, res) => {
@@ -123,7 +119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Suppliers API Routes
-  app.get("/api/suppliers", isAuthenticated, async (req, res) => {
+  app.get("/api/suppliers", requireAuth, async (req, res) => {
     try {
       const suppliers = await storage.getSuppliers();
       res.json(suppliers);
@@ -133,7 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/suppliers/:id", isAuthenticated, async (req, res) => {
+  app.get("/api/suppliers/:id", requireAuth, async (req, res) => {
     try {
       const supplier = await storage.getSupplier(req.params.id);
       if (!supplier) {
@@ -146,7 +142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/suppliers", isAuthenticated, async (req, res) => {
+  app.post("/api/suppliers", requireAuth, async (req, res) => {
     try {
       const validatedData = insertSupplierSchema.parse(req.body);
       const supplier = await storage.createSupplier(validatedData);
@@ -160,7 +156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/suppliers/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/suppliers/:id", requireAuth, async (req, res) => {
     try {
       const validatedData = updateSupplierSchema.parse(req.body);
       const supplier = await storage.updateSupplier(req.params.id, validatedData);
@@ -177,7 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/suppliers/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/suppliers/:id", requireAuth, async (req, res) => {
     try {
       const success = await storage.deleteSupplier(req.params.id);
       if (!success) {
