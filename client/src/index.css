@@ -2,23 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* FoodyFlow Logo Background */
-body::before {
-  content: "";
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 400px;
-  height: 400px;
-  background-image: url('@assets/FoodyFlow_1758637548942.png');
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  opacity: 0.08;
-  z-index: -1;
-  pointer-events: none;
-}
+/* Logo rimosso dallo sfondo */
 
 /* Mobile responsive background adjustments */
 @media (min-width: 768px) {

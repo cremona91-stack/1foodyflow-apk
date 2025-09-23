@@ -46,9 +46,16 @@ export default function AppHeader({ onExportPDF }: AppHeaderProps) {
         </Button>
         
         <div className="flex flex-col items-center text-center flex-1 mx-4 md:mx-8">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
-            FoodyFlow
-          </h1>
+          <div className="flex items-center gap-3">
+            <img 
+              src="/attached_assets/FoodyFlow_1758637548942.png" 
+              alt="FoodyFlow Logo" 
+              className="h-8 sm:h-10 md:h-12 lg:h-14 w-auto"
+            />
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
+              FoodyFlow
+            </h1>
+          </div>
           <p className="text-xs sm:text-sm md:text-base italic text-muted-foreground mt-1 hidden sm:block">
             Evolve Your Eatery
           </p>
