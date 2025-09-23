@@ -58,34 +58,10 @@ export default function SalesChart({ dishes }: SalesChartProps) {
     sortOrder: "desc",
   });
 
-  // Calcola dati delle vendite con percentuali
+  // Sales data now tracked separately in the Sales section
   const salesData = useMemo((): SalesDataItem[] => {
-    const soldDishes = dishes.filter(dish => dish.sold > 0);
-    
-    if (soldDishes.length === 0) return [];
-    
-    const totalRevenue = soldDishes.reduce((sum, dish) => sum + (dish.netPrice * dish.sold), 0);
-    const totalQuantity = soldDishes.reduce((sum, dish) => sum + dish.sold, 0);
-    
-    return soldDishes.map(dish => {
-      const revenue = dish.netPrice * dish.sold;
-      const cost = dish.totalCost * dish.sold;
-      const revenuePercentage = totalRevenue > 0 ? (revenue / totalRevenue) * 100 : 0;
-      const quantityPercentage = totalQuantity > 0 ? (dish.sold / totalQuantity) * 100 : 0;
-      
-      return {
-        id: dish.id,
-        name: dish.name,
-        quantity: dish.sold,
-        revenue: revenue,
-        cost: cost,
-        profit: revenue - cost,
-        revenuePercentage,
-        quantityPercentage,
-        unitPrice: dish.netPrice,
-        foodCost: dish.foodCost,
-      };
-    });
+    // TODO: Replace with data from sales table
+    return [];
   }, [dishes]);
 
   // Applica filtri e ricalcola percentuali sui dati filtrati

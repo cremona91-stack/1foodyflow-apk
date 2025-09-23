@@ -26,10 +26,10 @@ export default function SalesSummary({
   showSalesDetails = true 
 }: SalesSummaryProps) {
   
-  // Calculate totals
-  const totalCostOfSales = dishes.reduce((sum, dish) => sum + (dish.totalCost * dish.sold), 0);
-  const totalGrossSales = dishes.reduce((sum, dish) => sum + (dish.sellingPrice * dish.sold), 0);
-  const totalNetSales = dishes.reduce((sum, dish) => sum + (dish.netPrice * dish.sold), 0);
+  // Calculate totals - Sales are now tracked separately in the Sales section
+  const totalCostOfSales = 0; // TODO: Calculate from sales table
+  const totalGrossSales = 0; // TODO: Calculate from sales table
+  const totalNetSales = 0; // TODO: Calculate from sales table
   
   const totalWasteCost = waste.reduce((sum, w) => sum + w.cost, 0);
   const totalPersonalMealsCost = personalMeals.reduce((sum, pm) => sum + pm.cost, 0);
@@ -191,43 +191,17 @@ export default function SalesSummary({
         </CardContent>
       </Card>
 
-      {/* Detailed Sales Breakdown */}
-      {showSalesDetails && dishes.filter(d => d.sold > 0).length > 0 && (
+      {/* Detailed Sales Breakdown - TODO: Update to use sales table data */}
+      {showSalesDetails && false && (
         <Card>
           <CardHeader>
             <CardTitle>Dettaglio Vendite</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {dishes
-                .filter(dish => dish.sold > 0)
-                .map((dish) => (
-                  <div
-                    key={dish.id}
-                    className="flex justify-between items-center p-3 bg-muted rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <span className="font-medium">{dish.name}</span>
-                      <span className="text-sm text-muted-foreground ml-2">
-                        x{dish.sold}
-                      </span>
-                    </div>
-                    <div className="text-right space-y-1">
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">Ricavo: </span>
-                        <span className="font-mono font-medium">
-                          €{(dish.netPrice * dish.sold).toFixed(1)}
-                        </span>
-                      </div>
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">Costo: </span>
-                        <span className="font-mono font-medium">
-                          €{(dish.totalCost * dish.sold).toFixed(1)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <p className="text-center text-muted-foreground italic">
+                Le vendite sono ora gestite nella sezione dedicata "Vendite".
+              </p>
             </div>
           </CardContent>
         </Card>
