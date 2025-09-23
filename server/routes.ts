@@ -10,6 +10,7 @@ import {
   updateSupplierSchema,
   insertRecipeSchema, 
   insertDishSchema, 
+  insertSalesSchema,
   insertWasteSchema, 
   insertPersonalMealSchema,
   insertOrderSchema,
@@ -21,6 +22,7 @@ import {
   updateProductSchema,
   updateRecipeSchema,
   updateDishSchema,
+  updateSalesSchema,
   updateOrderSchema,
   updateStockMovementSchema,
   updateInventorySnapshotSchema,
@@ -321,6 +323,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting dish:", error);
       res.status(500).json({ error: "Failed to delete dish" });
+    }
+  });
+
+  // Sales API Routes
+  app.get("/api/sales", async (req, res) => {
+    try {
+      const sales = await storage.getSales();
+      res.json(sales);
+    } catch (error) {
+      console.error("Error fetching sales:", error);
+      res.status(500).json({ error: "Failed to fetch sales" });
+    }
+  });
+
+  app.get("/api/sales/:id", async (req, res) => {
+    try {
+      const sale = await storage.getSale(req.params.id);
+      if (!sale) {
+        return res.status(404).json({ error: "Sale not found" });
+      }
+      res.json(sale);
+    } catch (error) {
+      console.error("Error fetching sale:", error);
+      res.status(500).json({ error: "Failed to fetch sale" });
+    }
+  });
+
+  app.get("/api/sales/dish/:dishId", async (req, res) => {
+    try {
+      const sales = await storage.getSalesByDish(req.params.dishId);
+      res.json(sales);
+    } catch (error) {
+      console.error("Error fetching sales by dish:", error);
+      res.status(500).json({ error: "Failed to fetch sales by dish" });
+    }
+  });
+
+  app.post("/api/sales", async (req, res) => {
+    try {
+      const validatedData = insertSalesSchema.parse(req.body);
+      const sale = await storage.createSale(validatedData);
+      res.status(201).json(sale);
+    } catch (error) {
+      console.error("Error creating sale:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create sale" });
+    }
+  });
+
+  app.put("/api/sales/:id", async (req, res) => {
+    try {
+      const validatedData = updateSalesSchema.parse(req.body);
+      const sale = await storage.updateSale(req.params.id, validatedData);
+      if (!sale) {
+        return res.status(404).json({ error: "Sale not found" });
+      }
+      res.json(sale);
+    } catch (error) {
+      console.error("Error updating sale:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update sale" });
+    }
+  });
+
+  app.delete("/api/sales/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteSale(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Sale not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting sale:", error);
+      res.status(500).json({ error: "Failed to delete sale" });
     }
   });
 
@@ -976,8 +1056,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const month = parseInt(req.params.month);
       
       // Get all required data for food cost calculation
-      const [dishes, products, editableInventory, stockMovements] = await Promise.all([
+      const [dishes, sales, products, editableInventory, stockMovements] = await Promise.all([
         storage.getDishes(),
+        storage.getSales(),
         storage.getProducts(),
         storage.getEditableInventory(),
         storage.getStockMovements()
@@ -996,13 +1077,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create product map for quick lookup
       const productMap = new Map(products.map(p => [p.id, p]));
 
-      // Calculate food cost metrics using the same formula as Dashboard
-      // Note: dishes.sold is aggregate data - limitation documented for period-specific sales
-      // 1. Calculate NET REVENUE (netPrice) for food sales - using aggregate data
-      const totalFoodSales = dishes.reduce((sum, dish) => sum + (dish.netPrice * dish.sold), 0);
+      // Calculate food cost metrics using sales data
+      // Filter sales for the requested period
+      const monthlySales = sales.filter(sale => {
+        const saleDate = new Date(sale.saleDate);
+        return saleDate >= startDate && saleDate <= endDate;
+      });
+
+      // 1. Calculate NET REVENUE from sales data
+      const totalFoodSales = monthlySales.reduce((sum, sale) => sum + sale.totalRevenue, 0);
       
-      // 2. Calculate THEORETICAL food cost (based on recipes) - using aggregate data
-      const totalCostOfSales = dishes.reduce((sum, dish) => sum + (dish.totalCost * dish.sold), 0);
+      // 2. Calculate THEORETICAL food cost from sales data
+      const totalCostOfSales = monthlySales.reduce((sum, sale) => sum + sale.totalCost, 0);
       const theoreticalFoodCostPercentage = totalFoodSales > 0 ? (totalCostOfSales / totalFoodSales) * 100 : 0;
       
       // 3. Calculate REAL food cost: (totale iniziale + totale IN - totale finale)
@@ -1142,7 +1228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalProducts: products.length,
         totalDishes: dishes.length,
         totalWaste: waste.length,
-        averageProductPrice: products.reduce((sum, p) => sum + (p.currentPrice || 0), 0) / products.length || 0,
+        averageProductPrice: products.reduce((sum, p) => sum + (p.pricePerUnit || 0), 0) / products.length || 0,
         products: products.slice(0, 5),
         dishes: dishes.slice(0, 5),
         waste: waste.slice(0, 3)
