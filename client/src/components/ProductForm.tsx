@@ -171,7 +171,7 @@ export default function ProductForm({ onSubmit, editProduct, onCancel }: Product
                       </FormControl>
                       <SelectContent>
                         {suppliers.length === 0 ? (
-                          <SelectItem value="" disabled>
+                          <SelectItem value="no-suppliers" disabled>
                             Nessun fornitore disponibile
                           </SelectItem>
                         ) : (
