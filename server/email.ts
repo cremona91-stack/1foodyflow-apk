@@ -36,8 +36,12 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     await sgMail.send(emailData);
     console.log(`Email inviata con successo a ${params.to}`);
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Errore invio email SendGrid:', error);
+    // Log dettagli specifici dell'errore SendGrid
+    if (error.response && error.response.body && error.response.body.errors) {
+      console.error('Dettagli errore SendGrid:', JSON.stringify(error.response.body.errors, null, 2));
+    }
     return false;
   }
 }
