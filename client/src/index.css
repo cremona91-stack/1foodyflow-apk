@@ -11,11 +11,11 @@ body::before {
   transform: translate(-50%, -50%);
   width: 400px;
   height: 400px;
-  background-image: url('/attached_assets/FoodyFlow_1758637548942.png');
+  background-image: url('@assets/FoodyFlow_1758637548942.png');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
-  opacity: 0.05;
+  opacity: 0.08;
   z-index: -1;
   pointer-events: none;
 }
