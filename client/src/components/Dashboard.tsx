@@ -500,7 +500,23 @@ export function Dashboard({
       </div>
 
       {/* KPI Overview Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <KPICard
+          title="Ricavo Totale"
+          value={`€${totalFoodSales.toFixed(2)}`}
+          icon={<DollarSign className="h-4 w-4" />}
+          status="good"
+          data-testid="kpi-ricavo-totale"
+        />
+        
+        <KPICard
+          title="Costo Totale Materiali"
+          value={`€${Array.from(salesByDish.values()).reduce((sum, dishSales) => sum + dishSales.totalCost, 0).toFixed(2)}`}
+          icon={<ChefHat className="h-4 w-4" />}
+          status="good" 
+          data-testid="kpi-costo-totale-materiali"
+        />
+        
         <KPICard
           title="Food Cost %"
           value={`${foodCostPercentage.toFixed(1)}%`}
@@ -520,16 +536,6 @@ export function Dashboard({
         />
         
         <KPICard
-          title="Labour Cost %"
-          value={`${labourCostPercentage.toFixed(1)}%`}
-          change={1.2}
-          trend="up"
-          status={labourCostPercentage > 35 ? "danger" : labourCostPercentage > 30 ? "warning" : "good"}
-          icon={<Users className="h-4 w-4" />}
-          onClick={() => onNavigateToSection("labour-cost")}
-        />
-        
-        <KPICard
           title="EBITDA"
           value={`${ebitdaPercentageConsuntivo.toFixed(1)}%`}
           change={ebitdaDifference}
@@ -541,13 +547,11 @@ export function Dashboard({
         />
         
         <KPICard
-          title="Fatturato Oggi"
-          value={`€${mockRevenue.toLocaleString()}`}
-          change={5.3}
-          trend="up"
-          status="good"
-          icon={<DollarSign className="h-4 w-4" />}
-          onClick={() => onNavigateToSection("sales-detail")}
+          title="FCT Ponderato %"
+          value={`${theoreticalFoodCostPercentage.toFixed(1)}%`}
+          icon={<Calculator className="h-4 w-4" />}
+          status={theoreticalFoodCostPercentage > 30 ? "danger" : theoreticalFoodCostPercentage > 25 ? "warning" : "good"}
+          data-testid="kpi-fct-ponderato"
         />
       </div>
 
