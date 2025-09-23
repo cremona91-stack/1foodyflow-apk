@@ -38,12 +38,12 @@ const primaryTabs = [
 
 // Management section tabs
 const managementTabs = [
+  { id: "suppliers", label: "Fornitori", icon: Users },
   { id: "inventory", label: "Inventario", icon: Warehouse },
   { id: "recipes", label: "Ricette", icon: ChefHat },
-  { id: "suppliers", label: "Fornitori", icon: Users },
   { id: "orders", label: "Ordini", icon: Truck },
-  { id: "warehouse", label: "Magazzino", icon: ArrowUpDown },
   { id: "waste", label: "Sprechi/Staff Food", icon: Trash2 },
+  { id: "warehouse", label: "Magazzino", icon: ArrowUpDown },
 ];
 
 interface AppSidebarProps {
