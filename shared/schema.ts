@@ -65,7 +65,6 @@ export const dishes = pgTable("dishes", {
   sellingPrice: real("selling_price").notNull(),
   netPrice: real("net_price").notNull(),
   foodCost: real("food_cost").notNull(),
-  sold: integer("sold").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -90,6 +89,21 @@ export const personalMeals = pgTable("personal_meals", {
   date: text("date").notNull(),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Sales table (Vendite)
+export const sales = pgTable("sales", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  dishId: varchar("dish_id").notNull().references(() => dishes.id, { onDelete: "cascade" }),
+  quantitySold: integer("quantity_sold").notNull(),
+  unitCost: real("unit_cost").notNull(), // Costo materie prime per singolo piatto
+  unitRevenue: real("unit_revenue").notNull(), // Ricavo netto per singolo piatto
+  totalCost: real("total_cost").notNull(), // unitCost * quantitySold
+  totalRevenue: real("total_revenue").notNull(), // unitRevenue * quantitySold
+  saleDate: text("sale_date").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Order item schema
@@ -195,7 +209,6 @@ export const insertRecipeSchema = createInsertSchema(recipes).omit({
 
 export const insertDishSchema = createInsertSchema(dishes).omit({
   id: true,
-  sold: true,
   createdAt: true,
   updatedAt: true,
 }).extend({
@@ -220,6 +233,19 @@ export const insertPersonalMealSchema = createInsertSchema(personalMeals).omit({
 }).extend({
   quantity: z.number().min(0).default(1),
   cost: z.number().min(0),
+});
+
+export const insertSalesSchema = createInsertSchema(sales).omit({
+  id: true,
+  totalCost: true, // Calculated automatically
+  totalRevenue: true, // Calculated automatically
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  quantitySold: z.number().min(1),
+  unitCost: z.number().min(0),
+  unitRevenue: z.number().min(0),
+  saleDate: z.string(),
 });
 
 export const insertOrderSchema = createInsertSchema(orders).omit({
@@ -287,7 +313,14 @@ export const updateDishSchema = z.object({
   sellingPrice: z.number().min(0).optional(),
   netPrice: z.number().min(0).optional(),
   foodCost: z.number().min(0).optional(),
-  sold: z.number().min(0).optional(),
+});
+
+export const updateSalesSchema = z.object({
+  quantitySold: z.number().min(1).optional(),
+  unitCost: z.number().min(0).optional(),
+  unitRevenue: z.number().min(0).optional(),
+  saleDate: z.string().optional(),
+  notes: z.string().optional(),
 });
 
 export const updateOrderSchema = z.object({
@@ -342,6 +375,9 @@ export type UpdateRecipe = z.infer<typeof updateRecipeSchema>;
 export type Dish = typeof dishes.$inferSelect;
 export type InsertDish = z.infer<typeof insertDishSchema>;
 export type UpdateDish = z.infer<typeof updateDishSchema>;
+export type Sales = typeof sales.$inferSelect;
+export type InsertSales = z.infer<typeof insertSalesSchema>;
+export type UpdateSales = z.infer<typeof updateSalesSchema>;
 export type Waste = typeof waste.$inferSelect;
 export type InsertWaste = z.infer<typeof insertWasteSchema>;
 export type PersonalMeal = typeof personalMeals.$inferSelect;
