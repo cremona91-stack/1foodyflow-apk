@@ -95,6 +95,7 @@ export const personalMeals = pgTable("personal_meals", {
 export const sales = pgTable("sales", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   dishId: varchar("dish_id").notNull().references(() => dishes.id, { onDelete: "cascade" }),
+  dishName: text("dish_name").notNull(),
   quantitySold: integer("quantity_sold").notNull(),
   unitCost: real("unit_cost").notNull(), // Costo materie prime per singolo piatto
   unitRevenue: real("unit_revenue").notNull(), // Ricavo netto per singolo piatto
@@ -242,6 +243,7 @@ export const insertSalesSchema = createInsertSchema(sales).omit({
   createdAt: true,
   updatedAt: true,
 }).extend({
+  dishName: z.string().min(1),
   quantitySold: z.number().min(1),
   unitCost: z.number().min(0),
   unitRevenue: z.number().min(0),
@@ -316,6 +318,7 @@ export const updateDishSchema = z.object({
 });
 
 export const updateSalesSchema = z.object({
+  dishName: z.string().min(1).optional(),
   quantitySold: z.number().min(1).optional(),
   unitCost: z.number().min(0).optional(),
   unitRevenue: z.number().min(0).optional(),

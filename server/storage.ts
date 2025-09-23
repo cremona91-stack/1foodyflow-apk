@@ -395,6 +395,7 @@ export class DatabaseStorage implements IStorage {
   async updateSale(id: string, updates: UpdateSales): Promise<Sales | undefined> {
     // Filter out undefined values and ensure only safe fields are updated
     const sanitizedUpdates: any = {};
+    if (updates.dishName !== undefined) sanitizedUpdates.dishName = updates.dishName;
     if (updates.quantitySold !== undefined) sanitizedUpdates.quantitySold = updates.quantitySold;
     if (updates.unitCost !== undefined) sanitizedUpdates.unitCost = updates.unitCost;
     if (updates.unitRevenue !== undefined) sanitizedUpdates.unitRevenue = updates.unitRevenue;
