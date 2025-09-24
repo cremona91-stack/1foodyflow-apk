@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { TrendingUp, ShoppingCart, Plus, Save, Edit, Trash2, Euro, Package, Rocket } from "lucide-react";
+import { TrendingUp, ShoppingCart, Plus, Save, Edit, Trash2, Euro, Package, Rocket, Calendar, Filter } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -26,6 +26,8 @@ export default function Sales() {
   const [savingDishId, setSavingDishId] = useState<string | null>(null);
   const [editingSale, setEditingSale] = useState<Sales | undefined>();
   const [showForm, setShowForm] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [dateFilter, setDateFilter] = useState<string>('');
   const { toast } = useToast();
 
   // Data fetching
@@ -46,9 +48,15 @@ export default function Sales() {
       quantitySold: 1,
       unitCost: 0,
       unitRevenue: 0,
-      saleDate: new Date().toISOString().split('T')[0],
+      saleDate: selectedDate,
       notes: "",
     },
+  });
+
+  // Filter sales based on date filter
+  const filteredSales = sales.filter(sale => {
+    if (!dateFilter) return true;
+    return sale.saleDate === dateFilter;
   });
 
   // Smart quantity handlers
@@ -77,8 +85,8 @@ export default function Sales() {
       quantitySold: quantity,
       unitCost: dish.totalCost,
       unitRevenue: dish.netPrice,
-      saleDate: new Date().toISOString().split('T')[0],
-      notes: `Vendita rapida del ${new Date().toLocaleDateString()}`
+      saleDate: selectedDate,
+      notes: `Vendita rapida del ${new Date(selectedDate).toLocaleDateString()}`
     };
 
     createSaleMutation.mutate(saleData, {
@@ -156,10 +164,11 @@ export default function Sales() {
     form.reset();
   };
 
-  // Calculate totals
-  const totalQuantitySold = sales.reduce((sum, sale) => sum + sale.quantitySold, 0);
-  const totalCostOfSales = sales.reduce((sum, sale) => sum + sale.totalCost, 0);
-  const totalRevenue = sales.reduce((sum, sale) => sum + sale.totalRevenue, 0);
+  // Calculate totals based on filtered or all sales
+  const salesForCalculation = dateFilter ? filteredSales : sales;
+  const totalQuantitySold = salesForCalculation.reduce((sum, sale) => sum + sale.quantitySold, 0);
+  const totalCostOfSales = salesForCalculation.reduce((sum, sale) => sum + sale.totalCost, 0);
+  const totalRevenue = salesForCalculation.reduce((sum, sale) => sum + sale.totalRevenue, 0);
   const totalProfit = totalRevenue - totalCostOfSales;
 
   return (
@@ -174,6 +183,70 @@ export default function Sales() {
           Gestisci le vendite dei piatti e monitora le performance
         </p>
       </div>
+
+      {/* Date Filters Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5 text-primary" />
+            Filtri Data
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="selectedDate" className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Data di Riferimento per Inserimento
+              </Label>
+              <Input
+                id="selectedDate"
+                type="date"
+                value={selectedDate}
+                onChange={(e) => {
+                  setSelectedDate(e.target.value);
+                  form.setValue("saleDate", e.target.value);
+                }}
+                data-testid="input-selected-date"
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">
+                Data che verrà utilizzata per le nuove vendite inserite rapidamente
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="dateFilter" className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                Filtra Vendite per Data
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  id="dateFilter"
+                  type="date"
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  data-testid="input-date-filter"
+                  className="flex-1"
+                />
+                {dateFilter && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDateFilter('')}
+                    data-testid="button-clear-date-filter"
+                  >
+                    Mostra Tutto
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Lascia vuoto per vedere tutte le vendite
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Smart Quick Sales Grid */}
       {dishesLoading && (
@@ -537,13 +610,33 @@ export default function Sales() {
         <CardContent>
           {salesLoading ? (
             <p className="text-center text-muted-foreground">Caricamento vendite...</p>
-          ) : sales.length === 0 ? (
-            <p className="text-center text-muted-foreground italic">
-              Nessuna vendita ancora registrata.
-            </p>
           ) : (
-            <div className="space-y-3">
-              {sales.map((sale) => (
+            <>
+              {dateFilter && (
+                <div className="mb-4 p-3 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    Mostrando vendite del {new Date(dateFilter).toLocaleDateString()}
+                  </p>
+                  <Badge variant="secondary" className="mt-2">
+                    {filteredSales.length} di {sales.length} vendite
+                  </Badge>
+                </div>
+              )}
+              {!dateFilter && sales.length > 0 && (
+                <div className="mb-4 p-3 bg-muted rounded-lg">
+                  <Badge variant="secondary">
+                    Totale: {sales.length} vendite
+                  </Badge>
+                </div>
+              )}
+              {(dateFilter ? filteredSales : sales).length === 0 ? (
+                <p className="text-center text-muted-foreground italic">
+                  {dateFilter ? `Nessuna vendita registrata per il ${new Date(dateFilter).toLocaleDateString()}` : "Nessuna vendita ancora registrata."}
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {(dateFilter ? filteredSales : sales).map((sale) => (
                 <div
                   key={sale.id}
                   className="flex justify-between items-center p-4 bg-muted rounded-lg hover-elevate"
@@ -605,7 +698,9 @@ export default function Sales() {
                   </div>
                 </div>
               ))}
-            </div>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

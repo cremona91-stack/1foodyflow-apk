@@ -4,9 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, DollarSign, AlertTriangle, Users, Info } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { TrendingUp, DollarSign, AlertTriangle, Users, Info, Calendar } from "lucide-react";
 import { useSales } from "@/hooks/useApi";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 interface SalesSummaryProps {
   dishes: Dish[];
@@ -28,13 +29,42 @@ export default function SalesSummary({
   showSalesDetails = true 
 }: SalesSummaryProps) {
   
-  // Fetch sales data
-  const { data: salesData = [] } = useSales();
+  // Read selected year and month from localStorage (same as Dashboard)
+  const [selectedYear, setSelectedYear] = useState(() => {
+    const saved = localStorage.getItem('foodyflow-selected-year');
+    return saved ? parseInt(saved) : new Date().getFullYear();
+  });
   
-  // Calculate totals from sales data
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const saved = localStorage.getItem('foodyflow-selected-month');
+    return saved ? parseInt(saved) : new Date().getMonth() + 1;
+  });
+
+  // Update localStorage when values change
+  useEffect(() => {
+    localStorage.setItem('foodyflow-selected-year', selectedYear.toString());
+  }, [selectedYear]);
+
+  useEffect(() => {
+    localStorage.setItem('foodyflow-selected-month', selectedMonth.toString());
+  }, [selectedMonth]);
+  
+  // Fetch sales data
+  const { data: allSalesData = [] } = useSales();
+  
+  // Filter sales data by selected month/year
+  const filteredSalesData = useMemo(() => {
+    return allSalesData.filter(sale => {
+      const saleDate = new Date(sale.saleDate);
+      return saleDate.getFullYear() === selectedYear && 
+             saleDate.getMonth() + 1 === selectedMonth;
+    });
+  }, [allSalesData, selectedYear, selectedMonth]);
+  
+  // Calculate totals from filtered sales data
   const { totalCostOfSales, totalGrossSales, totalNetSales } = useMemo(() => {
-    const totalCost = salesData.reduce((sum, sale) => sum + sale.totalCost, 0);
-    const totalNetRevenue = salesData.reduce((sum, sale) => sum + sale.totalRevenue, 0);
+    const totalCost = filteredSalesData.reduce((sum, sale) => sum + sale.totalCost, 0);
+    const totalNetRevenue = filteredSalesData.reduce((sum, sale) => sum + sale.totalRevenue, 0);
     // Gross sales = net revenue + 10% (IVA)
     const totalGrossRevenue = totalNetRevenue * 1.10;
     return {
@@ -42,10 +72,27 @@ export default function SalesSummary({
       totalGrossSales: totalGrossRevenue,
       totalNetSales: totalNetRevenue
     };
-  }, [salesData]);
+  }, [filteredSalesData]);
   
-  const totalWasteCost = waste.reduce((sum, w) => sum + w.cost, 0);
-  const totalPersonalMealsCost = personalMeals.reduce((sum, pm) => sum + pm.cost, 0);
+  // Filter waste and personal meals by selected month/year (same as sales)
+  const filteredWaste = useMemo(() => {
+    return waste.filter(w => {
+      const wasteDate = new Date(w.date);
+      return wasteDate.getFullYear() === selectedYear && 
+             wasteDate.getMonth() + 1 === selectedMonth;
+    });
+  }, [waste, selectedYear, selectedMonth]);
+
+  const filteredPersonalMeals = useMemo(() => {
+    return personalMeals.filter(pm => {
+      const mealDate = new Date(pm.date);
+      return mealDate.getFullYear() === selectedYear && 
+             mealDate.getMonth() + 1 === selectedMonth;
+    });
+  }, [personalMeals, selectedYear, selectedMonth]);
+
+  const totalWasteCost = filteredWaste.reduce((sum, w) => sum + w.cost, 0);
+  const totalPersonalMealsCost = filteredPersonalMeals.reduce((sum, pm) => sum + pm.cost, 0);
   
   // Calculate weighted food cost
   const weightedFoodCost = totalNetSales > 0 ? (totalCostOfSales / totalNetSales) * 100 : 0;
@@ -57,8 +104,30 @@ export default function SalesSummary({
     onMaxFoodCostChange?.(numValue);
   };
 
+  // Month names in Italian
+  const monthNames = [
+    "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+    "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
+  ];
+
   return (
     <div className="space-y-6">
+      {/* Month Reference Header */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-center gap-2">
+            <Calendar className="h-5 w-5 text-primary" />
+            <span className="text-lg font-semibold">Food Cost - Mese di Riferimento:</span>
+            <Badge variant="secondary" className="text-lg px-3 py-1">
+              {monthNames[selectedMonth - 1]} {selectedYear}
+            </Badge>
+          </div>
+          <p className="text-center text-sm text-muted-foreground mt-2">
+            I dati mostrati si riferiscono al mese selezionato nella dashboard
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Summary Cards */}
       <Card>
         <CardHeader>
