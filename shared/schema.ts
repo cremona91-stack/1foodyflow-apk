@@ -8,6 +8,7 @@ export const recipeIngredientSchema = z.object({
   productId: z.string(),
   quantity: z.number().min(0),
   cost: z.number().min(0),
+  weightAdjustment: z.number().min(-100).max(1000).default(0), // Peso +/- percentage for this ingredient
 });
 
 // Dish ingredient schema - can be either a product or a recipe
