@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,7 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChefHat, Utensils, Plus, Calculator, ChevronDown } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ChefHat, Utensils, Plus, Calculator, ChevronDown, AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import RecipeForm from "@/components/RecipeForm";
 import RecipeList from "@/components/RecipeList";
@@ -35,6 +36,7 @@ export default function Recipes() {
   const [targetKg, setTargetKg] = useState<string>("");
   const [calculatedIngredients, setCalculatedIngredients] = useState<{product: Product, quantity: number, finishedQuantity: number, cost: number, hasWeightAdjustment: boolean}[]>([]);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
+  const [calculationError, setCalculationError] = useState<string>("");
 
   // Data fetching
   const { data: products = [] } = useProducts();
@@ -78,8 +80,10 @@ export default function Recipes() {
     deleteDishMutation.mutate(id);
   };
 
-  // Recipe calculator handlers
-  const handleCalculateIngredients = () => {
+  // Recipe calculator handlers with improved validation
+  const calculateIngredients = useCallback(() => {
+    setCalculationError("");
+    
     if (!selectedRecipeId || !targetKg || parseFloat(targetKg) <= 0) {
       setCalculatedIngredients([]);
       return;
@@ -92,11 +96,25 @@ export default function Recipes() {
     }
 
     const multiplier = parseFloat(targetKg);
-    // Apply weight adjustment to the multiplier
-    // If weightAdjustment = -50% (loses 50% weight), we need more raw material
-    // Formula: rawQuantity = finishedQuantity / (1 + weightAdjustment/100)
-    const weightAdjustmentFactor = 1 + (recipe.weightAdjustment || 0) / 100;
+    const weightAdjustment = recipe.weightAdjustment || 0;
+    
+    // Guard against division by zero or invalid weight adjustments
+    const weightAdjustmentFactor = 1 + weightAdjustment / 100;
+    
+    if (weightAdjustmentFactor <= 0) {
+      setCalculationError(`Peso adjustment di ${weightAdjustment}% non valido. Non può essere -100% o inferiore.`);
+      setCalculatedIngredients([]);
+      return;
+    }
+    
     const adjustedMultiplier = multiplier / weightAdjustmentFactor;
+    
+    // Check if adjustedMultiplier is finite
+    if (!isFinite(adjustedMultiplier)) {
+      setCalculationError("Errore di calcolo: moltiplicatore non valido.");
+      setCalculatedIngredients([]);
+      return;
+    }
     
     const ingredients = recipe.ingredients.map(ingredient => {
       const product = products.find(p => p.id === ingredient.productId);
@@ -106,17 +124,38 @@ export default function Recipes() {
       const rawQuantity = ingredient.quantity * adjustedMultiplier;
       const cost = ingredient.cost * adjustedMultiplier;
       
+      // Validate calculated values
+      if (!isFinite(rawQuantity) || !isFinite(cost)) {
+        return null;
+      }
+      
       return {
         product,
         quantity: rawQuantity, // This is the actual quantity to buy
         finishedQuantity: ingredient.quantity * multiplier, // This is the final result
         cost: cost,
-        hasWeightAdjustment: (recipe.weightAdjustment || 0) !== 0
+        hasWeightAdjustment: weightAdjustment !== 0
       };
     }).filter(Boolean) as {product: Product, quantity: number, finishedQuantity: number, cost: number, hasWeightAdjustment: boolean}[];
 
+    // Final validation: check if all calculations are valid
+    if (ingredients.length === 0 && recipe.ingredients.length > 0) {
+      setCalculationError("Errore nel calcolo degli ingredienti.");
+      return;
+    }
+
     setCalculatedIngredients(ingredients);
-  };
+  }, [selectedRecipeId, targetKg, recipes, products]);
+
+  // Auto-recalculate when dependencies change
+  useEffect(() => {
+    if (selectedRecipeId && targetKg) {
+      calculateIngredients();
+    } else {
+      setCalculatedIngredients([]);
+      setCalculationError("");
+    }
+  }, [calculateIngredients, selectedRecipeId, targetKg]);
 
   const getTotalCost = () => {
     return calculatedIngredients.reduce((sum, ing) => sum + ing.cost, 0);
@@ -219,24 +258,26 @@ export default function Recipes() {
                     min="0"
                     step="0.1"
                     value={targetKg}
-                    onChange={(e) => {
-                      setTargetKg(e.target.value);
-                      // Auto-calculate when both fields are filled
-                      if (selectedRecipeId && e.target.value) {
-                        setTimeout(handleCalculateIngredients, 100);
-                      }
-                    }}
+                    onChange={(e) => setTargetKg(e.target.value)}
                     placeholder="es. 3"
                     data-testid="input-target-kg"
                   />
                 </div>
                 
+                {calculationError && (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>{calculationError}</AlertDescription>
+                  </Alert>
+                )}
+                
                 <Button 
-                  onClick={handleCalculateIngredients} 
+                  onClick={calculateIngredients} 
                   className="w-full"
-                  disabled={!selectedRecipeId || !targetKg}
+                  disabled={!selectedRecipeId || !targetKg || parseFloat(targetKg) <= 0}
                   data-testid="button-calculate"
                 >
+                  <Calculator className="w-4 h-4 mr-2" />
                   Calcola Ingredienti
                 </Button>
                 

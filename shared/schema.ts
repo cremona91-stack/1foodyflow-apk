@@ -215,7 +215,7 @@ export const insertRecipeSchema = createInsertSchema(recipes).omit({
   updatedAt: true,
 }).extend({
   ingredients: z.array(recipeIngredientSchema),
-  weightAdjustment: z.number().min(-100).max(1000).default(0), // Peso +/- percentage (-100% to +1000%)
+  weightAdjustment: z.number().min(-99.9, "Weight adjustment cannot be -100% or lower").max(500, "Weight adjustment cannot exceed 500%").default(0), // Peso +/- percentage (-99.9% to +500%)
   totalCost: z.number().min(0),
 });
 
@@ -316,7 +316,7 @@ export const updateProductSchema = insertProductSchema.partial().omit({
 export const updateRecipeSchema = z.object({
   name: z.string().optional(),
   ingredients: z.array(recipeIngredientSchema).optional(),
-  weightAdjustment: z.number().min(-100).max(1000).optional(), // Peso +/- percentage
+  weightAdjustment: z.number().min(-99.9, "Weight adjustment cannot be -100% or lower").max(500, "Weight adjustment cannot exceed 500%").optional(), // Peso +/- percentage
   totalCost: z.number().min(0).optional(),
 });
 
