@@ -320,6 +320,7 @@ export const updateRecipeSchema = z.object({
   ingredients: z.array(recipeIngredientSchema).optional(),
   weightAdjustment: z.number().min(-99.9, "Weight adjustment cannot be -100% or lower").max(500, "Weight adjustment cannot exceed 500%").optional(), // Peso +/- percentage
   totalCost: z.number().min(0).optional(),
+  sellingPrice: z.number().min(0).optional(), // Prezzo di vendita opzionale
 });
 
 export const updateDishSchema = z.object({
