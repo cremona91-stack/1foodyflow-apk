@@ -62,7 +62,6 @@ export const recipes = pgTable("recipes", {
   ingredients: json("ingredients").$type<z.infer<typeof recipeIngredientSchema>[]>().notNull(),
   weightAdjustment: real("weight_adjustment").notNull().default(0), // Peso +/- percentage
   totalCost: real("total_cost").notNull(),
-  sellingPrice: real("selling_price"), // Prezzo di vendita per kg/unità
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -218,7 +217,6 @@ export const insertRecipeSchema = createInsertSchema(recipes).omit({
   ingredients: z.array(recipeIngredientSchema),
   weightAdjustment: z.number().min(-99.9, "Weight adjustment cannot be -100% or lower").max(500, "Weight adjustment cannot exceed 500%").default(0), // Peso +/- percentage (-99.9% to +500%)
   totalCost: z.number().min(0),
-  sellingPrice: z.number().min(0).optional(), // Prezzo di vendita opzionale
 });
 
 export const insertDishSchema = createInsertSchema(dishes).omit({
@@ -320,7 +318,6 @@ export const updateRecipeSchema = z.object({
   ingredients: z.array(recipeIngredientSchema).optional(),
   weightAdjustment: z.number().min(-99.9, "Weight adjustment cannot be -100% or lower").max(500, "Weight adjustment cannot exceed 500%").optional(), // Peso +/- percentage
   totalCost: z.number().min(0).optional(),
-  sellingPrice: z.number().min(0).optional(), // Prezzo di vendita opzionale
 });
 
 export const updateDishSchema = z.object({
