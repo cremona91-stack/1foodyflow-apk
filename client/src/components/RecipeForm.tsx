@@ -8,8 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChefHat, Plus, Trash2, X } from "lucide-react";
+import { ChefHat, Plus, Trash2, X, TrendingUp } from "lucide-react";
 import { z } from "zod";
+import { 
+  calculateRecipeSuggestedPrice, 
+  calculateFoodCostPercentage, 
+  formatPrice, 
+  DEFAULT_TARGET_FOOD_COST_PERCENTAGE 
+} from "@/lib/priceCalculations";
 
 interface RecipeFormProps {
   onSubmit: (recipe: InsertRecipe) => void;
@@ -29,14 +35,16 @@ export default function RecipeForm({ onSubmit, products, editRecipe, onCancel }:
   const [selectedProductId, setSelectedProductId] = useState("");
   const [quantity, setQuantity] = useState("");
 
-  const form = useForm<{ name: string; weightAdjustment: number }>({
+  const form = useForm<{ name: string; weightAdjustment: number; sellingPrice?: number }>({
     resolver: zodResolver(z.object({ 
       name: z.string().min(1, "Nome ricetta richiesto"),
-      weightAdjustment: z.number().min(-100).max(1000).default(0)
+      weightAdjustment: z.number().min(-100).max(1000).default(0),
+      sellingPrice: z.number().min(0).optional()
     })),
     defaultValues: {
       name: editRecipe?.name || "",
       weightAdjustment: editRecipe?.weightAdjustment || 0,
+      sellingPrice: editRecipe?.sellingPrice || undefined,
     },
   });
 
@@ -48,6 +56,7 @@ export default function RecipeForm({ onSubmit, products, editRecipe, onCancel }:
       form.reset({
         name: editRecipe.name,
         weightAdjustment: editRecipe.weightAdjustment || 0,
+        sellingPrice: editRecipe.sellingPrice || undefined,
       });
     } else {
       setIsEditing(false);
@@ -55,6 +64,7 @@ export default function RecipeForm({ onSubmit, products, editRecipe, onCancel }:
       form.reset({
         name: "",
         weightAdjustment: 0,
+        sellingPrice: undefined,
       });
     }
   }, [editRecipe, form]);
@@ -89,7 +99,7 @@ export default function RecipeForm({ onSubmit, products, editRecipe, onCancel }:
     setIngredients(ingredients.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (data: { name: string; weightAdjustment: number }) => {
+  const handleSubmit = (data: { name: string; weightAdjustment: number; sellingPrice?: number }) => {
     if (ingredients.length === 0) return;
 
     const recipe: InsertRecipe = {
@@ -97,6 +107,7 @@ export default function RecipeForm({ onSubmit, products, editRecipe, onCancel }:
       ingredients,
       weightAdjustment: data.weightAdjustment,
       totalCost,
+      sellingPrice: data.sellingPrice,
     };
 
     console.log("Recipe form submitted:", recipe);
@@ -270,6 +281,84 @@ export default function RecipeForm({ onSubmit, products, editRecipe, onCancel }:
                 </div>
               </Card>
             </div>
+
+            <FormField
+              control={form.control}
+              name="sellingPrice"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Prezzo di Vendita (€/kg)</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
+                      value={field.value || ""}
+                      className="bg-yellow-100 dark:bg-yellow-900/30"
+                      data-testid="input-recipe-selling-price"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                  
+                  {/* Price Suggestion */}
+                  {totalCost > 0 && (
+                    <div className="mt-2 space-y-2">
+                      <div className="bg-card border rounded-md p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <TrendingUp className="h-4 w-4 text-primary" />
+                          <span className="font-medium text-sm">Suggerimento Prezzo</span>
+                        </div>
+                        <div className="space-y-1 text-sm">
+                          {(() => {
+                            const weightAdjustment = form.watch("weightAdjustment");
+                            const suggestedPrice = calculateRecipeSuggestedPrice(
+                              totalCost,
+                              weightAdjustment,
+                              DEFAULT_TARGET_FOOD_COST_PERCENTAGE
+                            );
+                            const currentPrice = form.watch("sellingPrice");
+                            const currentFoodCostPercentage = currentPrice ? 
+                              calculateFoodCostPercentage(totalCost / (1 + (weightAdjustment / 100)), currentPrice) : 0;
+
+                            return (
+                              <>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Prezzo suggerito (30% food cost):</span>
+                                  <span className="font-mono font-medium">{formatPrice(suggestedPrice)}/kg</span>
+                                </div>
+                                {weightAdjustment !== 0 && (
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Costo reale con peso {weightAdjustment > 0 ? '+' : ''}{weightAdjustment}%:</span>
+                                    <span className="font-mono font-medium">
+                                      {formatPrice(totalCost / (1 + (weightAdjustment / 100)))}/kg
+                                    </span>
+                                  </div>
+                                )}
+                                {currentPrice && (
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Food cost attuale:</span>
+                                    <span className={`font-mono font-medium ${
+                                      currentFoodCostPercentage > 35 ? 'text-destructive' : 
+                                      currentFoodCostPercentage > 30 ? 'text-yellow-600 dark:text-yellow-400' : 
+                                      'text-green-600 dark:text-green-400'
+                                    }`}>
+                                      {currentFoodCostPercentage.toFixed(1)}%
+                                    </span>
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </FormItem>
+              )}
+            />
 
             <div className="flex gap-2 pt-4">
               <Button

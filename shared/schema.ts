@@ -218,6 +218,7 @@ export const insertRecipeSchema = createInsertSchema(recipes).omit({
   ingredients: z.array(recipeIngredientSchema),
   weightAdjustment: z.number().min(-99.9, "Weight adjustment cannot be -100% or lower").max(500, "Weight adjustment cannot exceed 500%").default(0), // Peso +/- percentage (-99.9% to +500%)
   totalCost: z.number().min(0),
+  sellingPrice: z.number().min(0).optional(), // Prezzo di vendita opzionale
 });
 
 export const insertDishSchema = createInsertSchema(dishes).omit({
