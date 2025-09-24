@@ -62,6 +62,7 @@ export const recipes = pgTable("recipes", {
   ingredients: json("ingredients").$type<z.infer<typeof recipeIngredientSchema>[]>().notNull(),
   weightAdjustment: real("weight_adjustment").notNull().default(0), // Peso +/- percentage
   totalCost: real("total_cost").notNull(),
+  sellingPrice: real("selling_price"), // Prezzo di vendita per kg/unità
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

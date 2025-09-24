@@ -211,7 +211,7 @@ export default function RecipeForm({ onSubmit, products, editRecipe, onCancel }:
                     />
                     <Input
                       readOnly
-                      value={`€${selectedProduct.effectivePricePerUnit.toFixed(2)}`}
+                      value={`€${selectedProduct.pricePerUnit.toFixed(2)}`}
                       className="bg-muted text-muted-foreground"
                     />
                   </div>
