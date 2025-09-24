@@ -13,9 +13,8 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export default function PWAInstallBanner() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [showBanner, setShowBanner] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
+  // PWA functionality disabled for now
+  return null;
 
   useEffect(() => {
     // Check if already installed (standalone mode)

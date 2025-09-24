@@ -27,7 +27,8 @@ export default function Sales() {
   const [editingSale, setEditingSale] = useState<Sales | undefined>();
   const [showForm, setShowForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [dateFilter, setDateFilter] = useState<string>('');
+  const [dateFromFilter, setDateFromFilter] = useState<string>('');
+  const [dateToFilter, setDateToFilter] = useState<string>('');
   const { toast } = useToast();
 
   // Data fetching
@@ -53,10 +54,31 @@ export default function Sales() {
     },
   });
 
-  // Filter sales based on date filter
+  // Filter sales based on date range filter
   const filteredSales = sales.filter(sale => {
-    if (!dateFilter) return true;
-    return sale.saleDate === dateFilter;
+    // If no filters are set, show all sales
+    if (!dateFromFilter && !dateToFilter) return true;
+    
+    const saleDate = new Date(sale.saleDate);
+    const fromDate = dateFromFilter ? new Date(dateFromFilter) : null;
+    const toDate = dateToFilter ? new Date(dateToFilter) : null;
+    
+    // If only "from" date is set
+    if (fromDate && !toDate) {
+      return saleDate >= fromDate;
+    }
+    
+    // If only "to" date is set
+    if (!fromDate && toDate) {
+      return saleDate <= toDate;
+    }
+    
+    // If both dates are set
+    if (fromDate && toDate) {
+      return saleDate >= fromDate && saleDate <= toDate;
+    }
+    
+    return true;
   });
 
   // Smart quantity handlers
@@ -165,7 +187,7 @@ export default function Sales() {
   };
 
   // Calculate totals based on filtered or all sales
-  const salesForCalculation = dateFilter ? filteredSales : sales;
+  const salesForCalculation = (dateFromFilter || dateToFilter) ? filteredSales : sales;
   const totalQuantitySold = salesForCalculation.reduce((sum, sale) => sum + sale.quantitySold, 0);
   const totalCostOfSales = salesForCalculation.reduce((sum, sale) => sum + sale.totalCost, 0);
   const totalRevenue = salesForCalculation.reduce((sum, sale) => sum + sale.totalRevenue, 0);
@@ -216,32 +238,54 @@ export default function Sales() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="dateFilter" className="flex items-center gap-2">
+              <Label className="flex items-center gap-2">
                 <Filter className="h-4 w-4" />
-                Filtra Vendite per Data
+                Filtra Vendite per Periodo
               </Label>
-              <div className="flex gap-2">
-                <Input
-                  id="dateFilter"
-                  type="date"
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                  data-testid="input-date-filter"
-                  className="flex-1"
-                />
-                {dateFilter && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setDateFilter('')}
-                    data-testid="button-clear-date-filter"
-                  >
-                    Mostra Tutto
-                  </Button>
-                )}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="dateFromFilter" className="text-xs text-muted-foreground">
+                    DA
+                  </Label>
+                  <Input
+                    id="dateFromFilter"
+                    type="date"
+                    value={dateFromFilter}
+                    onChange={(e) => setDateFromFilter(e.target.value)}
+                    data-testid="input-date-from-filter"
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="dateToFilter" className="text-xs text-muted-foreground">
+                    A
+                  </Label>
+                  <Input
+                    id="dateToFilter"
+                    type="date"
+                    value={dateToFilter}
+                    onChange={(e) => setDateToFilter(e.target.value)}
+                    data-testid="input-date-to-filter"
+                    className="w-full"
+                  />
+                </div>
               </div>
+              {(dateFromFilter || dateToFilter) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setDateFromFilter('');
+                    setDateToFilter('');
+                  }}
+                  data-testid="button-clear-date-filters"
+                  className="w-full"
+                >
+                  Mostra Tutto
+                </Button>
+              )}
               <p className="text-xs text-muted-foreground">
-                Lascia vuoto per vedere tutte le vendite
+                Imposta DA e/o A per filtrare le vendite per periodo
               </p>
             </div>
           </div>
@@ -612,31 +656,39 @@ export default function Sales() {
             <p className="text-center text-muted-foreground">Caricamento vendite...</p>
           ) : (
             <>
-              {dateFilter && (
+              {(dateFromFilter || dateToFilter) && (
                 <div className="mb-4 p-3 bg-muted rounded-lg">
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <Filter className="h-4 w-4" />
-                    Mostrando vendite del {new Date(dateFilter).toLocaleDateString()}
+                    {dateFromFilter && dateToFilter && (
+                      <>Mostrando vendite dal {new Date(dateFromFilter).toLocaleDateString()} al {new Date(dateToFilter).toLocaleDateString()}</>
+                    )}
+                    {dateFromFilter && !dateToFilter && (
+                      <>Mostrando vendite dal {new Date(dateFromFilter).toLocaleDateString()} in poi</>
+                    )}
+                    {!dateFromFilter && dateToFilter && (
+                      <>Mostrando vendite fino al {new Date(dateToFilter).toLocaleDateString()}</>
+                    )}
                   </p>
                   <Badge variant="secondary" className="mt-2">
                     {filteredSales.length} di {sales.length} vendite
                   </Badge>
                 </div>
               )}
-              {!dateFilter && sales.length > 0 && (
+              {!dateFromFilter && !dateToFilter && sales.length > 0 && (
                 <div className="mb-4 p-3 bg-muted rounded-lg">
                   <Badge variant="secondary">
                     Totale: {sales.length} vendite
                   </Badge>
                 </div>
               )}
-              {(dateFilter ? filteredSales : sales).length === 0 ? (
+              {((dateFromFilter || dateToFilter) ? filteredSales : sales).length === 0 ? (
                 <p className="text-center text-muted-foreground italic">
-                  {dateFilter ? `Nessuna vendita registrata per il ${new Date(dateFilter).toLocaleDateString()}` : "Nessuna vendita ancora registrata."}
+                  {(dateFromFilter || dateToFilter) ? `Nessuna vendita registrata per il periodo selezionato` : "Nessuna vendita ancora registrata."}
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {(dateFilter ? filteredSales : sales).map((sale) => (
+                  {((dateFromFilter || dateToFilter) ? filteredSales : sales).map((sale) => (
                 <div
                   key={sale.id}
                   className="flex justify-between items-center p-4 bg-muted rounded-lg hover-elevate"
