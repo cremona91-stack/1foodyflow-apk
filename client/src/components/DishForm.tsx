@@ -8,8 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calculator, Plus, X } from "lucide-react";
+import { Calculator, Plus, X, TrendingUp } from "lucide-react";
 import { z } from "zod";
+import { 
+  calculateDishSuggestedPrice,
+  calculateProductRealFoodCost,
+  calculateRecipeRealFoodCost,
+  calculateFoodCostPercentage,
+  formatPrice,
+  DEFAULT_TARGET_FOOD_COST_PERCENTAGE
+} from "@/lib/priceCalculations";
 
 interface DishFormProps {
   onSubmit: (dish: InsertDish) => void;
@@ -335,6 +343,76 @@ export default function DishForm({ onSubmit, products, recipes, editDish, onCanc
                     />
                   </FormControl>
                   <FormMessage />
+                  
+                  {/* Price Suggestion */}
+                  {totalCost > 0 && (
+                    <div className="mt-2">
+                      <div className="bg-card border rounded-md p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <TrendingUp className="h-4 w-4 text-primary" />
+                          <span className="font-medium text-sm">Suggerimento Prezzo</span>
+                        </div>
+                        <div className="space-y-1 text-sm">
+                          {(() => {
+                            // Calculate real food cost considering waste and weight adjustments
+                            let totalRealFoodCost = 0;
+
+                            for (const ingredient of ingredients) {
+                              if ('productId' in ingredient) {
+                                // Product ingredient - consider waste
+                                const product = products.find(p => p.id === ingredient.productId);
+                                if (product) {
+                                  const realCostPerUnit = calculateProductRealFoodCost(product.pricePerUnit, product.waste);
+                                  totalRealFoodCost += realCostPerUnit * ingredient.quantity;
+                                }
+                              } else if ('recipeId' in ingredient) {
+                                // Recipe ingredient - consider weight adjustment
+                                const recipe = recipes.find(r => r.id === ingredient.recipeId);
+                                if (recipe) {
+                                  const realCostPerUnit = calculateRecipeRealFoodCost(recipe.totalCost, recipe.weightAdjustment);
+                                  totalRealFoodCost += realCostPerUnit * ingredient.quantity;
+                                }
+                              }
+                            }
+
+                            const suggestedPrice = totalRealFoodCost / (DEFAULT_TARGET_FOOD_COST_PERCENTAGE / 100);
+                            const suggestedGrossPrice = suggestedPrice * 1.10; // Add IVA
+                            const currentPrice = form.watch("sellingPrice");
+                            const currentFoodCostPercentage = currentPrice ? calculateFoodCostPercentage(totalRealFoodCost, currentPrice / 1.10) : 0;
+
+                            return (
+                              <>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Prezzo suggerito (30% food cost):</span>
+                                  <span className="font-mono font-medium">{formatPrice(suggestedGrossPrice)} (IVA incl.)</span>
+                                </div>
+                                {totalRealFoodCost !== totalCost && (
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Costo reale con sfridi/peso:</span>
+                                    <span className="font-mono font-medium">
+                                      {formatPrice(totalRealFoodCost)}
+                                    </span>
+                                  </div>
+                                )}
+                                {currentPrice && (
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Food cost reale attuale:</span>
+                                    <span className={`font-mono font-medium ${
+                                      currentFoodCostPercentage > 35 ? 'text-destructive' : 
+                                      currentFoodCostPercentage > 30 ? 'text-yellow-600 dark:text-yellow-400' : 
+                                      'text-green-600 dark:text-green-400'
+                                    }`}>
+                                      {currentFoodCostPercentage.toFixed(1)}%
+                                    </span>
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </FormItem>
               )}
             />
