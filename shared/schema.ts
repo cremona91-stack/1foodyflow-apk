@@ -60,6 +60,7 @@ export const recipes = pgTable("recipes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   ingredients: json("ingredients").$type<z.infer<typeof recipeIngredientSchema>[]>().notNull(),
+  weightAdjustment: real("weight_adjustment").notNull().default(0), // Peso +/- percentage
   totalCost: real("total_cost").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -214,6 +215,7 @@ export const insertRecipeSchema = createInsertSchema(recipes).omit({
   updatedAt: true,
 }).extend({
   ingredients: z.array(recipeIngredientSchema),
+  weightAdjustment: z.number().min(-100).max(1000).default(0), // Peso +/- percentage (-100% to +1000%)
   totalCost: z.number().min(0),
 });
 
@@ -314,6 +316,7 @@ export const updateProductSchema = insertProductSchema.partial().omit({
 export const updateRecipeSchema = z.object({
   name: z.string().optional(),
   ingredients: z.array(recipeIngredientSchema).optional(),
+  weightAdjustment: z.number().min(-100).max(1000).optional(), // Peso +/- percentage
   totalCost: z.number().min(0).optional(),
 });
 
