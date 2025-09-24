@@ -29,10 +29,14 @@ export default function RecipeForm({ onSubmit, products, editRecipe, onCancel }:
   const [selectedProductId, setSelectedProductId] = useState("");
   const [quantity, setQuantity] = useState("");
 
-  const form = useForm<{ name: string }>({
-    resolver: zodResolver(z.object({ name: z.string().min(1, "Nome ricetta richiesto") })),
+  const form = useForm<{ name: string; weightAdjustment: number }>({
+    resolver: zodResolver(z.object({ 
+      name: z.string().min(1, "Nome ricetta richiesto"),
+      weightAdjustment: z.number().min(-100).max(1000).default(0)
+    })),
     defaultValues: {
       name: editRecipe?.name || "",
+      weightAdjustment: editRecipe?.weightAdjustment || 0,
     },
   });
 
@@ -43,12 +47,14 @@ export default function RecipeForm({ onSubmit, products, editRecipe, onCancel }:
       setIngredients(editRecipe.ingredients || []);
       form.reset({
         name: editRecipe.name,
+        weightAdjustment: editRecipe.weightAdjustment || 0,
       });
     } else {
       setIsEditing(false);
       setIngredients([]);
       form.reset({
         name: "",
+        weightAdjustment: 0,
       });
     }
   }, [editRecipe, form]);
@@ -83,12 +89,13 @@ export default function RecipeForm({ onSubmit, products, editRecipe, onCancel }:
     setIngredients(ingredients.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (data: { name: string }) => {
+  const handleSubmit = (data: { name: string; weightAdjustment: number }) => {
     if (ingredients.length === 0) return;
 
     const recipe: InsertRecipe = {
       name: data.name,
       ingredients,
+      weightAdjustment: data.weightAdjustment,
       totalCost,
     };
 
@@ -133,6 +140,33 @@ export default function RecipeForm({ onSubmit, products, editRecipe, onCancel }:
                       data-testid="input-recipe-name"
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="weightAdjustment"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Peso +/- (%)</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="number"
+                      step="0.1"
+                      min="-100"
+                      max="1000"
+                      placeholder="0"
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      className="bg-yellow-100 dark:bg-yellow-900/30"
+                      data-testid="input-recipe-weight-adjustment"
+                    />
+                  </FormControl>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Aumento/diminuzione peso dopo lavorazione (es. +70% per pasta cotta)
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
