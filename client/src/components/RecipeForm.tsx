@@ -28,6 +28,7 @@ export default function RecipeForm({ onSubmit, products, editRecipe, onCancel }:
   const [ingredients, setIngredients] = useState(editRecipe?.ingredients || []);
   const [selectedProductId, setSelectedProductId] = useState("");
   const [quantity, setQuantity] = useState("");
+  const [ingredientWeightAdjustment, setIngredientWeightAdjustment] = useState("0");
 
   const form = useForm<{ name: string; weightAdjustment: number }>({
     resolver: zodResolver(z.object({ 
@@ -72,16 +73,19 @@ export default function RecipeForm({ onSubmit, products, editRecipe, onCancel }:
     if (parsedQuantity <= 0) return;
 
     const cost = parsedQuantity * product.pricePerUnit;
+    const parsedWeightAdjustment = parseFloat(ingredientWeightAdjustment) || 0;
     const ingredient = {
       productId: selectedProductId,
       quantity: parsedQuantity,
       cost,
+      weightAdjustment: parsedWeightAdjustment,
     };
 
     console.log("Adding ingredient:", ingredient);
     setIngredients([...ingredients, ingredient]);
     setSelectedProductId("");
     setQuantity("");
+    setIngredientWeightAdjustment("0");
   };
 
   const removeIngredient = (index: number) => {
@@ -176,7 +180,7 @@ export default function RecipeForm({ onSubmit, products, editRecipe, onCancel }:
               <h3 className="font-semibold text-foreground mb-4">Ingredienti</h3>
               
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <Select value={selectedProductId} onValueChange={setSelectedProductId}>
                     <SelectTrigger data-testid="select-ingredient">
                       <SelectValue placeholder="Seleziona un ingrediente" />
@@ -199,6 +203,18 @@ export default function RecipeForm({ onSubmit, products, editRecipe, onCancel }:
                     onChange={(e) => setQuantity(e.target.value)}
                     className="bg-yellow-100 dark:bg-yellow-900/30"
                     data-testid="input-ingredient-quantity"
+                  />
+                  
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="-100"
+                    max="1000"
+                    placeholder="Peso +/- %"
+                    value={ingredientWeightAdjustment}
+                    onChange={(e) => setIngredientWeightAdjustment(e.target.value)}
+                    className="bg-yellow-100 dark:bg-yellow-900/30"
+                    data-testid="input-ingredient-weight-adjustment"
                   />
                 </div>
                 
@@ -241,6 +257,11 @@ export default function RecipeForm({ onSubmit, products, editRecipe, onCancel }:
                             <Badge variant="secondary" className="text-xs">
                               {ingredient.quantity} {product?.unit}
                             </Badge>
+                            {ingredient.weightAdjustment !== 0 && (
+                              <Badge variant="outline" className="text-xs">
+                                {ingredient.weightAdjustment > 0 ? '+' : ''}{ingredient.weightAdjustment}%
+                              </Badge>
+                            )}
                             <span className="text-sm text-muted-foreground">
                               €{ingredient.cost.toFixed(2)}
                             </span>
