@@ -110,7 +110,7 @@ export default function PWAInstallBanner() {
   }
 
   return (
-    <Card className="fixed bottom-4 left-4 right-4 md:left-auto md:w-96 z-50 shadow-lg border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800">
+    <Card className="fixed bottom-20 left-4 right-4 md:left-auto md:w-96 z-[60] shadow-lg border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800">
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg">
