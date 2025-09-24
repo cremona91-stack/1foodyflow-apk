@@ -99,18 +99,31 @@ export default function PWAInstallBanner() {
     sessionStorage.setItem('pwa-install-dismissed', 'true');
   };
 
-  // Don't show if installed, dismissed, or no prompt available
-  if (isInstalled || !showBanner || !deferredPrompt) {
+  // For testing in development, show regardless
+  if (import.meta.env.DEV) {
+    console.log('PWA Banner state:', { isInstalled, showBanner, deferredPrompt });
+  }
+  
+  // Don't show if installed
+  if (isInstalled) {
     return null;
   }
 
-  // Check if user already dismissed this session
-  if (sessionStorage.getItem('pwa-install-dismissed')) {
-    return null;
+  // In development, always show for testing
+  if (!import.meta.env.DEV) {
+    // Production checks
+    if (!showBanner || !deferredPrompt) {
+      return null;
+    }
+    
+    // Check if user already dismissed this session
+    if (sessionStorage.getItem('pwa-install-dismissed')) {
+      return null;
+    }
   }
 
   return (
-    <Card className="fixed bottom-20 left-4 right-4 md:left-auto md:w-96 z-[60] shadow-lg border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800">
+    <Card className="fixed top-4 left-4 right-4 md:left-auto md:w-96 z-[100] shadow-2xl border-4 border-red-500 bg-yellow-200 dark:bg-yellow-800">
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg">
