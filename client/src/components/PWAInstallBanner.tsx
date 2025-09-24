@@ -32,11 +32,13 @@ export default function PWAInstallBanner() {
       e.preventDefault();
       const installEvent = e as BeforeInstallPromptEvent;
       setDeferredPrompt(installEvent);
+      console.log('PWA: beforeinstallprompt event received');
       
       // Show banner after a delay to not be intrusive
       setTimeout(() => {
         setShowBanner(true);
-      }, 10000); // Show after 10 seconds
+        console.log('PWA: Banner should be visible now');
+      }, 2000); // Show after 2 seconds for testing
     };
 
     // Listen for app installed event
@@ -50,14 +52,29 @@ export default function PWAInstallBanner() {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
 
+    // For testing: show banner even without beforeinstallprompt in development
+    if (import.meta.env.DEV) {
+      setTimeout(() => {
+        if (!deferredPrompt) {
+          console.log('PWA: Showing test banner (no beforeinstallprompt event)');
+          setShowBanner(true);
+        }
+      }, 3000);
+    }
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, []);
+  }, [deferredPrompt]);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      // No native install prompt, show manual instructions
+      alert(`Per installare FoodyFlow:\n\n📱 Android/Chrome:\n• Menu > Installa app\n\n🍎 iPhone/Safari:\n• Condividi > Aggiungi alla schermata home\n\n💻 Desktop:\n• Icona installa nella barra indirizzi`);
+      setShowBanner(false);
+      return;
+    }
 
     // Show install prompt
     deferredPrompt.prompt();
