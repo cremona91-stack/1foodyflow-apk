@@ -1,9 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   ChefHat, 
   Users, 
@@ -27,6 +28,30 @@ const CHART_COLORS = [
   '#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1', 
   '#d084d0', '#ffb347', '#87ceeb', '#dda0dd', '#98fb98'
 ];
+
+// Helper functions for date handling
+const getWeekNumber = (date: Date) => {
+  const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+  const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
+  return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+};
+
+const getWeekStartEnd = (year: number, weekNumber: number) => {
+  const firstDayOfYear = new Date(year, 0, 1);
+  const daysToAdd = (weekNumber - 1) * 7 - firstDayOfYear.getDay() + 1;
+  const weekStart = new Date(year, 0, 1 + daysToAdd);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  return { weekStart, weekEnd };
+};
+
+const formatDateForAPI = (date: Date) => {
+  // Use local date to avoid timezone issues
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 interface DashboardProps {
   products: Product[];
@@ -210,25 +235,75 @@ export function Dashboard({
   personalMeals, 
   onNavigateToSection 
 }: DashboardProps) {
+  // Time filter state
+  const today = new Date();
+  const [selectedYear, setSelectedYear] = useState(() => {
+    const saved = localStorage.getItem('foodyflow-dashboard-year');
+    return saved ? parseInt(saved) : today.getFullYear();
+  });
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const saved = localStorage.getItem('foodyflow-dashboard-month');
+    return saved ? parseInt(saved) : today.getMonth() + 1;
+  });
+  const [selectedWeek, setSelectedWeek] = useState(() => {
+    const saved = localStorage.getItem('foodyflow-dashboard-week');
+    return saved ? parseInt(saved) : getWeekNumber(today);
+  });
+  const [selectedDay, setSelectedDay] = useState(() => {
+    const saved = localStorage.getItem('foodyflow-dashboard-day');
+    if (saved) {
+      // Parse date safely to avoid timezone issues
+      const [year, month, day] = saved.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    }
+    return today;
+  });
+  const [timeFilter, setTimeFilter] = useState<'day' | 'week' | 'month'>(() => {
+    const saved = localStorage.getItem('foodyflow-dashboard-timefilter');
+    return (saved as 'day' | 'week' | 'month') || 'month';
+  });
+
+  // Persist filter state to localStorage
+  useEffect(() => {
+    localStorage.setItem('foodyflow-dashboard-year', selectedYear.toString());
+    localStorage.setItem('foodyflow-dashboard-month', selectedMonth.toString());
+    localStorage.setItem('foodyflow-dashboard-week', selectedWeek.toString());
+    localStorage.setItem('foodyflow-dashboard-day', formatDateForAPI(selectedDay));
+    localStorage.setItem('foodyflow-dashboard-timefilter', timeFilter);
+  }, [selectedYear, selectedMonth, selectedWeek, selectedDay, timeFilter]);
+
   // Fetch sales data
   const { data: salesData = [] } = useSales();
   
-  // Current period for budget data (using current month and year)
-  // Sync with P&L and Budget localStorage values
-  const currentYear = (() => {
-    const saved = localStorage.getItem('foodyflow-selected-year');
-    return saved ? parseInt(saved) : new Date().getFullYear();
-  })();
-  const currentMonth = (() => {
-    const saved = localStorage.getItem('foodyflow-selected-month');
-    return saved ? parseInt(saved) : new Date().getMonth() + 1;
-  })();
+  // Use dashboard selected time period for queries - align with active filter
+  const { queryYear, queryMonth } = useMemo(() => {
+    switch (timeFilter) {
+      case 'day':
+        return {
+          queryYear: selectedDay.getFullYear(),
+          queryMonth: selectedDay.getMonth() + 1
+        };
+      case 'week': {
+        const { weekStart } = getWeekStartEnd(selectedYear, selectedWeek);
+        return {
+          queryYear: weekStart.getFullYear(),
+          queryMonth: weekStart.getMonth() + 1
+        };
+      }
+      case 'month':
+      default:
+        return {
+          queryYear: selectedYear,
+          queryMonth: selectedMonth
+        };
+    }
+  }, [timeFilter, selectedDay, selectedYear, selectedWeek, selectedMonth]);
 
   // Fetch economic parameters for EBITDA calculation
   const { data: ecoParams } = useQuery({
-    queryKey: ['/api/economic-parameters', currentYear, currentMonth],
+    queryKey: ['/api/economic-parameters', queryYear, queryMonth],
     queryFn: async () => {
-      const response = await fetch(`/api/economic-parameters/${currentYear}/${currentMonth}`);
+      const response = await fetch(`/api/economic-parameters/${queryYear}/${queryMonth}`);
       if (!response.ok) {
         return null; // Return null if not found instead of throwing
       }
@@ -237,20 +312,16 @@ export function Dashboard({
     retry: false
   });
 
-  // Query for food cost metrics (use current date for real-time data)
-  const currentDate = new Date();
-  const actualYear = currentDate.getFullYear();
-  const actualMonth = currentDate.getMonth() + 1;
-  
+  // Query for food cost metrics (use dashboard selected period)
   const { data: foodCostMetrics } = useQuery({
-    queryKey: ['/api/metrics/food-cost', actualYear, actualMonth]
+    queryKey: ['/api/metrics/food-cost', queryYear, queryMonth]
   });
 
   // Fetch budget entries for corrispettivi calculation
   const { data: budgetEntries = [] } = useQuery({
-    queryKey: ['/api/budget-entries', currentYear, currentMonth],
+    queryKey: ['/api/budget-entries', queryYear, queryMonth],
     queryFn: () => 
-      fetch(`/api/budget-entries/${currentYear}/${currentMonth}`)
+      fetch(`/api/budget-entries/${queryYear}/${queryMonth}`)
         .then(res => res.json()) as Promise<BudgetEntry[]>
   });
 
@@ -260,11 +331,39 @@ export function Dashboard({
     [products]
   );
 
-  // Create sales map by dish ID for performance
+  // Filter sales data based on selected time period
+  const filteredSalesData = useMemo(() => {
+    if (!salesData.length) return [];
+
+    const filterDate = (saleDate: string) => {
+      const sale = new Date(saleDate);
+      
+      switch (timeFilter) {
+        case 'day':
+          return sale.toDateString() === selectedDay.toDateString();
+        
+        case 'week': {
+          const { weekStart, weekEnd } = getWeekStartEnd(selectedYear, selectedWeek);
+          return sale >= weekStart && sale <= weekEnd;
+        }
+        
+        case 'month':
+          return sale.getFullYear() === selectedYear && 
+                 sale.getMonth() + 1 === selectedMonth;
+        
+        default:
+          return true;
+      }
+    };
+
+    return salesData.filter(sale => filterDate(sale.saleDate));
+  }, [salesData, timeFilter, selectedDay, selectedYear, selectedWeek, selectedMonth]);
+
+  // Create sales map by dish ID for performance (using filtered data)
   const salesByDish = useMemo(() => {
     const salesMap = new Map<string, { totalQuantity: number; totalRevenue: number; totalCost: number }>();
     
-    salesData.forEach(sale => {
+    filteredSalesData.forEach(sale => {
       const existing = salesMap.get(sale.dishId) || { totalQuantity: 0, totalRevenue: 0, totalCost: 0 };
       salesMap.set(sale.dishId, {
         totalQuantity: existing.totalQuantity + sale.quantitySold,
@@ -274,11 +373,11 @@ export function Dashboard({
     });
     
     return salesMap;
-  }, [salesData]);
+  }, [filteredSalesData]);
   
   // Calculate food cost metrics using the new formula: (totale iniziale + totale IN - totale finale)
   const { totalFoodSales, totalFoodCost, foodCostPercentage, theoreticalFoodCostPercentage, realVsTheoreticalDiff } = useMemo(() => {
-    // Use sales data from the new sales table instead of dish.sold
+    // Use sales data from the filtered sales table
     const sales = Array.from(salesByDish.values()).reduce((sum, dishSales) => sum + dishSales.totalRevenue, 0);
     
     // Calculate THEORETICAL food cost (based on recipes)
@@ -286,28 +385,43 @@ export function Dashboard({
     const theoreticalPercentage = sales > 0 ? (totalCostOfSales / sales) * 100 : 0;
     
     // Calculate REAL food cost according to formula: (totale iniziale magazzino + totale IN magazzino - totale finale magazzino)
-    // Using data from sezione magazzino (editableInventory + stockMovements)
+    // Filter inventory and stock movements by selected period for accuracy
     
-    // 1. Totale iniziale magazzino (from editableInventory)
-    const totaleInizialeM = editableInventory.reduce((sum, inventory) => {
-      const product = productMap.get(inventory.productId);
-      return sum + (product ? inventory.initialQuantity * product.pricePerUnit : 0);
-    }, 0);
+    // For day/week filters, disable real cost calculation or show warning
+    let foodCostValue = 0;
+    let realPercentage = 0;
     
-    // 2. Totale IN magazzino (from stockMovements with movementType = 'in')
-    const totaleInM = stockMovements
-      .filter(movement => movement.movementType === 'in')
-      .reduce((sum, movement) => sum + (movement.totalCost || 0), 0);
-    
-    // 3. Totale finale magazzino (from editableInventory)
-    const totaleFinaleM = editableInventory.reduce((sum, inventory) => {
-      const product = productMap.get(inventory.productId);
-      return sum + (product ? inventory.finalQuantity * product.pricePerUnit : 0);
-    }, 0);
-    
-    // REAL Food cost calculation
-    const foodCostValue = totaleInizialeM + totaleInM - totaleFinaleM;
-    const realPercentage = sales > 0 ? (foodCostValue / sales) * 100 : 0;
+    if (timeFilter === 'month') {
+      // 1. Totale iniziale magazzino (from editableInventory - monthly data)
+      const totaleInizialeM = editableInventory.reduce((sum, inventory) => {
+        const product = productMap.get(inventory.productId);
+        return sum + (product ? inventory.initialQuantity * product.pricePerUnit : 0);
+      }, 0);
+      
+      // 2. Totale IN magazzino (from stockMovements with movementType = 'in' in selected month)
+      const totaleInM = stockMovements
+        .filter(movement => {
+          if (movement.movementType !== 'in') return false;
+          const movementDate = new Date(movement.movementDate);
+          return movementDate.getFullYear() === queryYear && 
+                 movementDate.getMonth() + 1 === queryMonth;
+        })
+        .reduce((sum, movement) => sum + (movement.totalCost || 0), 0);
+      
+      // 3. Totale finale magazzino (from editableInventory - monthly data)
+      const totaleFinaleM = editableInventory.reduce((sum, inventory) => {
+        const product = productMap.get(inventory.productId);
+        return sum + (product ? inventory.finalQuantity * product.pricePerUnit : 0);
+      }, 0);
+      
+      // REAL Food cost calculation (only for month view)
+      foodCostValue = totaleInizialeM + totaleInM - totaleFinaleM;
+      realPercentage = sales > 0 ? (foodCostValue / sales) * 100 : 0;
+    } else {
+      // For day/week: use theoretical cost as placeholder since inventory is monthly
+      foodCostValue = totalCostOfSales;
+      realPercentage = theoreticalPercentage;
+    }
     
     // Calculate differential: Real - Theoretical
     const differential = realPercentage - theoreticalPercentage;
@@ -319,7 +433,7 @@ export function Dashboard({
       theoreticalFoodCostPercentage: theoreticalPercentage,
       realVsTheoreticalDiff: differential
     };
-  }, [salesByDish, productMap, editableInventory, stockMovements]);
+  }, [salesByDish, productMap, editableInventory, stockMovements, timeFilter, queryYear, queryMonth]);
   
   const wasteValue = useMemo(() => 
     waste.reduce((sum, w) => sum + (w.totalCost || 0), 0), 
@@ -354,12 +468,26 @@ export function Dashboard({
 
   // Daily revenue comparison data for bar chart
   const weeklyComparisonData = useMemo(() => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    // Align current week to selected time filter
+    let currentWeekStart: Date;
     
-    // Get current week (Monday to Sunday)
-    const currentWeekStart = new Date(today);
-    currentWeekStart.setDate(today.getDate() - today.getDay() + 1); // Monday
+    if (timeFilter === 'week') {
+      const { weekStart } = getWeekStartEnd(selectedYear, selectedWeek);
+      currentWeekStart = weekStart;
+    } else if (timeFilter === 'day') {
+      // Use the week containing the selected day
+      const dayOfWeek = selectedDay.getDay();
+      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Monday = 1
+      currentWeekStart = new Date(selectedDay);
+      currentWeekStart.setDate(selectedDay.getDate() + mondayOffset);
+    } else {
+      // Month filter: use first week of selected month
+      const firstDayOfMonth = new Date(selectedYear, selectedMonth - 1, 1);
+      const dayOfWeek = firstDayOfMonth.getDay();
+      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      currentWeekStart = new Date(firstDayOfMonth);
+      currentWeekStart.setDate(firstDayOfMonth.getDate() + mondayOffset);
+    }
     
     // Get previous week start
     const previousWeekStart = new Date(currentWeekStart);
@@ -398,7 +526,7 @@ export function Dashboard({
     }
     
     return chartData;
-  }, [salesData]);
+  }, [salesData, timeFilter, selectedYear, selectedWeek]);
 
   // Calcolo EBITDA dal budget E consuntivo (using same logic as P&L)
   const { ebitdaBudget, ebitdaPercentageBudget, ebitdaPercentageConsuntivo, ebitdaDifference, totalCorrispettivi } = useMemo(() => {
@@ -574,6 +702,98 @@ export function Dashboard({
         <p className="text-muted-foreground">
           Controllo completo di Food Cost, Labour Cost e Performance Finanziaria
         </p>
+        
+        {/* Time Filters */}
+        <div className="flex flex-col items-center gap-4 pt-4 border-t">
+          <div className="flex items-center justify-center gap-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Filtri Temporali:</span>
+            </div>
+          
+          <Select value={timeFilter} onValueChange={(value: 'day' | 'week' | 'month') => setTimeFilter(value)}>
+            <SelectTrigger className="w-32" data-testid="select-time-filter">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="day">Giorno</SelectItem>
+              <SelectItem value="week">Settimana</SelectItem>
+              <SelectItem value="month">Mese</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+            <SelectTrigger className="w-20" data-testid="select-year">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[2023, 2024, 2025, 2026].map(year => (
+                <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {timeFilter === 'month' && (
+            <Select value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}>
+              <SelectTrigger className="w-32" data-testid="select-month">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[
+                  { value: 1, label: 'Gennaio' },
+                  { value: 2, label: 'Febbraio' },
+                  { value: 3, label: 'Marzo' },
+                  { value: 4, label: 'Aprile' },
+                  { value: 5, label: 'Maggio' },
+                  { value: 6, label: 'Giugno' },
+                  { value: 7, label: 'Luglio' },
+                  { value: 8, label: 'Agosto' },
+                  { value: 9, label: 'Settembre' },
+                  { value: 10, label: 'Ottobre' },
+                  { value: 11, label: 'Novembre' },
+                  { value: 12, label: 'Dicembre' }
+                ].map(month => (
+                  <SelectItem key={month.value} value={month.value.toString()}>
+                    {month.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {timeFilter === 'week' && (
+            <Select value={selectedWeek.toString()} onValueChange={(value) => setSelectedWeek(parseInt(value))}>
+              <SelectTrigger className="w-32" data-testid="select-week">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 52 }, (_, i) => i + 1).map(week => (
+                  <SelectItem key={week} value={week.toString()}>
+                    Settimana {week}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {timeFilter === 'day' && (
+            <input
+              type="date"
+              value={formatDateForAPI(selectedDay)}
+              onChange={(e) => setSelectedDay(new Date(e.target.value))}
+              className="px-3 py-2 border border-input bg-background text-sm rounded-md"
+              data-testid="input-selected-day"
+            />
+          )}
+          </div>
+          
+          {(timeFilter === 'day' || timeFilter === 'week') && (
+            <div className="text-xs text-orange-600 dark:text-orange-400 max-w-2xl text-center">
+              ℹ️ I dati di magazzino e costi reali non sono filtrati per giorno/settimana. 
+              Usa il filtro mensile per metriche complete di Food Cost e EBITDA.
+            </div>
+          )}
+        </div>
       </div>
 
       {/* KPI Overview Cards */}
