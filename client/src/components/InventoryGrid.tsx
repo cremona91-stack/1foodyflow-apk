@@ -1,15 +1,19 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Package, 
   TrendingUp, 
   TrendingDown, 
   Edit2, 
   Save,
-  X
+  X,
+  Calendar,
+  Filter
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -67,6 +71,56 @@ export default function InventoryGrid({
   const [editValues, setEditValues] = useState<Record<string, { initialQuantity: string; finalQuantity: string }>>({});
   const [validationErrors, setValidationErrors] = useState<Record<string, { initialQuantity?: string; finalQuantity?: string }>>({});
 
+  // Date filtering state - synchronized with dashboard selection
+  const [selectedYear, setSelectedYear] = useState(() => {
+    const saved = localStorage.getItem('foodyflow-selected-year');
+    return saved ? parseInt(saved) : new Date().getFullYear();
+  });
+  
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const saved = localStorage.getItem('foodyflow-selected-month');
+    return saved ? parseInt(saved) : new Date().getMonth() + 1;
+  });
+
+  // Persist date selection to localStorage
+  useEffect(() => {
+    localStorage.setItem('foodyflow-selected-year', selectedYear.toString());
+    localStorage.setItem('foodyflow-selected-month', selectedMonth.toString());
+  }, [selectedYear, selectedMonth]);
+
+  // Filter data by selected month/year
+  const filteredStockMovements = useMemo(() => {
+    return stockMovements.filter(movement => {
+      const movementDate = new Date(movement.movementDate);
+      return movementDate.getFullYear() === selectedYear && 
+             movementDate.getMonth() + 1 === selectedMonth;
+    });
+  }, [stockMovements, selectedYear, selectedMonth]);
+
+  const filteredWaste = useMemo(() => {
+    return waste.filter(w => {
+      const wasteDate = new Date(w.date);
+      return wasteDate.getFullYear() === selectedYear && 
+             wasteDate.getMonth() + 1 === selectedMonth;
+    });
+  }, [waste, selectedYear, selectedMonth]);
+
+  const filteredPersonalMeals = useMemo(() => {
+    return personalMeals.filter(pm => {
+      const mealDate = new Date(pm.date);
+      return mealDate.getFullYear() === selectedYear && 
+             mealDate.getMonth() + 1 === selectedMonth;
+    });
+  }, [personalMeals, selectedYear, selectedMonth]);
+
+  const filteredSalesData = useMemo(() => {
+    return salesData.filter(sale => {
+      const saleDate = new Date(sale.saleDate);
+      return saleDate.getFullYear() === selectedYear && 
+             saleDate.getMonth() + 1 === selectedMonth;
+    });
+  }, [salesData, selectedYear, selectedMonth]);
+
   // Fetch editable inventory data
   const { data: editableInventoryData = [] } = useQuery<EditableInventory[]>({
     queryKey: ["/api/editable-inventory"],
@@ -90,24 +144,24 @@ export default function InventoryGrid({
     }
   });
 
-  // Calculate aggregated OUT movements for each product
+  // Calculate aggregated OUT movements for each product (using filtered data)
   const calculateAggregatedOutMovements = (productId: string): number => {
     // Get all dishes that use this product
     const dishesQuery = queryClient.getQueryData(["/api/dishes"]) as any[];
     const dishes = dishesQuery || [];
     
-    // Calculate sales OUT (from stock movements with source = "sale")
-    const salesOut = stockMovements
+    // Calculate sales OUT (from filtered stock movements with source = "sale")
+    const salesOut = filteredStockMovements
       .filter(m => m.productId === productId && m.movementType === "out" && m.source === "sale")
       .reduce((sum, m) => sum + m.quantity, 0);
 
-    // Calculate waste OUT (sum all waste for this product)
-    const wasteOut = waste
+    // Calculate waste OUT (sum all filtered waste for this product)
+    const wasteOut = filteredWaste
       .filter(w => w.productId === productId)
       .reduce((sum, w) => sum + w.quantity, 0);
 
-    // Calculate personal meals OUT (dishes using this product * personal meal quantities)
-    const personalMealsOut = personalMeals.reduce((sum, meal) => {
+    // Calculate personal meals OUT (dishes using this product * filtered personal meal quantities)
+    const personalMealsOut = filteredPersonalMeals.reduce((sum, meal) => {
       const dish = dishes.find(d => d.id === meal.dishId);
       if (!dish) return sum;
       
@@ -118,8 +172,8 @@ export default function InventoryGrid({
       return sum + (ingredient.quantity * meal.quantity);
     }, 0);
 
-    // Calculate dish sales OUT (sold dishes * ingredient quantities) from sales table
-    const dishSalesOut = salesData.reduce((sum, sale) => {
+    // Calculate dish sales OUT (sold dishes * ingredient quantities) from filtered sales table
+    const dishSalesOut = filteredSalesData.reduce((sum, sale) => {
       // Find the dish for this sale
       const dish = dishes.find(d => d.id === sale.dishId);
       if (!dish) return sum;
@@ -141,8 +195,8 @@ export default function InventoryGrid({
         (ei: EditableInventory) => ei.productId === product.id
       );
 
-      // Calculate IN movements (from stock movements)
-      const inQuantity = stockMovements
+      // Calculate IN movements (from filtered stock movements)
+      const inQuantity = filteredStockMovements
         .filter(m => m.productId === product.id && m.movementType === "in")
         .reduce((sum, m) => sum + m.quantity, 0);
 
@@ -175,7 +229,7 @@ export default function InventoryGrid({
         validationErrors: validationErrors[product.id] || {}
       };
     });
-  }, [products, editableInventoryData, stockMovements, waste, personalMeals, editingRows, editValues]);
+  }, [products, editableInventoryData, filteredStockMovements, filteredWaste, filteredPersonalMeals, filteredSalesData, editingRows, editValues]);
 
   // Helper function to check if inputs are valid for Save button
   const isInputValid = (productId: string): boolean => {
@@ -411,6 +465,67 @@ export default function InventoryGrid({
           </CardContent>
         </Card>
       </div>
+
+      {/* Date Filter Controls */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">Periodo di Riferimento:</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Anno:</span>
+              <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+                <SelectTrigger className="w-24" data-testid="select-year">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="2024">2024</SelectItem>
+                  <SelectItem value="2025">2025</SelectItem>
+                  <SelectItem value="2026">2026</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Mese:</span>
+              <Select value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}>
+                <SelectTrigger className="w-32" data-testid="select-month">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Gennaio</SelectItem>
+                  <SelectItem value="2">Febbraio</SelectItem>
+                  <SelectItem value="3">Marzo</SelectItem>
+                  <SelectItem value="4">Aprile</SelectItem>
+                  <SelectItem value="5">Maggio</SelectItem>
+                  <SelectItem value="6">Giugno</SelectItem>
+                  <SelectItem value="7">Luglio</SelectItem>
+                  <SelectItem value="8">Agosto</SelectItem>
+                  <SelectItem value="9">Settembre</SelectItem>
+                  <SelectItem value="10">Ottobre</SelectItem>
+                  <SelectItem value="11">Novembre</SelectItem>
+                  <SelectItem value="12">Dicembre</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Badge variant="outline" className="flex items-center gap-1" data-testid="badge-period">
+              <Filter className="h-3 w-3" />
+              {new Date(selectedYear, selectedMonth - 1).toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })}
+            </Badge>
+          </div>
+          
+          <div className="mt-3 text-sm text-muted-foreground">
+            <span>
+              I dati mostrati (movimenti di magazzino, sprechi, pasti personali) si riferiscono al periodo selezionato. 
+              Le quantità iniziali e finali sono sempre le più recenti.
+            </span>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Inventory Grid */}
       <Card>
