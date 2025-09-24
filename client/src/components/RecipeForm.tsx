@@ -71,7 +71,7 @@ export default function RecipeForm({ onSubmit, products, editRecipe, onCancel }:
     const parsedQuantity = parseFloat(quantity);
     if (parsedQuantity <= 0) return;
 
-    const cost = parsedQuantity * product.effectivePricePerUnit;
+    const cost = parsedQuantity * product.pricePerUnit;
     const ingredient = {
       productId: selectedProductId,
       quantity: parsedQuantity,
