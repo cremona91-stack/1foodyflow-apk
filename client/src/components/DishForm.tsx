@@ -58,7 +58,7 @@ export default function DishForm({ onSubmit, products, recipes, editDish, onCanc
       const product = products.find(p => p.id === selectedProductId);
       if (!product) return;
 
-      const cost = parsedQuantity * product.effectivePricePerUnit;
+      const cost = parsedQuantity * product.pricePerUnit;
       ingredient = {
         type: "product" as const,
         productId: selectedProductId,
