@@ -104,6 +104,68 @@ export function calculateRecipeSuggestedPrice(
 }
 
 /**
+ * Calculate the real food cost for a recipe ingredient considering both waste and weight adjustment
+ * @param product - Product information
+ * @param quantity - Quantity of product used
+ * @param ingredientWeightAdjustment - Weight adjustment specific to this ingredient in the recipe
+ * @returns Real food cost for this recipe ingredient
+ */
+export function calculateRecipeIngredientRealFoodCost(
+  product: Product,
+  quantity: number,
+  ingredientWeightAdjustment: number = 0
+): number {
+  // Step 1: Calculate cost considering waste
+  const costWithWaste = calculateProductRealFoodCost(product.pricePerUnit, product.wastePercentage) * quantity;
+  
+  // Step 2: Apply weight adjustment for this specific ingredient
+  if (ingredientWeightAdjustment === -100) {
+    throw new Error("Weight adjustment cannot be -100% (complete loss)");
+  }
+  
+  const multiplier = 1 + (ingredientWeightAdjustment / 100);
+  return costWithWaste / multiplier;
+}
+
+/**
+ * Calculate the real total cost of a recipe considering both waste and weight adjustments
+ * @param ingredients - Recipe ingredients with weight adjustments
+ * @param products - Map of products by ID
+ * @param recipeWeightAdjustment - Overall recipe weight adjustment
+ * @returns Real total cost of the recipe
+ */
+export function calculateRecipeRealTotalCost(
+  ingredients: Array<{productId: string, quantity: number, cost: number, weightAdjustment?: number}>,
+  products: Map<string, Product>,
+  recipeWeightAdjustment: number = 0
+): number {
+  let totalRealCost = 0;
+  
+  for (const ingredient of ingredients) {
+    const product = products.get(ingredient.productId);
+    if (product) {
+      const ingredientRealCost = calculateRecipeIngredientRealFoodCost(
+        product,
+        ingredient.quantity,
+        ingredient.weightAdjustment || 0
+      );
+      totalRealCost += ingredientRealCost;
+    }
+  }
+  
+  // Apply overall recipe weight adjustment
+  if (recipeWeightAdjustment !== 0) {
+    if (recipeWeightAdjustment === -100) {
+      throw new Error("Recipe weight adjustment cannot be -100% (complete loss)");
+    }
+    const multiplier = 1 + (recipeWeightAdjustment / 100);
+    totalRealCost = totalRealCost / multiplier;
+  }
+  
+  return totalRealCost;
+}
+
+/**
  * Calculate suggested price for a dish considering ingredient waste and recipe weight adjustments
  * @param ingredients - Array of dish ingredients (can be products or recipes)
  * @param products - Map of products by ID
@@ -128,11 +190,15 @@ export function calculateDishSuggestedPrice(
         totalRealFoodCost += realCostPerUnit * ingredient.quantity;
       }
     } else if (ingredient.recipeId) {
-      // Recipe ingredient - consider weight adjustment
+      // Recipe ingredient - calculate real cost considering both ingredient weight adjustments and recipe weight adjustment
       const recipe = recipes.get(ingredient.recipeId);
       if (recipe) {
-        const realCostPerUnit = calculateRecipeRealFoodCost(recipe.totalCost, recipe.weightAdjustment);
-        totalRealFoodCost += realCostPerUnit * ingredient.quantity;
+        const recipeRealCost = calculateRecipeRealTotalCost(
+          recipe.ingredients,
+          products,
+          recipe.weightAdjustment
+        );
+        totalRealFoodCost += recipeRealCost * ingredient.quantity;
       }
     }
   }
