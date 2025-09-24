@@ -71,6 +71,13 @@ export default function InventoryGrid({
   const [editValues, setEditValues] = useState<Record<string, { initialQuantity: string; finalQuantity: string }>>({});
   const [validationErrors, setValidationErrors] = useState<Record<string, { initialQuantity?: string; finalQuantity?: string }>>({});
 
+  // Helper function to extract year and month from date string (timezone-safe)
+  const getDateParts = (dateString: string) => {
+    // Parse ISO date string directly without timezone conversion
+    const [year, month] = dateString.split('-').map(Number);
+    return { year, month };
+  };
+
   // Date filtering state - synchronized with dashboard selection
   const [selectedYear, setSelectedYear] = useState(() => {
     const saved = localStorage.getItem('foodyflow-selected-year');
@@ -91,33 +98,29 @@ export default function InventoryGrid({
   // Filter data by selected month/year
   const filteredStockMovements = useMemo(() => {
     return stockMovements.filter(movement => {
-      const movementDate = new Date(movement.movementDate);
-      return movementDate.getFullYear() === selectedYear && 
-             movementDate.getMonth() + 1 === selectedMonth;
+      const { year, month } = getDateParts(movement.movementDate);
+      return year === selectedYear && month === selectedMonth;
     });
   }, [stockMovements, selectedYear, selectedMonth]);
 
   const filteredWaste = useMemo(() => {
     return waste.filter(w => {
-      const wasteDate = new Date(w.date);
-      return wasteDate.getFullYear() === selectedYear && 
-             wasteDate.getMonth() + 1 === selectedMonth;
+      const { year, month } = getDateParts(w.date);
+      return year === selectedYear && month === selectedMonth;
     });
   }, [waste, selectedYear, selectedMonth]);
 
   const filteredPersonalMeals = useMemo(() => {
     return personalMeals.filter(pm => {
-      const mealDate = new Date(pm.date);
-      return mealDate.getFullYear() === selectedYear && 
-             mealDate.getMonth() + 1 === selectedMonth;
+      const { year, month } = getDateParts(pm.date);
+      return year === selectedYear && month === selectedMonth;
     });
   }, [personalMeals, selectedYear, selectedMonth]);
 
   const filteredSalesData = useMemo(() => {
     return salesData.filter(sale => {
-      const saleDate = new Date(sale.saleDate);
-      return saleDate.getFullYear() === selectedYear && 
-             saleDate.getMonth() + 1 === selectedMonth;
+      const { year, month } = getDateParts(sale.saleDate);
+      return year === selectedYear && month === selectedMonth;
     });
   }, [salesData, selectedYear, selectedMonth]);
 
