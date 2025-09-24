@@ -41,6 +41,7 @@ import StockMovementList from "@/components/StockMovementList";
 import InventoryGrid from "@/components/InventoryGrid";
 import SalesChart from "@/components/SalesChart";
 import { FloatingAIBot } from "@/components/FloatingAIBot";
+import PWAInstallBanner from "@/components/PWAInstallBanner";
 
 // API Hooks
 import {
@@ -730,6 +731,7 @@ function App() {
         <TooltipProvider>
           <AuthProvider>
             <Router />
+            <PWAInstallBanner />
           </AuthProvider>
           <Toaster />
         </TooltipProvider>
