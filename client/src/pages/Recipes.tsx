@@ -33,7 +33,7 @@ export default function Recipes() {
   // Recipe calculator state
   const [selectedRecipeId, setSelectedRecipeId] = useState<string>("");
   const [targetKg, setTargetKg] = useState<string>("");
-  const [calculatedIngredients, setCalculatedIngredients] = useState<{product: Product, quantity: number, cost: number}[]>([]);
+  const [calculatedIngredients, setCalculatedIngredients] = useState<{product: Product, quantity: number, finishedQuantity: number, cost: number, hasWeightAdjustment: boolean}[]>([]);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
 
   // Data fetching
@@ -92,16 +92,28 @@ export default function Recipes() {
     }
 
     const multiplier = parseFloat(targetKg);
+    // Apply weight adjustment to the multiplier
+    // If weightAdjustment = -50% (loses 50% weight), we need more raw material
+    // Formula: rawQuantity = finishedQuantity / (1 + weightAdjustment/100)
+    const weightAdjustmentFactor = 1 + (recipe.weightAdjustment || 0) / 100;
+    const adjustedMultiplier = multiplier / weightAdjustmentFactor;
+    
     const ingredients = recipe.ingredients.map(ingredient => {
       const product = products.find(p => p.id === ingredient.productId);
       if (!product) return null;
       
+      // Calculate raw quantity needed (what we actually buy/use)
+      const rawQuantity = ingredient.quantity * adjustedMultiplier;
+      const cost = ingredient.cost * adjustedMultiplier;
+      
       return {
         product,
-        quantity: ingredient.quantity * multiplier,
-        cost: ingredient.cost * multiplier
+        quantity: rawQuantity, // This is the actual quantity to buy
+        finishedQuantity: ingredient.quantity * multiplier, // This is the final result
+        cost: cost,
+        hasWeightAdjustment: (recipe.weightAdjustment || 0) !== 0
       };
-    }).filter(Boolean) as {product: Product, quantity: number, cost: number}[];
+    }).filter(Boolean) as {product: Product, quantity: number, finishedQuantity: number, cost: number, hasWeightAdjustment: boolean}[];
 
     setCalculatedIngredients(ingredients);
   };
@@ -115,7 +127,11 @@ export default function Recipes() {
     
     const totalCost = getTotalCost();
     const ingredientCount = calculatedIngredients.length;
-    return `${targetKg} kg • ${ingredientCount} ingredienti • €${totalCost.toFixed(2)}`;
+    const hasWeightAdjustment = calculatedIngredients.some(ing => ing.hasWeightAdjustment);
+    const recipe = recipes.find(r => r.id === selectedRecipeId);
+    const weightInfo = hasWeightAdjustment && recipe ? ` (peso ${recipe.weightAdjustment > 0 ? '+' : ''}${recipe.weightAdjustment}%)` : '';
+    
+    return `${targetKg} kg${weightInfo} • ${ingredientCount} ingredienti • €${totalCost.toFixed(2)}`;
   };
 
 
@@ -239,14 +255,36 @@ export default function Recipes() {
                     <CollapsibleContent className="space-y-2 mt-2">
                       <div className="bg-muted p-3 rounded-md space-y-2">
                         <h4 className="font-semibold text-sm">Ingredienti necessari:</h4>
-                        {calculatedIngredients.map((ingredient, index) => (
-                          <div key={index} className="flex justify-between text-sm">
-                            <span>{ingredient.product.name}</span>
-                            <span className="font-mono">
-                              {ingredient.quantity.toFixed(2)} {ingredient.product.unit} • €{ingredient.cost.toFixed(2)}
-                            </span>
-                          </div>
-                        ))}
+                        {calculatedIngredients.map((ingredient, index) => {
+                          const recipe = recipes.find(r => r.id === selectedRecipeId);
+                          const hasWeightAdjustment = ingredient.hasWeightAdjustment;
+                          
+                          return (
+                            <div key={index} className="space-y-1">
+                              <div className="flex justify-between text-sm">
+                                <span className="font-medium">{ingredient.product.name}</span>
+                                <span className="font-mono">€{ingredient.cost.toFixed(2)}</span>
+                              </div>
+                              {hasWeightAdjustment ? (
+                                <div className="text-xs text-muted-foreground ml-2 space-y-0.5">
+                                  <div>
+                                    • Da comprare (crudo): <span className="font-mono">{ingredient.quantity.toFixed(2)} {ingredient.product.unit}</span>
+                                  </div>
+                                  <div>
+                                    • Risultato (cotto): <span className="font-mono">{ingredient.finishedQuantity.toFixed(2)} {ingredient.product.unit}</span>
+                                  </div>
+                                  <div>
+                                    • Peso: {recipe?.weightAdjustment && recipe.weightAdjustment > 0 ? '+' : ''}{recipe?.weightAdjustment || 0}% durante la lavorazione
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-xs text-muted-foreground ml-2">
+                                  • Quantità: <span className="font-mono">{ingredient.quantity.toFixed(2)} {ingredient.product.unit}</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                         <hr className="my-2" />
                         <div className="flex justify-between font-semibold text-sm">
                           <span>Totale</span>
