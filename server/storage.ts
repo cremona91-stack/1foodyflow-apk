@@ -309,6 +309,7 @@ export class DatabaseStorage implements IStorage {
     const sanitizedUpdates: any = {};
     if (updates.name !== undefined) sanitizedUpdates.name = updates.name;
     if (updates.ingredients !== undefined) sanitizedUpdates.ingredients = updates.ingredients;
+    if (updates.weightAdjustment !== undefined) sanitizedUpdates.weightAdjustment = updates.weightAdjustment;
     if (updates.totalCost !== undefined) sanitizedUpdates.totalCost = updates.totalCost;
     
     // Always update the updatedAt timestamp
