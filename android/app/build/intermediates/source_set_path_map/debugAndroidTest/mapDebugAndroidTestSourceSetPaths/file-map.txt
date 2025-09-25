@@ -1,0 +1,7 @@
+it.foodyflow.app.test.app-core-1.6.1-0 C:\Users\asus\.gradle\caches\8.13\transforms\38f9b21f22aa83bca362aa5769807911\transformed\core-1.6.1\res
+it.foodyflow.app.test.app-tracing-1.2.0-1 C:\Users\asus\.gradle\caches\8.13\transforms\ffa7ec77c2cc9c6310b1fe5ec0473d75\transformed\tracing-1.2.0\res
+it.foodyflow.app.test.app-androidTest-2 C:\Users\asus\OneDrive\Desktop\FoodyFlow\android\app\build\generated\res\resValues\androidTest\debug
+it.foodyflow.app.test.app-updated_navigation_xml-3 C:\Users\asus\OneDrive\Desktop\FoodyFlow\android\app\build\generated\updated_navigation_xml\debugAndroidTest
+it.foodyflow.app.test.app-mergeDebugAndroidTestResources-4 C:\Users\asus\OneDrive\Desktop\FoodyFlow\android\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\merged.dir
+it.foodyflow.app.test.app-mergeDebugAndroidTestResources-5 C:\Users\asus\OneDrive\Desktop\FoodyFlow\android\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\stripped.dir
+it.foodyflow.app.test.app-debugAndroidTest-6 C:\Users\asus\OneDrive\Desktop\FoodyFlow\android\app\build\intermediates\merged_res\debugAndroidTest\mergeDebugAndroidTestResources
